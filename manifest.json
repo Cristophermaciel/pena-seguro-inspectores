@@ -1,0 +1,19 @@
+{
+  "name": "Peña Seguro 1410 - Inspectores y Reportes",
+  "short_name": "Peña Seguro 1410",
+  "description": "Plataforma Operativa de Inspectores, Patrullaje, Procedimientos y Agendamientos Peña Seguro 1410 - Municipalidad de Peñaflor",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%231e3a8a'/%3E%3Crect x='32' y='32' width='448' height='448' rx='72' fill='none' stroke='%23fbbf24' stroke-width='20'/%3E%3Ctext x='256' y='240' font-family='Arial,sans-serif' font-size='148' font-weight='900' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'%3E1410%3C/text%3E%3Ctext x='256' y='365' font-family='Arial,sans-serif' font-size='52' font-weight='800' fill='%23fbbf24' text-anchor='middle'%3EPE%C3%91A SEGURO%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
