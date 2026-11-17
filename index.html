@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Peña Seguro - Inspectores Municipal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 4px; }
+        
+        body { overscroll-behavior-y: contain; background-color: #0f172a; }
+        
+        #app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            box-shadow: 0 0 25px rgba(0,0,0,0.3);
+            position: relative;
+            overflow-x: hidden;
+            transition: max-width 0.25s ease;
+        }
+        #app-container.admin-wide {
+            max-width: 980px;
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #toast {
+            visibility: hidden;
+            min-width: 260px;
+            background-color: #16a34a;
+            color: #fff;
+            text-align: center;
+            border-radius: 12px;
+            padding: 14px 18px;
+            position: fixed;
+            z-index: 60;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.4s, fadeout 0.4s 2.6s;
+        }
+
+        @keyframes fadein {
+            from { bottom: 0; opacity: 0; }
+            to { bottom: 30px; opacity: 1; }
+        }
+        @keyframes fadeout {
+            from { bottom: 30px; opacity: 1; }
+            to { bottom: 0; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 font-sans antialiased">
+
+    <div id="app-container">
+        
+        <!-- Header (Hidden on Login) -->
+        <header id="main-header" class="hidden bg-[#1e3a8a] text-white p-3.5 shadow-md sticky top-0 z-20 flex justify-between items-center border-b border-blue-900">
+            <div class="flex items-center gap-2.5">
+                <!-- SVG Emblem Logo Inline -->
+                <div class="w-9 h-10 flex-shrink-0">
+                    <svg viewBox="0 0 100 115" class="w-full h-full drop-shadow-sm">
+                        <path d="M50 2 L95 20 V65 C95 90 50 112 50 112 C50 112 5 90 5 65 V20 Z" fill="#0d47a1" stroke="#ffffff" stroke-width="3"/>
+                        <path d="M12 25 L88 25 L88 62 C88 83 50 102 50 102 C50 102 12 83 12 62 Z" fill="#ffffff"/>
+                        <!-- Pena text -->
+                        <text x="50" y="44" font-family="Arial, sans-serif" font-weight="900" font-size="20" fill="#0d47a1" text-anchor="middle">PEÑA</text>
+                        <!-- Red Banner -->
+                        <rect x="18" y="49" width="64" height="20" fill="#d32f2f" rx="3"/>
+                        <text x="50" y="64" font-family="Arial, sans-serif" font-weight="900" font-size="13" fill="#ffffff" text-anchor="middle">SEGURO</text>
+                        <!-- 1410 text -->
+                        <text x="50" y="87" font-family="Arial, sans-serif" font-weight="900" font-size="19" fill="#0d47a1" text-anchor="middle">1410</text>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base font-extrabold tracking-wide leading-none text-white">PEÑA SEGURO</h1>
+                    <span id="header-role-subtitle" class="text-[10px] text-yellow-300 font-semibold tracking-wider uppercase">Inspectores 1410</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <div id="header-user-info" class="text-right">
+                    <p id="header-rut-display" class="text-xs font-bold text-white"></p>
+                    <p id="header-shift-display" class="text-[10px] text-blue-200 uppercase font-medium"></p>
+                </div>
+                <button type="button" id="btn-switch-admin" onclick="toggleAdminInspectorMode()" class="hidden px-2.5 py-1.5 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-[#1e3a8a] text-[11px] font-black flex items-center gap-1 shadow" title="Cambiar entre Vista Móvil y Panel Admin">
+                    <i class="fa-solid fa-user-gear"></i> <span id="btn-switch-admin-text">Admin</span>
+                </button>
+                <button type="button" onclick="openCloudConfigModal()" class="w-8 h-8 rounded-lg bg-blue-800/80 hover:bg-blue-700 border border-blue-600 flex items-center justify-center text-white relative" title="Configuración Google Drive / Excel">
+                    <i class="fa-solid fa-cloud-arrow-up text-xs" id="header-cloud-icon"></i>
+                    <span id="header-sync-badge" class="hidden absolute -top-1.5 -right-1.5 bg-amber-400 text-blue-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                </button>
+                <button type="button" onclick="navigateTo('view-login')" class="w-8 h-8 rounded-lg bg-red-600/80 hover:bg-red-600 border border-red-400 flex items-center justify-center text-white" title="Cerrar Sesión">
+                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <main class="p-4 pb-20">
+            
+            <!-- 1. LOGIN VIEW -->
+            <section id="view-login" class="view-section active">
+                <div class="flex flex-col items-center justify-center min-h-[85vh] py-6">
+                    <div class="bg-[#1e3a8a] w-full p-6 rounded-2xl shadow-2xl flex flex-col items-center border border-blue-800 relative">
+                        <button type="button" onclick="openCloudConfigModal()" class="absolute top-4 right-4 text-blue-200 hover:text-yellow-400 text-xs flex items-center gap-1 bg-blue-900/70 px-2.5 py-1.5 rounded-lg border border-blue-700" title="Conectar Google Sheets / Drive">
+                            <i class="fa-solid fa-table"></i> <span id="login-cloud-status">Excel Drive</span>
+                        </button>
+                        
+                        <!-- Main Logo SVG -->
+                        <div class="w-28 h-32 mb-3">
+                            <svg viewBox="0 0 100 115" class="w-full h-full filter drop-shadow-lg">
+                                <path d="M50 2 L95 20 V65 C95 90 50 112 50 112 C50 112 5 90 5 65 V20 Z" fill="#0d47a1" stroke="#ffffff" stroke-width="3"/>
+                                <path d="M12 25 L88 25 L88 62 C88 83 50 102 50 102 C50 102 12 83 12 62 Z" fill="#ffffff"/>
+                                <text x="50" y="44" font-family="Arial, sans-serif" font-weight="900" font-size="20" fill="#0d47a1" text-anchor="middle">PEÑA</text>
+                                <rect x="18" y="49" width="64" height="20" fill="#d32f2f" rx="3"/>
+                                <text x="50" y="64" font-family="Arial, sans-serif" font-weight="900" font-size="13" fill="#ffffff" text-anchor="middle">SEGURO</text>
+                                <text x="50" y="87" font-family="Arial, sans-serif" font-weight="900" font-size="19" fill="#0d47a1" text-anchor="middle">1410</text>
+                            </svg>
+                        </div>
+
+                        <h1 class="text-2xl font-black text-white tracking-wide mb-1">PEÑA SEGURO</h1>
+                        <p class="text-blue-200 mb-6 text-xs text-center font-medium">Plataforma Web de Operaciones e Inspección Municipal</p>
+                        
+                        <form id="form-login" class="w-full space-y-4">
+                            <div>
+                                <label class="block text-white text-xs font-bold mb-1" for="rut">RUT Funcionario o Usuario Admin</label>
+                                <div class="relative">
+                                    <input type="text" id="rut" class="w-full p-3 pl-10 rounded-xl border-0 focus:ring-2 focus:ring-yellow-400 outline-none text-slate-800 font-semibold" placeholder="Ej: 15.432.876-K o admin" required>
+                                    <i class="fa-solid fa-id-card absolute left-3.5 top-3.5 text-blue-900 opacity-60"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-white text-xs font-bold mb-1" for="password">Contraseña</label>
+                                <div class="relative">
+                                    <input type="password" id="password" class="w-full p-3 pl-10 rounded-xl border-0 focus:ring-2 focus:ring-yellow-400 outline-none text-slate-800 font-semibold" placeholder="••••••••" required>
+                                    <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-blue-900 opacity-60"></i>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-[#1e3a8a] font-extrabold py-3.5 rounded-xl mt-4 transition-all shadow-lg active:scale-[0.98]">
+                                INICIAR SESIÓN
+                            </button>
+                        </form>
+
+                        <!-- Quick Access / Demo Credentials Helper -->
+                        <div class="w-full mt-4 pt-3 border-t border-blue-800/80 text-[11px] text-blue-200 space-y-1.5">
+                            <p class="font-bold text-yellow-300 text-center"><i class="fa-solid fa-key mr-1"></i> Accesos Rápidos de Prueba:</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" onclick="fillDemoLogin('15.432.876-K', '1234')" class="bg-blue-900/70 hover:bg-blue-800 border border-blue-700 rounded-lg p-2 text-left transition-all">
+                                    <span class="block font-extrabold text-white"><i class="fa-solid fa-mobile-screen mr-1 text-emerald-400"></i> Vista Inspector</span>
+                                    <span class="text-[10px] text-blue-300">15.432.876-K / 1234</span>
+                                </button>
+                                <button type="button" onclick="fillDemoLogin('admin', '1410')" class="bg-blue-900/70 hover:bg-blue-800 border border-blue-700 rounded-lg p-2 text-left transition-all">
+                                    <span class="block font-extrabold text-yellow-300"><i class="fa-solid fa-user-shield mr-1"></i> Panel Admin</span>
+                                    <span class="text-[10px] text-blue-300">admin / 1410</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-6 font-medium">© 2026 Ilustre Municipalidad de Peñaflor</p>
+                </div>
+            </section>
+
+            <!-- 2. SHIFT SETUP VIEW -->
+            <section id="view-setup" class="view-section">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-4">
+                    <h2 class="text-lg font-bold text-[#1e3a8a] mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-user text-yellow-500"></i> Apertura de Turno
+                    </h2>
+                    
+                    <form id="form-setup" class="space-y-4">
+                        
+                        <!-- Auto Date/Time -->
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100 text-center">
+                            <p class="text-[11px] text-blue-800 uppercase font-bold tracking-wider">Fecha y Hora de Ingreso (Automática)</p>
+                            <p id="current-datetime" class="text-base font-mono font-extrabold text-[#1e3a8a] mt-0.5"></p>
+                        </div>
+
+                        <!-- Shift / Rango Horario Auto Detect -->
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-bold text-slate-700">Rango Horario Detectado:</label>
+                                <span id="rango-badge" class="px-2 py-0.5 bg-blue-700 text-white text-[10px] font-bold rounded-full uppercase">Detectando...</span>
+                            </div>
+                            <select id="rango-horario-override" class="w-full p-2.5 text-xs rounded-lg border border-slate-300 font-semibold text-slate-700 bg-white">
+                                <option value="AUTO">Automático según hora actual</option>
+                                <option value="MANANA">Mañana (07:00 - 15:00)</option>
+                                <option value="TARDE">Tarde (15:00 - 23:00)</option>
+                                <option value="NOCHE">Noche (23:00 - 07:00)</option>
+                            </select>
+                        </div>
+
+                        <!-- Móvil Dropdown -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="movil">Móvil / Vehículo <span class="text-red-500">*</span></label>
+                            <select id="movil" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-medium text-sm" required>
+                                <option value="" disabled selected>Seleccione vehículo...</option>
+                                <optgroup label="Móviles">
+                                    <script>
+                                        for(let i=1; i<=20; i++) document.write(`<option value="Móvil ${i}">Móvil ${i}</option>`);
+                                    </script>
+                                </optgroup>
+                                <optgroup label="Camionetas">
+                                    <option value="Camioneta 1">Camioneta 1</option>
+                                    <option value="Camioneta 2">Camioneta 2</option>
+                                </optgroup>
+                                <optgroup label="Motocicletas">
+                                    <script>
+                                        for(let i=1; i<=9; i++) document.write(`<option value="Motocicleta ${i}">Motocicleta ${i}</option>`);
+                                    </script>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Cuadrante Dropdown -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="cuadrante">Cuadrante Asignado <span class="text-red-500">*</span></label>
+                            <select id="cuadrante" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-medium text-sm" required>
+                                <option value="" disabled selected>Seleccione cuadrante...</option>
+                                <option value="SRA1">SRA1</option>
+                                <option value="252A">252A</option>
+                                <option value="252B">252B</option>
+                                <option value="252C">252C</option>
+                                <option value="SRC">SRC</option>
+                                <option value="SRB">SRB</option>
+                                <option value="253A">253A</option>
+                                <option value="253B">253B</option>
+                            </select>
+                        </div>
+
+                        <!-- Kilometraje Inicial -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="km-inicial">Kilometraje Inicial <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" id="km-inicial" class="w-full p-3 pl-10 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none font-mono text-sm font-bold" placeholder="Ej: 142500" required min="0">
+                                <i class="fa-solid fa-gauge-high absolute left-3.5 top-3.5 text-slate-400"></i>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl mt-4 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            CONTINUAR A CHECKLIST <i class="fa-solid fa-arrow-right text-yellow-400 ml-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 2.5 VEHICLE CHECKLIST VIEW -->
+            <section id="view-checklist" class="view-section">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                        <h2 class="text-lg font-bold text-[#1e3a8a] flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-check text-yellow-500"></i> Checklist Técnico Exhaustivo
+                        </h2>
+                        <span class="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full uppercase">Obligatorio</span>
+                    </div>
+                    
+                    <div class="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] text-blue-800 font-bold uppercase">Inspeccionando Unidad:</p>
+                            <p id="checklist-vehiculo-display" class="text-sm font-extrabold text-[#1e3a8a] uppercase"></p>
+                        </div>
+                        <i class="fa-solid fa-car-side text-2xl text-blue-600" id="checklist-icon"></i>
+                    </div>
+                    
+                    <form id="form-checklist" class="space-y-4">
+                        
+                        <!-- Dynamic Exhaustive Categories injected via JS -->
+                        <div id="checklist-container" class="space-y-4"></div>
+                        
+                        <!-- General Vehicle Condition Photo -->
+                        <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-100 space-y-3">
+                            <label class="block text-xs font-bold text-[#1e3a8a] flex items-center gap-1.5">
+                                <i class="fa-solid fa-camera text-blue-600"></i> Registro Fotográfico del Vehículo / Odómetro (Recomendado)
+                            </label>
+                            <div class="border-2 border-dashed border-blue-300 rounded-xl p-4 text-center bg-white relative">
+                                <input type="file" id="chk-general-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'chk-general-preview', 'chk-general-placeholder')">
+                                <div id="chk-general-placeholder" class="flex flex-col items-center pointer-events-none">
+                                    <i class="fa-solid fa-camera text-xl text-blue-600 mb-1"></i>
+                                    <span class="text-xs text-blue-800 font-bold">Capturar Foto General del Vehículo / Odómetro</span>
+                                    <span class="text-[10px] text-slate-500">Tocar para abrir cámara o seleccionar archivo</span>
+                                </div>
+                                <img id="chk-general-preview" class="hidden max-h-36 mx-auto rounded-lg shadow-sm" alt="Preview General">
+                            </div>
+                        </div>
+
+                        <!-- Visual Defect Mandatory Photo & Observations -->
+                        <div id="defect-photo-container" class="hidden bg-red-50 p-4 rounded-xl border border-red-200 space-y-3">
+                            <p class="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-triangle-exclamation text-red-600"></i> Se detectaron fallas o desaprobaciones. Evidencia fotográfica de desperfectos:
+                            </p>
+                            <div class="border-2 border-dashed border-red-300 rounded-xl p-4 text-center bg-white relative">
+                                <input type="file" id="chk-defect-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'chk-defect-preview', 'chk-defect-placeholder')">
+                                <div id="chk-defect-placeholder" class="flex flex-col items-center pointer-events-none">
+                                    <i class="fa-solid fa-camera text-xl text-red-500 mb-1"></i>
+                                    <span class="text-xs text-red-700 font-bold">Capturar Foto de Desperfecto</span>
+                                </div>
+                                <img id="chk-defect-preview" class="hidden max-h-32 mx-auto rounded-lg shadow-sm" alt="Preview Desperfecto">
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="checklist-observaciones">Observaciones Generales de Inspección</label>
+                            <textarea id="checklist-observaciones" rows="2" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-slate-50" placeholder="Indique detalles adicionales, abolladuras previas o estado de la máquina..."></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl mt-4 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i class="fa-solid fa-shield-check text-yellow-300"></i> CONFIRMAR E INICIAR TURNO
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 3. OPERATIONAL MENU VIEW -->
+            <section id="view-menu" class="view-section">
+                
+                <!-- Active Info Card -->
+                <div class="mb-5 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> TURNO ACTIVO
+                        </span>
+                        <span id="display-time-slot" class="text-[11px] font-extrabold text-[#1e3a8a] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                            <!-- Shift Slot -->
+                        </span>
+                    </div>
+                    <p id="status-info" class="text-sm font-semibold text-slate-800"></p>
+                    <p id="status-km" class="text-xs text-slate-500 font-mono mt-0.5"></p>
+                </div>
+
+                <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5 px-1">Menú de Operaciones</div>
+
+                <!-- 3 MAIN BUTTON DASHBOARD -->
+                <div class="space-y-3.5">
+                    
+                    <!-- 1. PROCEDIMIENTOS -->
+                    <button onclick="openNewProcedure()" class="w-full bg-gradient-to-r from-[#1e3a8a] to-blue-800 text-white font-bold py-4 rounded-2xl shadow-md flex items-center justify-between px-5 transition-transform active:scale-[0.98]">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-xl border border-yellow-400/30">
+                                <i class="fa-solid fa-plus-circle text-yellow-400"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-base font-extrabold leading-tight">Ingresar Procedimiento</p>
+                                <p class="text-xs text-blue-200 font-normal">Patrullaje, incivilidad, rucos, etc.</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-blue-300 text-sm"></i>
+                    </button>
+                    
+                    <!-- 2. TAREAS DEL CUADRANTE -->
+                    <button onclick="openTasks()" class="w-full bg-gradient-to-r from-blue-700 to-indigo-800 text-white font-bold py-4 rounded-2xl shadow-md flex items-center justify-between px-5 relative transition-transform active:scale-[0.98]">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-yellow-400 text-xl border border-white/20">
+                                <i class="fa-solid fa-list-check"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-base font-extrabold leading-tight">Tareas del Cuadrante</p>
+                                <p id="task-menu-subtitle" class="text-xs text-blue-200 font-normal">SRA1 • Tareas diarias</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="task-badge" class="bg-red-500 text-white text-xs font-black px-2.5 py-1 rounded-full shadow border border-white/20">0</span>
+                            <i class="fa-solid fa-chevron-right text-blue-300 text-sm"></i>
+                        </div>
+                    </button>
+
+                    <!-- 3. CERRAR TURNO -->
+                    <button onclick="navigateTo('view-end-shift')" class="w-full bg-gradient-to-r from-red-600 to-red-700 text-white font-bold py-4 rounded-2xl shadow-md flex items-center justify-between px-5 transition-transform active:scale-[0.98] mt-6">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white text-xl border border-white/20">
+                                <i class="fa-solid fa-power-off"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-base font-extrabold leading-tight">Cerrar Turno</p>
+                                <p class="text-xs text-red-100 font-normal">Ingreso de Km de término</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-red-200 text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Google Drive / Sheets Sync & Backup Utility -->
+                <div class="mt-8 pt-4 border-t border-slate-200 space-y-2.5">
+                    <div class="bg-slate-100 rounded-xl p-3 border border-slate-200 flex items-center justify-between">
+                        <div class="text-left">
+                            <p class="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-excel text-emerald-600"></i> Registro en Excel (Google Drive)
+                            </p>
+                            <p id="menu-sync-status-text" class="text-[10px] text-slate-500">Modo local + cola de sincronización activa</p>
+                        </div>
+                        <button type="button" onclick="openCloudConfigModal()" class="text-[11px] bg-white hover:bg-blue-50 text-[#1e3a8a] font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 shadow-xs">
+                            <i class="fa-solid fa-gear mr-1"></i> Configurar
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2">
+                        <button type="button" onclick="exportAllHistoryToCSV()" class="text-xs text-emerald-800 hover:text-emerald-950 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                            <i class="fa-solid fa-download mr-1"></i> Descargar Excel (.CSV)
+                        </button>
+                        <button type="button" onclick="resetTasksDatabase()" class="text-xs text-blue-700 hover:text-blue-900 font-semibold bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+                            <i class="fa-solid fa-arrows-rotate mr-1"></i> Reiniciar Tareas (Demo)
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. PROCEDURE FORM VIEW -->
+            <section id="view-procedure" class="view-section">
+                <div class="flex items-center gap-3 mb-4">
+                    <button type="button" onclick="navigateTo('view-menu')" class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-300">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight">Ingresar Procedimiento</h2>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <form id="form-procedure" class="space-y-4">
+                        
+                        <!-- Tipo de Procedimiento Dropdown -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-tipo">Tipo de Procedimiento <span class="text-red-500">*</span></label>
+                            <select id="proc-tipo" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white text-sm font-semibold text-slate-800" required>
+                                <option value="" disabled selected>Seleccione procedimiento...</option>
+                                <option value="Patrullajes">Patrullajes</option>
+                                <option value="Vigilancias">Vigilancias</option>
+                                <option value="Puntos fijos">Puntos fijos</option>
+                                <option value="Rondas preventivas">Rondas preventivas</option>
+                                <option value="Incivilidades">Incivilidades</option>
+                                <option value="Luminarias defectuosas">Luminarias defectuosas</option>
+                                <option value="Rucos">Rucos</option>
+                                <option value="Basura en vía pública">Basura en vía pública</option>
+                                <option value="Micro basurales">Micro basurales</option>
+                                <option value="Calles malas">Calles malas</option>
+                                <option value="Socavones">Socavones</option>
+                                <option value="Consumo de alcohol y drogas">Consumo de alcohol y drogas</option>
+                            </select>
+                        </div>
+
+                        <!-- Dirección / Ubicación -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-direccion">Dirección / Ubicación <span class="text-red-500">*</span></label>
+                            <div class="relative flex">
+                                <input type="text" id="proc-direccion" class="w-full p-3 rounded-l-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm font-medium" placeholder="Calle, número, esquina..." required>
+                                <button type="button" onclick="getLocation('proc-direccion')" class="bg-blue-50 border border-l-0 border-slate-300 px-3.5 rounded-r-xl text-blue-700 font-bold hover:bg-blue-100 flex items-center justify-center" title="Obtener GPS">
+                                    <i class="fa-solid fa-crosshairs text-base"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observaciones -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-detalle">Observaciones / Detalle</label>
+                            <textarea id="proc-detalle" rows="3" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm" placeholder="Añada información descriptiva relevante..."></textarea>
+                        </div>
+
+                        <!-- Fotografía -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Fotografía del Procedimiento</label>
+                            <div class="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center bg-slate-50 relative">
+                                <input type="file" id="proc-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'foto-preview', 'foto-placeholder')">
+                                <div id="foto-placeholder" class="flex flex-col items-center pointer-events-none">
+                                    <i class="fa-solid fa-camera text-2xl text-slate-400 mb-1"></i>
+                                    <span class="text-xs text-blue-700 font-bold">Tomar Foto con Cámara</span>
+                                </div>
+                                <img id="foto-preview" class="hidden max-h-36 mx-auto rounded-lg shadow-sm" alt="Preview">
+                            </div>
+                        </div>
+
+                        <!-- Notificaciones Correo -->
+                        <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-100">
+                            <p class="text-xs font-bold text-[#1e3a8a] mb-2 flex items-center gap-1.5"><i class="fa-solid fa-paper-plane"></i> Enviar Notificación Inmediata:</p>
+                            <div class="space-y-1.5">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="email-central" class="w-4 h-4 text-[#1e3a8a] rounded border-slate-300 focus:ring-[#1e3a8a]" checked>
+                                    <span class="text-xs font-medium text-slate-700">Central de Comunicaciones 1410</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" id="email-jefatura" class="w-4 h-4 text-[#1e3a8a] rounded border-slate-300 focus:ring-[#1e3a8a]">
+                                    <span class="text-xs font-medium text-slate-700">Jefatura de Turno Inspección</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl mt-2 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i class="fa-solid fa-floppy-disk"></i> REGISTRAR PROCEDIMIENTO
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 5. TASKS LIST VIEW -->
+            <section id="view-tasks" class="view-section">
+                <div class="flex items-center gap-3 mb-4">
+                    <button type="button" onclick="navigateTo('view-menu')" class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-300">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight leading-none">Tareas del Cuadrante</h2>
+                        <span id="task-rango-indicator" class="text-[10px] font-bold text-slate-500"></span>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-900 text-white p-3 rounded-xl mb-4 text-xs font-semibold flex justify-between items-center shadow-sm">
+                    <span>Cuadrante: <strong id="task-cuadrante-label" class="text-yellow-400 font-extrabold text-sm"></strong></span>
+                    <span id="task-rango-badge" class="bg-yellow-400 text-blue-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase"></span>
+                </div>
+
+                <div id="tasks-container" class="space-y-3">
+                    <!-- Dynamic Task Cards -->
+                </div>
+            </section>
+
+            <!-- 6. TASK RESOLUTION VIEW -->
+            <section id="view-task-resolve" class="view-section">
+                <div class="flex items-center gap-3 mb-4">
+                    <button type="button" onclick="navigateTo('view-tasks')" class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-300">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight">Dar Visto Bueno a Tarea</h2>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="mb-4 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                        <p class="text-[10px] text-amber-800 font-bold uppercase tracking-wider mb-1">Tarea asignada:</p>
+                        <p id="resolve-task-title" class="text-sm font-extrabold text-slate-800"></p>
+                    </div>
+
+                    <form id="form-task-resolve" class="space-y-4">
+                        <input type="hidden" id="resolve-task-id">
+                        
+                        <!-- Dirección de Resolución -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="resolve-direccion">Ubicación de Verificación <span class="text-red-500">*</span></label>
+                            <div class="relative flex">
+                                <input type="text" id="resolve-direccion" class="w-full p-3 rounded-l-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm font-medium" placeholder="Confirmar dirección/GPS..." required>
+                                <button type="button" onclick="getLocation('resolve-direccion')" class="bg-blue-50 border border-l-0 border-slate-300 px-3.5 rounded-r-xl text-blue-700 font-bold hover:bg-blue-100 flex items-center justify-center" title="Obtener GPS">
+                                    <i class="fa-solid fa-location-dot text-base"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Fotografía Obligatoria -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Evidencia Fotográfica (Mandatorio) <span class="text-red-500">*</span></label>
+                            <div class="border-2 border-dashed border-red-300 rounded-xl p-5 text-center bg-red-50/50 relative">
+                                <input type="file" id="resolve-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'resolve-foto-preview', 'resolve-foto-placeholder')" required>
+                                <div id="resolve-foto-placeholder" class="flex flex-col items-center pointer-events-none">
+                                    <i class="fa-solid fa-camera text-2xl text-red-500 mb-1"></i>
+                                    <span class="text-xs text-red-700 font-extrabold">Capturar Evidencia Fotográfica</span>
+                                    <span class="text-[10px] text-red-500">Requerida para marcar visto bueno</span>
+                                </div>
+                                <img id="resolve-foto-preview" class="hidden max-h-36 mx-auto rounded-lg shadow-sm border border-red-200" alt="Preview">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="resolve-detalle">Observaciones de Inspección</label>
+                            <textarea id="resolve-detalle" rows="2" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm" placeholder="Ej: Visto bueno otorgado. Sin novedades en el punto."></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl mt-2 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i class="fa-solid fa-check-circle text-yellow-400"></i> CONFIRMAR Y MARCAR COMPLETADA
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 7. END SHIFT VIEW -->
+            <section id="view-end-shift" class="view-section">
+                
+                <div class="flex items-center gap-3 mb-4">
+                    <button type="button" onclick="navigateTo('view-menu')" class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-300">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h2 class="text-lg font-bold text-red-600 uppercase tracking-tight">Cierre de Turno Operativo</h2>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-red-100 p-5">
+                    
+                    <form id="form-end-shift" class="space-y-4">
+                        
+                        <!-- Auto Date/Time for End Shift -->
+                        <div class="bg-red-50/70 p-3 rounded-xl border border-red-100 text-center">
+                            <p class="text-[11px] text-red-800 uppercase font-bold tracking-wider">Fecha y Hora de Término (Automática)</p>
+                            <p id="end-datetime" class="text-base font-mono font-extrabold text-red-600 mt-0.5"></p>
+                        </div>
+
+                        <div class="bg-slate-50 p-3 rounded-xl flex justify-between items-center text-xs border border-slate-200">
+                            <span class="text-slate-600 font-bold">Km Inicial Registrado:</span>
+                            <span id="display-km-inicial" class="font-mono font-extrabold text-[#1e3a8a] bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-sm">0</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="km-termino">Kilometraje de Término <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" id="km-termino" class="w-full p-3.5 pl-11 rounded-xl border-2 border-red-200 focus:ring-2 focus:ring-red-500 outline-none text-base font-mono font-bold" placeholder="Ej: 142620" required min="0">
+                                <i class="fa-solid fa-gauge-high absolute left-3.5 top-4 text-red-400 text-lg"></i>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl mt-4 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i class="fa-solid fa-power-off"></i> FINALIZAR Y CERRAR TURNO
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 8. ADMINISTRATOR PANEL VIEW (Gestión de Usuarios, Contraseñas, Tareas, Flota y Monitor) -->
+            <section id="view-admin" class="view-section">
+                <div class="bg-gradient-to-r from-[#1e3a8a] to-blue-900 text-white rounded-2xl p-4 mb-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 bg-yellow-400 text-[#1e3a8a] text-[10px] font-black rounded-full uppercase">Modo Administrador</span>
+                            <span class="text-[11px] text-blue-200 font-mono">ID Excel: 1E8xew..._FQ</span>
+                        </div>
+                        <h2 class="text-lg font-black tracking-tight mt-1">Panel de Control y Configuración — Peña Seguro 1410</h2>
+                        <p class="text-xs text-blue-200">Crea inspectores, cambia contraseñas, asigna tareas por cuadrante y monitorea los turnos en Google Sheets.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        <a href="https://docs.google.com/spreadsheets/d/1E8xewBE2aUIzy0yUfydUc1ljiVWh09WVGwsAooD-_FQ/edit" target="_blank" rel="noopener" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-excel"></i> Abrir Excel en Drive
+                        </a>
+                        <button type="button" onclick="navigateTo('view-setup')" class="bg-white/15 hover:bg-white/25 text-white text-xs font-bold px-3 py-2 rounded-xl border border-white/20 flex items-center gap-1.5">
+                            <i class="fa-solid fa-mobile-screen"></i> Ir a App Inspector
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Admin Navigation Tabs -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                    <button type="button" onclick="switchAdminTab('users')" id="admin-tab-btn-users" class="admin-tab-btn bg-[#1e3a8a] text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-users-gear text-yellow-400"></i> Usuarios y Claves
+                    </button>
+                    <button type="button" onclick="switchAdminTab('tasks')" id="admin-tab-btn-tasks" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-list-check text-blue-700"></i> Tareas Cuadrante
+                    </button>
+                    <button type="button" onclick="switchAdminTab('fleet')" id="admin-tab-btn-fleet" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-car-side text-blue-700"></i> Flota / Móviles
+                    </button>
+                    <button type="button" onclick="switchAdminTab('monitor')" id="admin-tab-btn-monitor" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-chart-line text-emerald-600"></i> Monitor en Vivo
+                    </button>
+                </div>
+
+                <!-- TAB 1: GESTIÓN DE USUARIOS Y CONTRASEÑAS -->
+                <div id="admin-panel-users" class="admin-panel-section space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Formulario Crear / Editar Usuario -->
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <h3 class="text-sm font-extrabold text-[#1e3a8a] border-b border-slate-100 pb-2 mb-3 flex items-center justify-between">
+                                <span id="user-form-title"><i class="fa-solid fa-user-plus text-yellow-500 mr-1"></i> Crear / Modificar Usuario</span>
+                                <button type="button" onclick="resetAdminUserForm()" class="text-[10px] text-blue-700 underline">Limpiar</button>
+                            </h3>
+                            <form id="form-admin-user" class="space-y-3 text-xs">
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">RUT o Nombre de Usuario <span class="text-red-500">*</span></label>
+                                    <input type="text" id="adm-user-rut" class="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" placeholder="Ej: 15.432.876-K o admin" required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Nombre Completo <span class="text-red-500">*</span></label>
+                                    <input type="text" id="adm-user-nombre" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Ej: Juan Pérez Soto" required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Cargo / Función</label>
+                                    <input type="text" id="adm-user-cargo" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Ej: Inspector Municipal" value="Inspector Municipal">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Contraseña de Acceso <span class="text-red-500">*</span></label>
+                                    <div class="relative">
+                                        <input type="text" id="adm-user-pass" class="w-full p-2.5 rounded-xl border border-slate-300 font-mono font-bold text-[#1e3a8a]" placeholder="Ej: 1234" required>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Rol en Sistema</label>
+                                        <select id="adm-user-rol" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                                            <option value="INSPECTOR">INSPECTOR (Móvil)</option>
+                                            <option value="ADMIN">ADMIN (Total)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Estado</label>
+                                        <select id="adm-user-estado" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                                            <option value="ACTIVO">ACTIVO</option>
+                                            <option value="INACTIVO">INACTIVO</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-extrabold py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-floppy-disk text-yellow-400"></i> GUARDAR USUARIO EN EXCEL
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Tabla de Usuarios Registrados -->
+                        <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-3">
+                                <h3 class="text-sm font-extrabold text-[#1e3a8a]">
+                                    <i class="fa-solid fa-id-badge text-blue-600 mr-1"></i> Funcionarios y Administradores (<span id="admin-users-count">0</span>)
+                                </h3>
+                                <input type="text" id="adm-user-search" oninput="renderAdminUsersList()" class="p-2 rounded-lg border border-slate-300 text-xs" placeholder="Buscar por RUT o nombre...">
+                            </div>
+                            <div id="admin-users-list" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: GESTIÓN DE TAREAS POR CUADRANTE Y TURNO -->
+                <div id="admin-panel-tasks" class="admin-panel-section hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <h3 class="text-sm font-extrabold text-[#1e3a8a] border-b border-slate-100 pb-2 mb-3 flex items-center justify-between">
+                                <span><i class="fa-solid fa-plus-circle text-yellow-500 mr-1"></i> Nueva / Editar Tarea</span>
+                                <button type="button" onclick="resetAdminTaskForm()" class="text-[10px] text-blue-700 underline">Limpiar</button>
+                            </h3>
+                            <form id="form-admin-task" class="space-y-3 text-xs">
+                                <input type="hidden" id="adm-task-id">
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Rango Horario / Turno <span class="text-red-500">*</span></label>
+                                    <select id="adm-task-rango" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white" required>
+                                        <option value="MANANA">Mañana (07:00 - 15:00)</option>
+                                        <option value="TARDE">Tarde (15:00 - 23:00)</option>
+                                        <option value="NOCHE">Noche (23:00 - 07:00)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Cuadrante Asignado <span class="text-red-500">*</span></label>
+                                    <select id="adm-task-cuadrante" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white" required>
+                                        <option value="SRA1">SRA1</option>
+                                        <option value="252A">252A</option>
+                                        <option value="252B">252B</option>
+                                        <option value="252C">252C</option>
+                                        <option value="SRC">SRC</option>
+                                        <option value="SRB">SRB</option>
+                                        <option value="253A">253A</option>
+                                        <option value="253B">253B</option>
+                                        <option value="TODOS">TODOS (General para cualquier cuadrante)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Instrucción / Descripción de la Tarea <span class="text-red-500">*</span></label>
+                                    <textarea id="adm-task-desc" rows="3" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Ej: Fiscalización en Zona Escolar y Cruce Peatonal..." required></textarea>
+                                </div>
+                                <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-extrabold py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-floppy-disk text-yellow-400"></i> GUARDAR TAREA
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-3">
+                                <h3 class="text-sm font-extrabold text-[#1e3a8a]">
+                                    <i class="fa-solid fa-clipboard-list text-blue-600 mr-1"></i> Catálogo de Tareas Programadas (<span id="admin-tasks-count">0</span>)
+                                </h3>
+                                <select id="adm-task-filter-shift" onchange="renderAdminTasksList()" class="p-2 rounded-lg border border-slate-300 text-xs font-semibold bg-white">
+                                    <option value="ALL">Todos los turnos</option>
+                                    <option value="MANANA">Turno Mañana</option>
+                                    <option value="TARDE">Turno Tarde</option>
+                                    <option value="NOCHE">Turno Noche</option>
+                                </select>
+                            </div>
+                            <div id="admin-tasks-list" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: GESTIÓN DE FLOTA Y UNIDADES -->
+                <div id="admin-panel-fleet" class="admin-panel-section hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <h3 class="text-sm font-extrabold text-[#1e3a8a] border-b border-slate-100 pb-2 mb-3">
+                                <i class="fa-solid fa-car-on text-yellow-500 mr-1"></i> Agregar / Modificar Unidad
+                            </h3>
+                            <form id="form-admin-fleet" class="space-y-3 text-xs">
+                                <input type="hidden" id="adm-fleet-id">
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Nombre Unidad <span class="text-red-500">*</span></label>
+                                    <input type="text" id="adm-fleet-nombre" class="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" placeholder="Ej: Móvil 21 o Motocicleta 10" required>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Tipo</label>
+                                        <select id="adm-fleet-tipo" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                                            <option value="Móvil">Móvil</option>
+                                            <option value="Camioneta">Camioneta</option>
+                                            <option value="Motocicleta">Motocicleta</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Patente / Código</label>
+                                        <input type="text" id="adm-fleet-patente" class="w-full p-2.5 rounded-xl border border-slate-300 font-mono" placeholder="PF-1410">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Estado</label>
+                                        <select id="adm-fleet-estado" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                                            <option value="OPERATIVO">OPERATIVO</option>
+                                            <option value="MANTENCION">EN MANTENCIÓN</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Cuadrante Base</label>
+                                        <input type="text" id="adm-fleet-cuadrante" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="SRA1" value="SRA1">
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-extrabold py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-floppy-disk text-yellow-400"></i> GUARDAR UNIDAD
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <h3 class="text-sm font-extrabold text-[#1e3a8a] border-b border-slate-100 pb-2 mb-3">
+                                <i class="fa-solid fa-truck-pickup text-blue-600 mr-1"></i> Flota Municipal Configurada (<span id="admin-fleet-count">0</span>)
+                            </h3>
+                            <div id="admin-fleet-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[420px] overflow-y-auto pr-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: MONITOR OPERATIVO Y REGISTROS EN EXCEL DRIVE -->
+                <div id="admin-panel-monitor" class="admin-panel-section hidden space-y-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Usuarios Activos</p>
+                            <p id="kpi-users" class="text-2xl font-black text-[#1e3a8a] mt-1">0</p>
+                        </div>
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Tareas Catálogo</p>
+                            <p id="kpi-tasks" class="text-2xl font-black text-blue-700 mt-1">0</p>
+                        </div>
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Completadas Hoy</p>
+                            <p id="kpi-completed" class="text-2xl font-black text-emerald-600 mt-1">0</p>
+                        </div>
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Registros Locales / Nube</p>
+                            <p id="kpi-records" class="text-2xl font-black text-amber-600 mt-1">0</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-[#1e3a8a]">
+                                    <i class="fa-solid fa-table-list text-emerald-600 mr-1"></i> Últimos Registros Operativos (Turnos, Checklists y Procedimientos)
+                                </h3>
+                                <p class="text-[11px] text-slate-500">Sincronizados con la planilla <strong>BD_Peña_Seguro_1410_Inspectores</strong> en Google Drive.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="syncBootstrapFromCloud(true)" class="bg-blue-50 hover:bg-blue-100 text-[#1e3a8a] text-xs font-bold px-3 py-1.5 rounded-xl border border-blue-200">
+                                    <i class="fa-solid fa-rotate mr-1"></i> Refrescar desde Drive
+                                </button>
+                                <button type="button" onclick="exportAllHistoryToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs">
+                                    <i class="fa-solid fa-download mr-1"></i> Exportar .CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div id="admin-monitor-list" class="space-y-2 max-h-[380px] overflow-y-auto"></div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Cloud / Google Sheets Configuration Modal -->
+        <div id="cloud-config-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                <div class="bg-[#1e3a8a] text-white p-4 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel text-emerald-400 text-lg"></i>
+                        <div>
+                            <h3 class="text-sm font-extrabold uppercase tracking-wide">Conexión Excel en Google Drive</h3>
+                            <p class="text-[10px] text-blue-200">Planilla: BD_Peña_Seguro_1410_Inspectores</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeCloudConfigModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+                <div class="p-4 space-y-3.5 text-xs">
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-slate-700 space-y-1.5">
+                        <p class="font-bold text-[#1e3a8a]"><i class="fa-solid fa-circle-info mr-1"></i> Planilla Oficial Creada en tu Drive:</p>
+                        <a href="https://docs.google.com/spreadsheets/d/1E8xewBE2aUIzy0yUfydUc1ljiVWh09WVGwsAooD-_FQ/edit" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-emerald-700 font-extrabold underline">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir BD_Peña_Seguro_1410_Inspectores
+                        </a>
+                        <p class="text-[11px] leading-relaxed">Si ejecutas esta app desde <strong>Google Apps Script</strong> se conecta sola automáticamente. Si la abres desde <strong>GitHub Pages</strong>, pega abajo la URL <code>/exec</code> de tu implementación.</p>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1" for="input-script-url">URL de Google Apps Script (Web App <code>/exec</code>)</label>
+                        <input type="url" id="input-script-url" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none font-mono text-[11px]" placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-slate-700">Cola de Sincronización Offline</p>
+                            <p id="modal-queue-count" class="text-[11px] text-slate-500">0 registros pendientes de envío</p>
+                        </div>
+                        <button type="button" onclick="flushOfflineQueue(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] shadow-xs">
+                            <i class="fa-solid fa-rotate mr-1"></i> Sincronizar Ahora
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+                        <button type="button" onclick="exportAllHistoryToCSV()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl border border-slate-300">
+                            <i class="fa-solid fa-download mr-1 text-emerald-700"></i> Exportar .CSV
+                        </button>
+                        <button type="button" onclick="saveCloudConfig()" class="flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl shadow">
+                            <i class="fa-solid fa-floppy-disk mr-1 text-yellow-400"></i> Guardar URL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Toast Notification -->
+        <div id="toast"><span id="toast-message">Acción exitosa</span></div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // ============================================================================
+        // CONFIGURACIÓN GOOGLE SHEETS / GOOGLE DRIVE (APPS SCRIPT WEBHOOK)
+        // ============================================================================
+        const DEFAULT_GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzA-qJkVTWhnL_0YKPb3uA3k_-Pr7Wlp-gQUZXxQJjBacM5eHTJ7PiCh7eeTKN2LjxroA/exec';
+        const SPREADSHEET_EDIT_URL = 'https://docs.google.com/spreadsheets/d/1E8xewBE2aUIzy0yUfydUc1ljiVWh09WVGwsAooD-_FQ/edit';
+        const STORAGE_KEYS = {
+            SCRIPT_URL: 'pena_seguro_google_script_url',
+            SYNC_QUEUE: 'pena_seguro_sync_queue',
+            LOCAL_HISTORY: 'pena_seguro_local_history',
+            COMPLETED_TASKS: 'pena_seguro_completed_tasks',
+            USERS_DB: 'pena_seguro_users_db',
+            TASKS_DB: 'pena_seguro_tasks_db',
+            FLEET_DB: 'pena_seguro_fleet_db'
+        };
+
+        // --- Central State Object Declaration ---
+        const AppState = {
+            turnoId: '',
+            fechaInicioTurno: '',
+            userRut: '',
+            userName: '',
+            userRole: 'INSPECTOR',
+            movil: '',
+            cuadrante: '',
+            kmInicial: 0,
+            rangoHorario: 'MANANA',
+            cloudRecentShifts: [],
+            cloudRecentProcedures: []
+        };
+
+        // --- Base de Datos Inicial de Usuarios (Sincronizada con hoja "Usuarios" en Drive) ---
+        const DEFAULT_USERS = [
+            { rut: 'admin', nombre: 'Administrador General 1410', cargo: 'Jefatura Operaciones', password: '1410', rol: 'ADMIN', estado: 'ACTIVO' },
+            { rut: '11.111.111-1', nombre: 'Cristopher Maciel', cargo: 'Coordinador Plataforma', password: '1410', rol: 'ADMIN', estado: 'ACTIVO' },
+            { rut: '15.432.876-K', nombre: 'Inspector Turno 1', cargo: 'Inspector Municipal', password: '1234', rol: 'INSPECTOR', estado: 'ACTIVO' },
+            { rut: '16.789.123-4', nombre: 'Inspector Motorizado 1', cargo: 'Inspector Motorizado', password: '1234', rol: 'INSPECTOR', estado: 'ACTIVO' }
+        ];
+
+        // --- Catálogo Inicial de Tareas (Sincronizado con hoja "Catalogo_Tareas" en Drive) ---
+        const DEFAULT_TASKS_CATALOG = [
+            { id: 'm_sra1_1', rango: 'MANANA', cuadrante: 'SRA1', desc: 'Fiscalización en Zona Escolar y Cruce Peatonal Balmaceda', estado: 'ACTIVA' },
+            { id: 'm_sra1_2', rango: 'MANANA', cuadrante: 'SRA1', desc: 'Ronda preventiva en comercio céntrico y paraderos', estado: 'ACTIVA' },
+            { id: 'm_sra1_3', rango: 'MANANA', cuadrante: 'SRA1', desc: 'Verificación de punto fijo en Plaza de Peñaflor', estado: 'ACTIVA' },
+            { id: 'm_252a_1', rango: 'MANANA', cuadrante: '252A', desc: 'Inspección de paraderos de locomoción colectiva', estado: 'ACTIVA' },
+            { id: 'm_252a_2', rango: 'MANANA', cuadrante: '252A', desc: 'Patrullaje preventivo en Villa Las Palmeras', estado: 'ACTIVA' },
+            { id: 'm_def_1', rango: 'MANANA', cuadrante: 'TODOS', desc: 'Patrullaje preventivo de cuadrante', estado: 'ACTIVA' },
+            { id: 'm_def_2', rango: 'MANANA', cuadrante: 'TODOS', desc: 'Fiscalización vehicular en punto crítico', estado: 'ACTIVA' },
+            { id: 't_sra1_1', rango: 'TARDE', cuadrante: 'SRA1', desc: 'Control de comercio ambulante no autorizado en Av. Balmaceda', estado: 'ACTIVA' },
+            { id: 't_sra1_2', rango: 'TARDE', cuadrante: 'SRA1', desc: 'Ronda en plazas cívicas y espacio público', estado: 'ACTIVA' },
+            { id: 't_sra1_3', rango: 'TARDE', cuadrante: 'SRA1', desc: 'Revisión de luminarias en eje principal', estado: 'ACTIVA' },
+            { id: 't_def_1', rango: 'TARDE', cuadrante: 'TODOS', desc: 'Ronda en zonas residenciales y parques', estado: 'ACTIVA' },
+            { id: 't_def_2', rango: 'TARDE', cuadrante: 'TODOS', desc: 'Monitoreo de focos de acumulación de basura', estado: 'ACTIVA' },
+            { id: 'n_sra1_1', rango: 'NOCHE', cuadrante: 'SRA1', desc: 'Vigilancia especial en botillerías y locales nocturnos', estado: 'ACTIVA' },
+            { id: 'n_sra1_2', rango: 'NOCHE', cuadrante: 'SRA1', desc: 'Fiscalización de rucos y personas en situación de calle', estado: 'ACTIVA' },
+            { id: 'n_sra1_3', rango: 'NOCHE', cuadrante: 'SRA1', desc: 'Patrullaje con baliza encendida por arterias principales', estado: 'ACTIVA' },
+            { id: 'n_def_1', rango: 'NOCHE', cuadrante: 'TODOS', desc: 'Patrullaje nocturno de alta visibilidad', estado: 'ACTIVA' },
+            { id: 'n_def_2', rango: 'NOCHE', cuadrante: 'TODOS', desc: 'Verificación de cierres perimetrales y luminarias apagadas', estado: 'ACTIVA' }
+        ];
+
+        // --- Flota Inicial (Sincronizada con hoja "Config_Flota" en Drive) ---
+        const DEFAULT_FLEET = [
+            ...Array.from({ length: 20 }, (_, i) => ({ id: `MOV-${i+1}`, nombre: `Móvil ${i+1}`, tipo: 'Móvil', patente: `PF-MOV-${i+1}`, estado: 'OPERATIVO', cuadranteBase: 'SRA1' })),
+            { id: 'CAM-1', nombre: 'Camioneta 1', tipo: 'Camioneta', patente: 'PF-CAM-01', estado: 'OPERATIVO', cuadranteBase: 'SRB' },
+            { id: 'CAM-2', nombre: 'Camioneta 2', tipo: 'Camioneta', patente: 'PF-CAM-02', estado: 'OPERATIVO', cuadranteBase: '253A' },
+            ...Array.from({ length: 9 }, (_, i) => ({ id: `MOT-${i+1}`, nombre: `Motocicleta ${i+1}`, tipo: 'Motocicleta', patente: `PF-MOT-${i+1}`, estado: 'OPERATIVO', cuadranteBase: 'SRA1' }))
+        ];
+
+        function getUsersDB() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS_DB)) || DEFAULT_USERS;
+            } catch (e) {
+                return DEFAULT_USERS;
+            }
+        }
+        function saveUsersDB(list) {
+            localStorage.setItem(STORAGE_KEYS.USERS_DB, JSON.stringify(list));
+        }
+
+        function getTasksCatalogDB() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEYS.TASKS_DB)) || DEFAULT_TASKS_CATALOG;
+            } catch (e) {
+                return DEFAULT_TASKS_CATALOG;
+            }
+        }
+        function saveTasksCatalogDB(list) {
+            localStorage.setItem(STORAGE_KEYS.TASKS_DB, JSON.stringify(list));
+        }
+
+        function getFleetDB() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEYS.FLEET_DB)) || DEFAULT_FLEET;
+            } catch (e) {
+                return DEFAULT_FLEET;
+            }
+        }
+        function saveFleetDB(list) {
+            localStorage.setItem(STORAGE_KEYS.FLEET_DB, JSON.stringify(list));
+            populateVehicleSelectDropdown();
+        }
+
+        // Helper to get completed tasks from localStorage
+        function getCompletedTaskIds() {
+            try {
+                return JSON.parse(localStorage.getItem('pena_seguro_completed_tasks')) || [];
+            } catch(e) {
+                return [];
+            }
+        }
+
+        // Automatic Time Slot Detection
+        function detectTimeSlot() {
+            const override = document.getElementById('rango-horario-override')?.value;
+            if (override && override !== 'AUTO') {
+                AppState.rangoHorario = override;
+            } else {
+                const hour = new Date().getHours();
+                if (hour >= 7 && hour < 15) {
+                    AppState.rangoHorario = 'MANANA';
+                } else if (hour >= 15 && hour < 23) {
+                    AppState.rangoHorario = 'TARDE';
+                } else {
+                    AppState.rangoHorario = 'NOCHE';
+                }
+            }
+            
+            const badge = document.getElementById('rango-badge');
+            if (badge) {
+                const labels = { 'MANANA': 'Mañana (07-15h)', 'TARDE': 'Tarde (15-23h)', 'NOCHE': 'Noche (23-07h)' };
+                badge.innerText = labels[AppState.rangoHorario] || 'Detectado';
+            }
+        }
+
+        // --- Generate Dynamic Exhaustive Checklist based on Vehicle Type ---
+        function generateChecklist() {
+            const isMoto = AppState.movil.toLowerCase().includes('moto');
+            const displayEl = document.getElementById('checklist-vehiculo-display');
+            if(displayEl) displayEl.innerText = `${AppState.movil} • Cuadrante ${AppState.cuadrante}`;
+            
+            const iconEl = document.getElementById('checklist-icon');
+            if(iconEl) iconEl.className = isMoto ? "fa-solid fa-motorcycle text-2xl text-blue-600" : "fa-solid fa-car-side text-2xl text-blue-600";
+            
+            const container = document.getElementById('checklist-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            let categories = [];
+            
+            if (isMoto) {
+                // EXHAUSTIVE CHECKLIST FOR MOTORCYCLES
+                categories = [
+                    {
+                        title: "1. Documentación y Bitácora",
+                        icon: "fa-file-contract",
+                        items: [
+                            { id: "moto_doc_padron", label: "Padrón del vehículo" },
+                            { id: "moto_doc_permiso", label: "Permiso de Circulación al día" },
+                            { id: "moto_doc_revtech", label: "Revisión Técnica al día" },
+                            { id: "moto_doc_bitacora", label: "Bitácora física a bordo" }
+                        ]
+                    },
+                    {
+                        title: "2. Niveles y Transmisión",
+                        icon: "fa-oil-can",
+                        items: [
+                            { id: "moto_niv_aceite", label: "Nivel de Aceite de motor" },
+                            { id: "moto_niv_frenos", label: "Líquido de frenos (Delantero y Trasero)" },
+                            { id: "moto_trans_cadena", label: "Tensión y lubricación de cadena / transmisión" }
+                        ]
+                    },
+                    {
+                        title: "3. Neumáticos y Frenos",
+                        icon: "fa-circle-dot",
+                        items: [
+                            { id: "moto_neu_delantero", label: "Neumático delantero (Presión y dibujo)" },
+                            { id: "moto_neu_trasero", label: "Neumático trasero (Presión y dibujo)" },
+                            { id: "moto_fre_delantero", label: "Sistema Freno delantero (Manillar)" },
+                            { id: "moto_fre_trasero", label: "Sistema Freno trasero (Pedal)" }
+                        ]
+                    },
+                    {
+                        title: "4. Sistema Eléctrico y Luces",
+                        icon: "fa-bolt",
+                        items: [
+                            { id: "moto_ele_luces", label: "Luz delantera (Alta y Baja)" },
+                            { id: "moto_ele_freno", label: "Luz trasera y luz de freno" },
+                            { id: "moto_ele_guinos", label: "Guiños / Intermitentes (Izq / Der)" },
+                            { id: "moto_ele_baliza", label: "Baliza destelladora LED de motocicleta" },
+                            { id: "moto_ele_sirena", label: "Sirena y Claxon / Bocina" },
+                            { id: "moto_ele_radio", label: "Radio Handie / Comunicador portable" }
+                        ]
+                    },
+                    {
+                        title: "5. Seguridad del Inspector y Accesorio Moto",
+                        icon: "fa-user-shield",
+                        items: [
+                            { id: "moto_seg_casco", label: "Casco homologado con visor" },
+                            { id: "moto_seg_guantes", label: "Guantes y chaqueta reflectante con protecciones" },
+                            { id: "moto_seg_espejos", label: "Espejos retrovisores (Izq y Der)" },
+                            { id: "moto_seg_estanque", label: "Tapa de combustible y estanque sin fugas" },
+                            { id: "moto_seg_pata", label: "Pata de apoyo y caballete central" },
+                            { id: "moto_seg_botiquin", label: "Botiquín compacto de emergencia" }
+                        ]
+                    }
+                ];
+            } else {
+                // EXHAUSTIVE CHECKLIST FOR AUTOS & CAMIONETAS
+                categories = [
+                    {
+                        title: "1. Documentación y Bitácora",
+                        icon: "fa-file-lines",
+                        items: [
+                            { id: "auto_doc_padron", label: "Padrón del vehículo" },
+                            { id: "auto_doc_permiso", label: "Permiso de Circulación al día" },
+                            { id: "auto_doc_revtech", label: "Revisión Técnica al día" },
+                            { id: "auto_doc_bitacora", label: "Bitácora física a bordo" }
+                        ]
+                    },
+                    {
+                        title: "2. Niveles de Fluidos",
+                        icon: "fa-droplet",
+                        items: [
+                            { id: "auto_flu_aceite", label: "Aceite de motor" },
+                            { id: "auto_flu_frenos", label: "Líquido de frenos" },
+                            { id: "auto_flu_refrigerante", label: "Refrigerante / Agua de motor" },
+                            { id: "auto_flu_limpia", label: "Agua de limpiaparabrisas" }
+                        ]
+                    },
+                    {
+                        title: "3. Sistema Eléctrico y Luces",
+                        icon: "fa-lightbulb",
+                        items: [
+                            { id: "auto_ele_luces", label: "Luces principales (Altas y Bajas)" },
+                            { id: "auto_ele_intermitentes", label: "Intermitentes y Hazard" },
+                            { id: "auto_ele_frenoreversa", label: "Luces de freno y luz de reversa" },
+                            { id: "auto_ele_baliza", label: "Baliza de seguridad LED destelladora" },
+                            { id: "auto_ele_sirena", label: "Sirena y sistema de perifoneo / megáfono" },
+                            { id: "auto_ele_radio", label: "Radio comunicador base / móvil" }
+                        ]
+                    },
+                    {
+                        title: "4. Neumáticos y Mecánica",
+                        icon: "fa-wrench",
+                        items: [
+                            { id: "auto_neu_delanteros", label: "Neumáticos delanteros (Presión y dibujo)" },
+                            { id: "auto_neu_traseros", label: "Neumáticos traseros (Presión y dibujo)" },
+                            { id: "auto_neu_repuesto", label: "Neumático de repuesto funcional" },
+                            { id: "auto_mec_gata", label: "Gata hidráulica y llave de ruedas" },
+                            { id: "auto_mec_frenomano", label: "Freno de mano / estacionamiento" }
+                        ]
+                    },
+                    {
+                        title: "5. Equipamiento de Emergencia y Seguridad",
+                        icon: "fa-kit-medical",
+                        items: [
+                            { id: "auto_seg_extintor", label: "Extintor con carga vigente" },
+                            { id: "auto_seg_botiquin", label: "Botiquín de primeros auxilios completo" },
+                            { id: "auto_seg_triangulos", label: "Triángulos / Conos de seguridad" },
+                            { id: "auto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad" }
+                        ]
+                    },
+                    {
+                        title: "6. Carrocería e Interior",
+                        icon: "fa-car",
+                        items: [
+                            { id: "auto_car_parabrisas", label: "Parabrisas y vidrios sin trizaduras" },
+                            { id: "auto_car_espejos", label: "Espejos retrovisores (Interior y Laterales)" },
+                            { id: "auto_car_carroceria", label: "Carrocería en buen estado (Sin nuevos abollones)" },
+                            { id: "auto_car_cinturones", label: "Cinturones de seguridad operativos" },
+                            { id: "auto_car_clima", label: "Calefacción y aire acondicionado" },
+                            { id: "auto_car_aseo", label: "Aseo interior y exterior del vehículo" }
+                        ]
+                    }
+                ];
+            }
+            
+            categories.forEach(cat => {
+                let catHtml = `
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm">
+                    <h3 class="text-xs font-black text-[#1e3a8a] uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-slate-200 pb-2">
+                        <i class="fa-solid ${cat.icon} text-yellow-500 text-sm"></i> ${cat.title}
+                    </h3>
+                    <div class="space-y-3">`;
+                
+                cat.items.forEach(item => {
+                    catHtml += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-slate-800 flex-1">${item.label} <span class="text-red-500">*</span></span>
+                        <div class="flex items-center gap-1.5 self-end sm:self-center">
+                            <label class="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-all border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1">
+                                <input type="radio" name="${item.id}" value="Bueno" onchange="checkChecklistStatus()" required class="w-3 h-3 text-emerald-600 focus:ring-emerald-500">
+                                <span>Bueno</span>
+                            </label>
+                            <label class="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-all border-red-300 text-red-800 bg-red-50 hover:bg-red-100 flex items-center gap-1">
+                                <input type="radio" name="${item.id}" value="Malo" onchange="checkChecklistStatus()" required class="w-3 h-3 text-red-600 focus:ring-red-500">
+                                <span>Malo</span>
+                            </label>
+                            <label class="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-all border-slate-300 text-slate-600 bg-slate-100 hover:bg-slate-200 flex items-center gap-1">
+                                <input type="radio" name="${item.id}" value="N/A" onchange="checkChecklistStatus()" required class="w-3 h-3 text-slate-600 focus:ring-slate-400">
+                                <span>N/A</span>
+                            </label>
+                        </div>
+                    </div>`;
+                });
+                
+                catHtml += `</div></div>`;
+                container.innerHTML += catHtml;
+            });
+        }
+
+        // Check if any item in checklist is marked 'Malo' to trigger mandatory defect photo
+        function checkChecklistStatus() {
+            const radioButtons = document.querySelectorAll('#checklist-container input[type="radio"]:checked');
+            let hasMalo = false;
+            
+            radioButtons.forEach(radio => {
+                if (radio.value === 'Malo') {
+                    hasMalo = true;
+                }
+            });
+
+            const photoContainer = document.getElementById('defect-photo-container');
+            const photoInput = document.getElementById('chk-defect-foto');
+
+            if (hasMalo && photoContainer && photoInput) {
+                photoContainer.classList.remove('hidden');
+                photoInput.setAttribute('required', 'true');
+            } else if (photoContainer && photoInput) {
+                photoContainer.classList.add('hidden');
+                photoInput.removeAttribute('required');
+            }
+        }
+
+        function markTaskIdCompleted(taskId, inspectorRut) {
+            const completed = getCompletedTaskIds();
+            if (!completed.includes(taskId)) {
+                completed.push(taskId);
+                localStorage.setItem('pena_seguro_completed_tasks', JSON.stringify(completed));
+            }
+        }
+
+        function resetTasksDatabase() {
+            localStorage.removeItem('pena_seguro_completed_tasks');
+            showToast('Base de datos de tareas reiniciada', 'bg-blue-600');
+            updateBadgeAndTasks();
+        }
+
+        // --- Get Active Tasks for Quadrant & Shift (Dinámico desde Catálogo Admin / Excel Drive) ---
+        function getQuadrantPendingTasks() {
+            const quad = (AppState.cuadrante || 'SRA1').toUpperCase();
+            const shift = (AppState.rangoHorario || 'MANANA').toUpperCase();
+            const catalog = getTasksCatalogDB();
+
+            const matching = catalog.filter(t =>
+                t.estado !== 'INACTIVA' &&
+                t.rango === shift &&
+                (t.cuadrante === quad || t.cuadrante === 'TODOS' || t.cuadrante === 'DEFAULT')
+            );
+
+            const completedIds = getCompletedTaskIds();
+            return matching.filter(t => !completedIds.includes(t.id));
+        }
+
+        function populateVehicleSelectDropdown() {
+            const select = document.getElementById('movil');
+            if (!select) return;
+            const currentVal = select.value;
+            const fleet = getFleetDB().filter(f => f.estado === 'OPERATIVO');
+
+            const groups = { 'Móvil': [], 'Camioneta': [], 'Motocicleta': [] };
+            fleet.forEach(unit => {
+                const key = groups[unit.tipo] ? unit.tipo : 'Móvil';
+                groups[key].push(unit);
+            });
+
+            select.innerHTML = `<option value="" disabled selected>Seleccione vehículo...</option>` +
+                Object.entries(groups).map(([label, items]) => `
+                    <optgroup label="${label}s">
+                        ${items.map(u => `<option value="${u.nombre}">${u.nombre}</option>`).join('')}
+                    </optgroup>
+                `).join('');
+
+            if (currentVal) select.value = currentVal;
+        }
+
+        // --- Clock Utility ---
+        function startClock() {
+            const dtStart = document.getElementById('current-datetime');
+            const dtEnd = document.getElementById('end-datetime'); 
+            
+            setInterval(() => {
+                const now = new Date();
+                const options = { 
+                    year: 'numeric', month: '2-digit', day: '2-digit', 
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    hour12: false
+                };
+                const timeString = now.toLocaleString('es-CL', options).replace(',', '');
+                if(dtStart) dtStart.innerText = timeString;
+                if(dtEnd) dtEnd.innerText = timeString;
+            }, 1000);
+        }
+
+        // --- View Navigation ---
+        function navigateTo(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById(viewId);
+            if(target) target.classList.add('active');
+
+            const appContainer = document.getElementById('app-container');
+            if (appContainer) {
+                appContainer.classList.toggle('admin-wide', viewId === 'view-admin');
+            }
+
+            const btnSwitch = document.getElementById('btn-switch-admin');
+            const btnSwitchText = document.getElementById('btn-switch-admin-text');
+            const roleSub = document.getElementById('header-role-subtitle');
+
+            if (btnSwitch) {
+                btnSwitch.classList.toggle('hidden', AppState.userRole !== 'ADMIN');
+                if (btnSwitchText) {
+                    btnSwitchText.innerText = viewId === 'view-admin' ? 'Modo Móvil' : 'Panel Admin';
+                }
+            }
+            if (roleSub) {
+                roleSub.innerText = viewId === 'view-admin' ? 'Panel Administrador' : 'Inspectores 1410';
+            }
+
+            if (viewId === 'view-admin') {
+                renderAllAdminPanels();
+            }
+            
+            const header = document.getElementById('main-header');
+            if (viewId === 'view-login') {
+                if(header) header.classList.add('hidden');
+                resetApp();
+            } else {
+                if(header) header.classList.remove('hidden');
+            }
+        }
+
+        function toggleAdminInspectorMode() {
+            const isAdminView = document.getElementById('view-admin')?.classList.contains('active');
+            if (isAdminView) {
+                navigateTo(AppState.movil ? 'view-menu' : 'view-setup');
+            } else {
+                navigateTo('view-admin');
+            }
+        }
+
+        function fillDemoLogin(rut, pass) {
+            document.getElementById('rut').value = rut;
+            document.getElementById('password').value = pass;
+            showToast(`Credenciales cargadas: ${rut}`, 'bg-blue-700');
+        }
+
+        function openNewProcedure() {
+            resetPhotoPreview('foto-preview', 'foto-placeholder');
+            document.getElementById('form-procedure').reset();
+            navigateTo('view-procedure');
+        }
+
+        function openTasks() {
+            renderTasks();
+            navigateTo('view-tasks');
+        }
+
+        function openTaskResolve(taskId) {
+            const pending = getQuadrantPendingTasks();
+            const task = pending.find(t => t.id === taskId);
+            if(task) {
+                document.getElementById('resolve-task-title').innerText = task.desc;
+                document.getElementById('resolve-task-id').value = task.id;
+                resetPhotoPreview('resolve-foto-preview', 'resolve-foto-placeholder');
+                document.getElementById('form-task-resolve').reset();
+                navigateTo('view-task-resolve');
+            }
+        }
+
+        function updateBadgeAndTasks() {
+            const pending = getQuadrantPendingTasks();
+            const badge = document.getElementById('task-badge');
+            if (badge) {
+                badge.innerText = pending.length;
+                badge.className = pending.length > 0 
+                    ? "bg-red-500 text-white text-xs font-black px-2.5 py-1 rounded-full shadow border border-white/20" 
+                    : "bg-emerald-600 text-white text-xs font-black px-2.5 py-1 rounded-full shadow border border-white/20";
+            }
+            
+            const sub = document.getElementById('task-menu-subtitle');
+            if (sub) {
+                sub.innerText = `${AppState.cuadrante || 'SRA1'} • ${pending.length} pendiente(s)`;
+            }
+
+            if(document.getElementById('view-tasks')?.classList.contains('active')) {
+                renderTasks();
+            }
+        }
+
+        function renderTasks() {
+            const quad = AppState.cuadrante || 'SRA1';
+            const shift = AppState.rangoHorario || 'MANANA';
+            
+            const labelEl = document.getElementById('task-cuadrante-label');
+            if(labelEl) labelEl.innerText = quad;
+            
+            const shiftNames = { 'MANANA': 'Turno Mañana', 'TARDE': 'Turno Tarde', 'NOCHE': 'Turno Noche' };
+            const badgeEl = document.getElementById('task-rango-badge');
+            if(badgeEl) badgeEl.innerText = shiftNames[shift] || shift;
+
+            const indicatorEl = document.getElementById('task-rango-indicator');
+            if(indicatorEl) indicatorEl.innerText = `Rango: ${shiftNames[shift] || shift}`;
+
+            const container = document.getElementById('tasks-container');
+            if(!container) return;
+            container.innerHTML = '';
+
+            const pending = getQuadrantPendingTasks();
+
+            if (pending.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base mb-1">¡Sin Tareas Pendientes!</h3>
+                        <p class="text-xs text-slate-500">Todas las tareas de este rango horario en el cuadrante <strong>${quad}</strong> ya fueron completadas.</p>
+                    </div>`;
+                return;
+            }
+
+            pending.forEach(task => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 cursor-pointer hover:border-blue-300 transition-all active:scale-[0.99]";
+                card.onclick = () => openTaskResolve(task.id);
+                card.innerHTML = `
+                    <div class="flex-1">
+                        <span class="text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 uppercase">Pendiente • ${task.cuadrante}</span>
+                        <p class="text-xs font-bold text-slate-800 mt-1.5 leading-snug">${task.desc}</p>
+                    </div>
+                    <div class="w-9 h-9 bg-blue-50 text-blue-800 rounded-xl flex items-center justify-center shrink-0 border border-blue-100">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ========================================================================
+        // ADMINISTRATOR PANEL FUNCTIONS (USUARIOS, TAREAS, FLOTA, MONITOR)
+        // ========================================================================
+        function switchAdminTab(tabName) {
+            ['users', 'tasks', 'fleet', 'monitor'].forEach(t => {
+                const panel = document.getElementById(`admin-panel-${t}`);
+                const btn = document.getElementById(`admin-tab-btn-${t}`);
+                if (panel) panel.classList.toggle('hidden', t !== tabName);
+                if (btn) {
+                    btn.className = t === tabName
+                        ? "admin-tab-btn bg-[#1e3a8a] text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5"
+                        : "admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5";
+                }
+            });
+            renderAllAdminPanels();
+        }
+
+        function renderAllAdminPanels() {
+            renderAdminUsersList();
+            renderAdminTasksList();
+            renderAdminFleetList();
+            renderAdminMonitor();
+        }
+
+        function renderAdminUsersList() {
+            const container = document.getElementById('admin-users-list');
+            const countEl = document.getElementById('admin-users-count');
+            const search = (document.getElementById('adm-user-search')?.value || '').trim().toLowerCase();
+            if (!container) return;
+
+            const users = getUsersDB();
+            if (countEl) countEl.innerText = users.length;
+
+            const filtered = users.filter(u =>
+                u.rut.toLowerCase().includes(search) ||
+                (u.nombre || '').toLowerCase().includes(search) ||
+                (u.cargo || '').toLowerCase().includes(search)
+            );
+
+            container.innerHTML = filtered.map(u => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="font-mono font-extrabold text-xs text-[#1e3a8a]">${u.rut}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${u.rol === 'ADMIN' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-blue-100 text-blue-800'}">${u.rol}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${u.estado === 'ACTIVO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'}">${u.estado}</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-800 mt-0.5">${u.nombre} <span class="text-slate-400 font-normal">• ${u.cargo || 'Inspector'}</span></p>
+                        <p class="text-[11px] text-slate-500 font-mono">Clave: <strong class="text-slate-700">${u.password}</strong></p>
+                    </div>
+                    <div class="flex items-center gap-1.5 self-end sm:self-center">
+                        <button type="button" onclick="editAdminUser('${u.rut.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-blue-50 text-blue-700 border border-slate-300 text-[11px] font-bold">
+                            <i class="fa-solid fa-pen"></i> Editar
+                        </button>
+                        <button type="button" onclick="deleteAdminUser('${u.rut.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-bold">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editAdminUser(rut) {
+            const user = getUsersDB().find(u => u.rut.toLowerCase() === rut.toLowerCase());
+            if (!user) return;
+            document.getElementById('adm-user-rut').value = user.rut;
+            document.getElementById('adm-user-nombre').value = user.nombre || '';
+            document.getElementById('adm-user-cargo').value = user.cargo || 'Inspector Municipal';
+            document.getElementById('adm-user-pass').value = user.password || '';
+            document.getElementById('adm-user-rol').value = user.rol || 'INSPECTOR';
+            document.getElementById('adm-user-estado').value = user.estado || 'ACTIVO';
+            showToast(`Editando usuario ${user.rut}`, 'bg-blue-700');
+        }
+
+        function resetAdminUserForm() {
+            document.getElementById('form-admin-user')?.reset();
+        }
+
+        function deleteAdminUser(rut) {
+            if (rut.toLowerCase() === 'admin') {
+                showToast('No se puede eliminar la cuenta admin principal', 'bg-red-600');
+                return;
+            }
+            const users = getUsersDB().filter(u => u.rut.toLowerCase() !== rut.toLowerCase());
+            saveUsersDB(users);
+            sendPayloadToGoogleSheets({ action: 'ADMIN_DELETE_USER', rut: rut });
+            renderAdminUsersList();
+            showToast(`Usuario ${rut} eliminado`, 'bg-slate-700');
+        }
+
+        function renderAdminTasksList() {
+            const container = document.getElementById('admin-tasks-list');
+            const countEl = document.getElementById('admin-tasks-count');
+            const shiftFilter = document.getElementById('adm-task-filter-shift')?.value || 'ALL';
+            if (!container) return;
+
+            const tasks = getTasksCatalogDB();
+            if (countEl) countEl.innerText = tasks.length;
+
+            const filtered = shiftFilter === 'ALL' ? tasks : tasks.filter(t => t.rango === shiftFilter);
+
+            container.innerHTML = filtered.map(t => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-2">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 rounded bg-blue-100 text-[#1e3a8a] text-[10px] font-black">${t.rango}</span>
+                            <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-black">Cuadrante: ${t.cuadrante}</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-800 mt-1">${t.desc}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" onclick="editAdminTask('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-blue-50 text-blue-700 border border-slate-300 text-[11px] font-bold">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button type="button" onclick="deleteAdminTask('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-bold">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editAdminTask(taskId) {
+            const t = getTasksCatalogDB().find(item => item.id === taskId);
+            if (!t) return;
+            document.getElementById('adm-task-id').value = t.id;
+            document.getElementById('adm-task-rango').value = t.rango;
+            document.getElementById('adm-task-cuadrante').value = t.cuadrante;
+            document.getElementById('adm-task-desc').value = t.desc;
+            showToast('Editando tarea seleccionada', 'bg-blue-700');
+        }
+
+        function resetAdminTaskForm() {
+            document.getElementById('form-admin-task')?.reset();
+            document.getElementById('adm-task-id').value = '';
+        }
+
+        function deleteAdminTask(taskId) {
+            const list = getTasksCatalogDB().filter(t => t.id !== taskId);
+            saveTasksCatalogDB(list);
+            sendPayloadToGoogleSheets({ action: 'ADMIN_DELETE_TASK', id: taskId });
+            renderAdminTasksList();
+            updateBadgeAndTasks();
+            showToast('Tarea eliminada del catálogo', 'bg-slate-700');
+        }
+
+        function renderAdminFleetList() {
+            const container = document.getElementById('admin-fleet-list');
+            const countEl = document.getElementById('admin-fleet-count');
+            if (!container) return;
+
+            const fleet = getFleetDB();
+            if (countEl) countEl.innerText = fleet.length;
+
+            container.innerHTML = fleet.map(f => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-2">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-extrabold text-[#1e3a8a]">${f.nombre}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${f.estado === 'OPERATIVO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'}">${f.estado}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500">${f.tipo} • ${f.patente || 'S/P'} • Base: ${f.cuadranteBase || 'SRA1'}</p>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button type="button" onclick="editAdminFleet('${f.id}')" class="px-2 py-1 rounded bg-white border border-slate-300 text-blue-700 text-[11px]">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button type="button" onclick="deleteAdminFleet('${f.id}')" class="px-2 py-1 rounded bg-red-50 border border-red-200 text-red-600 text-[11px]">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editAdminFleet(id) {
+            const f = getFleetDB().find(item => item.id === id);
+            if (!f) return;
+            document.getElementById('adm-fleet-id').value = f.id;
+            document.getElementById('adm-fleet-nombre').value = f.nombre;
+            document.getElementById('adm-fleet-tipo').value = f.tipo;
+            document.getElementById('adm-fleet-patente').value = f.patente || '';
+            document.getElementById('adm-fleet-estado').value = f.estado || 'OPERATIVO';
+            document.getElementById('adm-fleet-cuadrante').value = f.cuadranteBase || 'SRA1';
+        }
+
+        function deleteAdminFleet(id) {
+            const list = getFleetDB().filter(f => f.id !== id);
+            saveFleetDB(list);
+            sendPayloadToGoogleSheets({ action: 'ADMIN_DELETE_VEHICLE', id: id });
+            renderAdminFleetList();
+            showToast('Unidad eliminada', 'bg-slate-700');
+        }
+
+        function renderAdminMonitor() {
+            const users = getUsersDB().filter(u => u.estado === 'ACTIVO');
+            const tasks = getTasksCatalogDB();
+            const completed = getCompletedTaskIds();
+            let localHist = [];
+            try {
+                localHist = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOCAL_HISTORY)) || [];
+            } catch (e) {}
+
+            const kpiUsers = document.getElementById('kpi-users');
+            const kpiTasks = document.getElementById('kpi-tasks');
+            const kpiCompleted = document.getElementById('kpi-completed');
+            const kpiRecords = document.getElementById('kpi-records');
+
+            if (kpiUsers) kpiUsers.innerText = users.length;
+            if (kpiTasks) kpiTasks.innerText = tasks.length;
+            if (kpiCompleted) kpiCompleted.innerText = completed.length;
+            if (kpiRecords) kpiRecords.innerText = localHist.length + AppState.cloudRecentShifts.length + AppState.cloudRecentProcedures.length;
+
+            const container = document.getElementById('admin-monitor-list');
+            if (!container) return;
+
+            const combined = [...localHist].reverse();
+            if (combined.length === 0 && AppState.cloudRecentShifts.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                        No hay registros locales aún en esta sesión. Todos los datos históricos están disponibles en vivo en tu planilla
+                        <a href="${SPREADSHEET_EDIT_URL}" target="_blank" class="text-blue-700 font-bold underline">BD_Peña_Seguro_1410_Inspectores</a>.
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = combined.slice(0, 30).map(item => `
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div>
+                        <span class="px-2 py-0.5 rounded bg-blue-100 text-[#1e3a8a] text-[10px] font-black uppercase">${item.action}</span>
+                        <span class="font-mono text-[11px] text-slate-500 ml-1">${item.fechaInicio || item.fechaRegistro || item.fechaTermino || ''}</span>
+                        <p class="font-bold text-slate-800 mt-1">RUT: ${item.rut || '-'} • ${item.movil || '-'} • Cuadrante ${item.cuadrante || '-'}</p>
+                        <p class="text-[11px] text-slate-600">${item.tipo || item.taskDesc || item.estadoChecklist || ''} ${item.observaciones || item.detalle ? '— ' + (item.observaciones || item.detalle) : ''}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- Google Sheets / Drive Integration & Native Apps Script Bridge ---
+        function isRunningInsideGoogleAppsScript() {
+            return (typeof google !== 'undefined' && google.script && google.script.run);
+        }
+
+        function normalizeScriptUrl(rawUrl) {
+            return String(rawUrl || '').trim().replace(/\/macros\/u\/\d+\/s\//, '/macros/s/');
+        }
+
+        function getGoogleScriptUrl() {
+            const raw = localStorage.getItem(STORAGE_KEYS.SCRIPT_URL) || DEFAULT_GOOGLE_SCRIPT_URL || '';
+            return normalizeScriptUrl(raw);
+        }
+
+        function getSyncQueue() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEYS.SYNC_QUEUE)) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveSyncQueue(queue) {
+            localStorage.setItem(STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(queue));
+            updateCloudStatusUI();
+        }
+
+        function appendLocalHistory(record) {
+            try {
+                const hist = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOCAL_HISTORY)) || [];
+                const cleanCopy = Object.assign({}, record);
+                delete cleanCopy.fotoBase64;
+                delete cleanCopy.fotoGeneralBase64;
+                delete cleanCopy.fotoDesperfectoBase64;
+                hist.push(cleanCopy);
+                localStorage.setItem(STORAGE_KEYS.LOCAL_HISTORY, JSON.stringify(hist));
+            } catch (e) {}
+        }
+
+        function updateCloudStatusUI() {
+            const url = getGoogleScriptUrl();
+            const nativeGas = isRunningInsideGoogleAppsScript();
+            const queue = getSyncQueue();
+            const badge = document.getElementById('header-sync-badge');
+            const loginStatus = document.getElementById('login-cloud-status');
+            const menuStatus = document.getElementById('menu-sync-status-text');
+            const modalQueue = document.getElementById('modal-queue-count');
+
+            if (badge) {
+                if (queue.length > 0) {
+                    badge.innerText = queue.length;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+
+            if (loginStatus) {
+                loginStatus.innerText = (nativeGas || url) ? 'Drive Conectado' : 'Excel Drive';
+            }
+
+            if (menuStatus) {
+                if (nativeGas || url) {
+                    menuStatus.innerText = queue.length > 0
+                        ? `Conectado a Drive • ${queue.length} registro(s) en cola`
+                        : 'Conectado a BD_Peña_Seguro_1410 en tiempo real';
+                } else {
+                    menuStatus.innerText = `Modo local activo • ${queue.length} registro(s) en cola para Drive`;
+                }
+            }
+
+            if (modalQueue) {
+                modalQueue.innerText = `${queue.length} registro(s) pendientes de envío a Google Sheets`;
+            }
+        }
+
+        function openCloudConfigModal() {
+            const modal = document.getElementById('cloud-config-modal');
+            const input = document.getElementById('input-script-url');
+            if (input) input.value = getGoogleScriptUrl();
+            updateCloudStatusUI();
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeCloudConfigModal() {
+            const modal = document.getElementById('cloud-config-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function saveCloudConfig() {
+            const input = document.getElementById('input-script-url');
+            const val = (input ? input.value : '').trim();
+            localStorage.setItem(STORAGE_KEYS.SCRIPT_URL, val);
+            updateCloudStatusUI();
+            closeCloudConfigModal();
+            if (val) {
+                showToast('URL de Google Sheets guardada', 'bg-emerald-600');
+                flushOfflineQueue(true);
+                syncBootstrapFromCloud();
+            } else {
+                showToast('Modo local activado', 'bg-blue-700');
+            }
+        }
+
+        function compressImageFileToBase64(file, maxDim = 1024, quality = 0.75) {
+            return new Promise((resolve) => {
+                if (!file) return resolve('');
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            } else {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = () => resolve('');
+                    img.src = ev.target.result;
+                };
+                reader.onerror = () => resolve('');
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function sendPayloadToGoogleSheets(payload) {
+            appendLocalHistory(payload);
+
+            // 1. Si se ejecuta nativamente dentro de Google Apps Script Web App
+            if (isRunningInsideGoogleAppsScript()) {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            updateCloudStatusUI();
+                            resolve(res || { ok: true });
+                        })
+                        .withFailureHandler((err) => {
+                            const queue = getSyncQueue();
+                            queue.push(payload);
+                            saveSyncQueue(queue);
+                            resolve({ ok: false, queued: true, error: err });
+                        })
+                        .apiHandleAction(payload);
+                });
+            }
+
+            // 2. Si se ejecuta desde GitHub Pages o navegador local vía URL /exec
+            const scriptUrl = getGoogleScriptUrl();
+            if (!scriptUrl) {
+                const queue = getSyncQueue();
+                queue.push(payload);
+                saveSyncQueue(queue);
+                return { ok: false, queued: true };
+            }
+
+            try {
+                await fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                updateCloudStatusUI();
+                return { ok: true };
+            } catch (err) {
+                const queue = getSyncQueue();
+                queue.push(payload);
+                saveSyncQueue(queue);
+                return { ok: false, queued: true, error: err };
+            }
+        }
+
+        async function flushOfflineQueue(showFeedback = false) {
+            const scriptUrl = getGoogleScriptUrl();
+            const nativeGas = isRunningInsideGoogleAppsScript();
+            const queue = getSyncQueue();
+
+            if (!nativeGas && !scriptUrl) {
+                if (showFeedback) showToast('Ingrese primero la URL de Google Apps Script', 'bg-amber-600');
+                return;
+            }
+            if (queue.length === 0) {
+                if (showFeedback) showToast('Todo está sincronizado con Google Drive', 'bg-emerald-600');
+                return;
+            }
+
+            const remaining = [];
+            for (const item of queue) {
+                try {
+                    if (nativeGas) {
+                        await new Promise((res, rej) => {
+                            google.script.run.withSuccessHandler(res).withFailureHandler(rej).apiHandleAction(item);
+                        });
+                    } else {
+                        await fetch(scriptUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(item)
+                        });
+                    }
+                } catch (e) {
+                    remaining.push(item);
+                }
+            }
+
+            saveSyncQueue(remaining);
+            if (showFeedback) {
+                if (remaining.length === 0) {
+                    showToast('Cola sincronizada con Excel en Drive', 'bg-emerald-600');
+                } else {
+                    showToast(`Quedaron ${remaining.length} registros pendientes`, 'bg-amber-600');
+                }
+            }
+        }
+
+        function applyBootstrapData(data, showFeedback = false) {
+            if (!data || !data.ok) return;
+            if (Array.isArray(data.users) && data.users.length > 0) {
+                saveUsersDB(data.users);
+            }
+            if (Array.isArray(data.tasksCatalog) && data.tasksCatalog.length > 0) {
+                saveTasksCatalogDB(data.tasksCatalog);
+            }
+            if (Array.isArray(data.fleet) && data.fleet.length > 0) {
+                saveFleetDB(data.fleet);
+            }
+            if (Array.isArray(data.completedTaskIds)) {
+                const localCompleted = getCompletedTaskIds();
+                const merged = Array.from(new Set([...localCompleted, ...data.completedTaskIds]));
+                localStorage.setItem(STORAGE_KEYS.COMPLETED_TASKS, JSON.stringify(merged));
+            }
+            if (Array.isArray(data.recentShifts)) AppState.cloudRecentShifts = data.recentShifts;
+            if (Array.isArray(data.recentProcedures)) AppState.cloudRecentProcedures = data.recentProcedures;
+
+            updateBadgeAndTasks();
+            if (document.getElementById('view-admin')?.classList.contains('active')) {
+                renderAllAdminPanels();
+            }
+            if (showFeedback) {
+                showToast('Datos sincronizados desde Google Sheets', 'bg-emerald-600');
+            }
+        }
+
+        async function syncBootstrapFromCloud(showFeedback = false) {
+            if (isRunningInsideGoogleAppsScript()) {
+                google.script.run
+                    .withSuccessHandler((data) => applyBootstrapData(data, showFeedback))
+                    .apiGetBootstrapData();
+                return;
+            }
+
+            const scriptUrl = getGoogleScriptUrl();
+            if (!scriptUrl) {
+                if (showFeedback) showToast('Configure la URL de Apps Script para sincronizar', 'bg-amber-600');
+                return;
+            }
+            try {
+                const res = await fetch(`${scriptUrl}?action=bootstrap`);
+                const data = await res.json();
+                applyBootstrapData(data, showFeedback);
+            } catch (e) {
+                if (showFeedback) showToast('No se pudo conectar con Google Sheets', 'bg-red-600');
+            }
+        }
+
+        // Exportación directa a archivo .CSV compatible con Microsoft Excel y Google Sheets
+        function exportAllHistoryToCSV() {
+            let hist = [];
+            try {
+                hist = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOCAL_HISTORY)) || [];
+            } catch (e) {}
+
+            if (hist.length === 0) {
+                showToast('Aún no hay registros locales para exportar', 'bg-amber-600');
+                return;
+            }
+
+            const headers = [
+                'Accion', 'ID Turno', 'Fecha/Hora', 'RUT Funcionario', 'Rango Horario',
+                'Movil', 'Cuadrante', 'Km Inicial', 'Km Termino', 'Estado Checklist',
+                'Items Malos', 'Tipo Procedimiento / Tarea', 'Direccion / GPS', 'Observaciones'
+            ];
+
+            const escapeCSV = (val) => {
+                const s = String(val ?? '').replace(/"/g, '""');
+                return `"${s}"`;
+            };
+
+            const rows = hist.map(r => [
+                r.action || '',
+                r.turnoId || '',
+                r.fechaInicio || r.fechaRegistro || r.fechaTermino || '',
+                r.rut || '',
+                r.rangoHorario || '',
+                r.movil || '',
+                r.cuadrante || '',
+                r.kmInicial ?? '',
+                r.kmTermino ?? '',
+                r.estadoChecklist || '',
+                r.itemsMalos || '',
+                r.tipo || r.taskDesc || '',
+                r.direccion || '',
+                r.observaciones || r.detalle || ''
+            ].map(escapeCSV).join(';'));
+
+            const csvContent = '\uFEFF' + [headers.map(escapeCSV).join(';'), ...rows].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte_Pena_Seguro_1410_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('Archivo Excel (.CSV) descargado', 'bg-emerald-600');
+        }
+
+        // --- Event Handlers ---
+
+        // 1. Form Login (Autenticación de Inspectores y Administradores contra base de Usuarios)
+        document.getElementById('form-login').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const rutInput = document.getElementById('rut').value.trim();
+            const passInput = document.getElementById('password').value.trim();
+
+            const users = getUsersDB();
+            const matchedUser = users.find(u => u.rut.toLowerCase() === rutInput.toLowerCase());
+
+            if (matchedUser) {
+                if (matchedUser.estado === 'INACTIVO') {
+                    showToast('Usuario INACTIVO. Contacte al Administrador.', 'bg-red-600');
+                    return;
+                }
+                if (String(matchedUser.password) !== passInput) {
+                    showToast('Contraseña incorrecta', 'bg-red-600');
+                    return;
+                }
+                AppState.userRut = matchedUser.rut;
+                AppState.userName = matchedUser.nombre;
+                AppState.userRole = matchedUser.rol || 'INSPECTOR';
+            } else {
+                // Si el RUT no está aún en la tabla local, permite ingreso como INSPECTOR
+                AppState.userRut = rutInput;
+                AppState.userName = rutInput;
+                AppState.userRole = 'INSPECTOR';
+            }
+
+            document.getElementById('header-rut-display').innerText = `${AppState.userName || AppState.userRut}`;
+            document.getElementById('header-shift-display').innerText = AppState.userRole === 'ADMIN' ? 'ADMINISTRADOR' : 'EN TURNO';
+
+            syncBootstrapFromCloud();
+
+            if (AppState.userRole === 'ADMIN') {
+                showToast(`Bienvenido Admin: ${AppState.userName}`, 'bg-amber-600');
+                navigateTo('view-admin');
+            } else {
+                showToast(`Sesión Iniciada: ${AppState.userName}`, 'bg-blue-700');
+                navigateTo('view-setup');
+            }
+        });
+
+        // 1.5 Admin Forms Submit Handlers
+        document.getElementById('form-admin-user').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newUser = {
+                rut: document.getElementById('adm-user-rut').value.trim(),
+                nombre: document.getElementById('adm-user-nombre').value.trim(),
+                cargo: document.getElementById('adm-user-cargo').value.trim() || 'Inspector Municipal',
+                password: document.getElementById('adm-user-pass').value.trim(),
+                rol: document.getElementById('adm-user-rol').value,
+                estado: document.getElementById('adm-user-estado').value,
+                fechaCreacion: new Date().toLocaleDateString('es-CL')
+            };
+
+            const users = getUsersDB();
+            const idx = users.findIndex(u => u.rut.toLowerCase() === newUser.rut.toLowerCase());
+            if (idx >= 0) {
+                users[idx] = newUser;
+            } else {
+                users.push(newUser);
+            }
+            saveUsersDB(users);
+            sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_USER' }, newUser));
+            renderAdminUsersList();
+            resetAdminUserForm();
+            showToast(`Usuario ${newUser.rut} guardado en Excel Drive`, 'bg-emerald-600');
+        });
+
+        document.getElementById('form-admin-task').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const idInput = document.getElementById('adm-task-id').value.trim();
+            const newTask = {
+                id: idInput || `t_${Date.now()}`,
+                rango: document.getElementById('adm-task-rango').value,
+                cuadrante: document.getElementById('adm-task-cuadrante').value,
+                desc: document.getElementById('adm-task-desc').value.trim(),
+                estado: 'ACTIVA'
+            };
+
+            const tasks = getTasksCatalogDB();
+            const idx = tasks.findIndex(t => t.id === newTask.id);
+            if (idx >= 0) {
+                tasks[idx] = newTask;
+            } else {
+                tasks.push(newTask);
+            }
+            saveTasksCatalogDB(tasks);
+            sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_TASK' }, newTask));
+            renderAdminTasksList();
+            updateBadgeAndTasks();
+            resetAdminTaskForm();
+            showToast('Tarea guardada en Catálogo Excel Drive', 'bg-emerald-600');
+        });
+
+        document.getElementById('form-admin-fleet').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const idInput = document.getElementById('adm-fleet-id').value.trim();
+            const newUnit = {
+                id: idInput || `UND-${Date.now()}`,
+                nombre: document.getElementById('adm-fleet-nombre').value.trim(),
+                tipo: document.getElementById('adm-fleet-tipo').value,
+                patente: document.getElementById('adm-fleet-patente').value.trim(),
+                estado: document.getElementById('adm-fleet-estado').value,
+                cuadranteBase: document.getElementById('adm-fleet-cuadrante').value.trim() || 'SRA1'
+            };
+
+            const fleet = getFleetDB();
+            const idx = fleet.findIndex(f => f.id === newUnit.id || f.nombre.toLowerCase() === newUnit.nombre.toLowerCase());
+            if (idx >= 0) {
+                fleet[idx] = newUnit;
+            } else {
+                fleet.push(newUnit);
+            }
+            saveFleetDB(fleet);
+            sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_VEHICLE' }, newUnit));
+            renderAdminFleetList();
+            document.getElementById('form-admin-fleet').reset();
+            document.getElementById('adm-fleet-id').value = '';
+            showToast(`Unidad ${newUnit.nombre} guardada en Excel Drive`, 'bg-emerald-600');
+        });
+
+        // 2. Form Setup
+        document.getElementById('form-setup').addEventListener('submit', (e) => {
+            e.preventDefault();
+            detectTimeSlot(); // Re-detect time slot
+            
+            AppState.turnoId = `T-${Date.now()}`;
+            AppState.fechaInicioTurno = document.getElementById('current-datetime')?.innerText || new Date().toLocaleString('es-CL');
+            AppState.movil = document.getElementById('movil').value;
+            AppState.cuadrante = document.getElementById('cuadrante').value;
+            AppState.kmInicial = document.getElementById('km-inicial').value;
+            
+            const shiftLabels = { 'MANANA': 'Mañana', 'TARDE': 'Tarde', 'NOCHE': 'Noche' };
+            
+            document.getElementById('header-shift-display').innerText = `${AppState.movil} • ${AppState.cuadrante}`;
+            document.getElementById('display-time-slot').innerText = `TURNO ${shiftLabels[AppState.rangoHorario] || AppState.rangoHorario}`;
+            document.getElementById('status-info').innerHTML = `Móvil: <strong>${AppState.movil}</strong> | Cuadrante: <strong>${AppState.cuadrante}</strong>`;
+            document.getElementById('status-km').innerText = `Km Inicial: ${AppState.kmInicial} km`;
+            document.getElementById('display-km-inicial').innerText = AppState.kmInicial;
+            document.getElementById('km-termino').min = AppState.kmInicial;
+
+            updateBadgeAndTasks();
+            generateChecklist();
+            navigateTo('view-checklist');
+        });
+
+        // 2.5 Form Checklist Submit (Registra Apertura + Checklist + Fotos en Excel Drive)
+        document.getElementById('form-checklist').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const radioButtons = document.querySelectorAll('#checklist-container input[type="radio"]:checked');
+            const respuestasChecklist = {};
+            const itemsMalosList = [];
+
+            radioButtons.forEach(radio => {
+                respuestasChecklist[radio.name] = radio.value;
+                if (radio.value === 'Malo') {
+                    itemsMalosList.push(radio.name);
+                }
+            });
+
+            const genFotoInput = document.getElementById('chk-general-foto');
+            const defFotoInput = document.getElementById('chk-defect-foto');
+
+            const fotoGeneralBase64 = (genFotoInput && genFotoInput.files[0])
+                ? await compressImageFileToBase64(genFotoInput.files[0])
+                : '';
+            const fotoDesperfectoBase64 = (defFotoInput && defFotoInput.files[0])
+                ? await compressImageFileToBase64(defFotoInput.files[0])
+                : '';
+
+            const payload = {
+                action: 'INICIO_TURNO_CHECKLIST',
+                turnoId: AppState.turnoId,
+                fechaInicio: AppState.fechaInicioTurno,
+                rut: AppState.userRut,
+                rangoHorario: AppState.rangoHorario,
+                movil: AppState.movil,
+                cuadrante: AppState.cuadrante,
+                kmInicial: AppState.kmInicial,
+                estadoChecklist: itemsMalosList.length > 0 ? 'CON OBSERVACIONES' : 'OK',
+                itemsMalos: itemsMalosList.length > 0 ? itemsMalosList.join(', ') : 'Ninguno',
+                observaciones: document.getElementById('checklist-observaciones')?.value.trim() || '',
+                respuestasChecklist: respuestasChecklist,
+                fotoGeneralBase64: fotoGeneralBase64,
+                fotoDesperfectoBase64: fotoDesperfectoBase64
+            };
+
+            sendPayloadToGoogleSheets(payload);
+            showToast('Turno y Checklist guardados', 'bg-emerald-600');
+            navigateTo('view-menu');
+        });
+
+        // 3. Form Procedure (Registra Procedimiento + Foto en Excel Drive)
+        document.getElementById('form-procedure').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fotoInput = document.getElementById('proc-foto');
+            const fotoBase64 = (fotoInput && fotoInput.files[0])
+                ? await compressImageFileToBase64(fotoInput.files[0])
+                : '';
+
+            const payload = {
+                action: 'REGISTRAR_PROCEDIMIENTO',
+                procId: `PROC-${Date.now()}`,
+                fechaRegistro: new Date().toLocaleString('es-CL'),
+                turnoId: AppState.turnoId,
+                rut: AppState.userRut,
+                rangoHorario: AppState.rangoHorario,
+                movil: AppState.movil,
+                cuadrante: AppState.cuadrante,
+                tipo: document.getElementById('proc-tipo').value,
+                direccion: document.getElementById('proc-direccion').value.trim(),
+                detalle: document.getElementById('proc-detalle').value.trim(),
+                notificarCentral: document.getElementById('email-central').checked,
+                notificarJefatura: document.getElementById('email-jefatura').checked,
+                fotoBase64: fotoBase64
+            };
+
+            sendPayloadToGoogleSheets(payload);
+            showToast('Procedimiento registrado en Drive', 'bg-emerald-600');
+            e.target.reset();
+            resetPhotoPreview('foto-preview', 'foto-placeholder');
+            setTimeout(() => navigateTo('view-menu'), 400);
+        });
+
+        // 4. Form Task Resolve (Registra Visto Bueno + Evidencia en Excel Drive)
+        document.getElementById('form-task-resolve').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const taskId = document.getElementById('resolve-task-id').value;
+            const taskDesc = document.getElementById('resolve-task-title')?.innerText || '';
+            const fotoInput = document.getElementById('resolve-foto');
+
+            if (!fotoInput.files || !fotoInput.files[0]) {
+                showToast('Error: Fotografía requerida', 'bg-red-600');
+                return;
+            }
+
+            const fotoBase64 = await compressImageFileToBase64(fotoInput.files[0]);
+
+            const payload = {
+                action: 'RESOLVER_TAREA',
+                fechaRegistro: new Date().toLocaleString('es-CL'),
+                taskId: taskId,
+                taskDesc: taskDesc,
+                turnoId: AppState.turnoId,
+                rut: AppState.userRut,
+                rangoHorario: AppState.rangoHorario,
+                movil: AppState.movil,
+                cuadrante: AppState.cuadrante,
+                direccion: document.getElementById('resolve-direccion').value.trim(),
+                detalle: document.getElementById('resolve-detalle').value.trim(),
+                fotoBase64: fotoBase64
+            };
+
+            sendPayloadToGoogleSheets(payload);
+
+            // Mark completed in localStorage shared database
+            markTaskIdCompleted(taskId, AppState.userRut);
+
+            showToast('Visto bueno guardado en Drive', 'bg-emerald-600');
+            updateBadgeAndTasks();
+
+            setTimeout(() => {
+                navigateTo('view-tasks');
+            }, 400);
+        });
+
+        // 5. Form End Shift (Registra Cierre de Turno y Km Recorridos en Excel Drive)
+        document.getElementById('form-end-shift').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const kmTermino = parseInt(document.getElementById('km-termino').value);
+            const kmInicial = parseInt(AppState.kmInicial);
+            
+            if (kmTermino < kmInicial) {
+                showToast('Error: Km Término inferior a Km Inicial', 'bg-red-600');
+                return;
+            }
+
+            const payload = {
+                action: 'CERRAR_TURNO',
+                fechaTermino: document.getElementById('end-datetime')?.innerText || new Date().toLocaleString('es-CL'),
+                turnoId: AppState.turnoId,
+                rut: AppState.userRut,
+                rangoHorario: AppState.rangoHorario,
+                movil: AppState.movil,
+                cuadrante: AppState.cuadrante,
+                kmInicial: kmInicial,
+                kmTermino: kmTermino
+            };
+
+            sendPayloadToGoogleSheets(payload);
+
+            showToast('Turno finalizado y registrado', 'bg-blue-900');
+            setTimeout(() => {
+                navigateTo('view-login');
+            }, 800);
+        });
+
+        // --- Helper Tools ---
+        function previewImage(input, previewId, placeholderId) {
+            const preview = document.getElementById(previewId);
+            const placeholder = document.getElementById(placeholderId);
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                resetPhotoPreview(previewId, placeholderId);
+            }
+        }
+
+        function resetPhotoPreview(previewId, placeholderId) {
+            const preview = document.getElementById(previewId);
+            const placeholder = document.getElementById(placeholderId);
+            if(preview && placeholder) {
+                preview.classList.add('hidden');
+                preview.src = '';
+                placeholder.classList.remove('hidden');
+            }
+        }
+
+        function getLocation(inputId) {
+            const input = document.getElementById(inputId);
+            input.value = "Obteniendo GPS...";
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude.toFixed(5);
+                        const lon = pos.coords.longitude.toFixed(5);
+                        input.value = `GPS Peñaflor (${lat}, ${lon})`;
+                        showToast("Coordenadas GPS reales obtenidas", "bg-emerald-600");
+                    },
+                    () => {
+                        const lat = (-33.6120 + (Math.random()*0.008)).toFixed(4);
+                        const lon = (-70.8750 + (Math.random()*0.008)).toFixed(4);
+                        input.value = `Av. Balmaceda 1410, Peñaflor (${lat}, ${lon})`;
+                        showToast("Coordenadas GPS obtenidas", "bg-emerald-600");
+                    },
+                    { timeout: 5000 }
+                );
+            } else {
+                setTimeout(() => {
+                    const lat = (-33.6120 + (Math.random()*0.008)).toFixed(4);
+                    const lon = (-70.8750 + (Math.random()*0.008)).toFixed(4);
+                    input.value = `Av. Balmaceda 1410, Peñaflor (${lat}, ${lon})`;
+                    showToast("Coordenadas GPS obtenidas", "bg-emerald-600");
+                }, 600);
+            }
+        }
+
+        function showToast(message, bgColorClass = 'bg-emerald-600') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            
+            if(!toast || !toastMsg) return;
+            toast.className = ''; 
+            toastMsg.innerText = message;
+            toast.className = `show ${bgColorClass}`;
+            
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '').trim();
+            }, 2800);
+        }
+
+        function resetApp() {
+            document.getElementById('form-login').reset();
+            document.getElementById('form-setup').reset();
+            document.getElementById('form-checklist').reset();
+            document.getElementById('form-end-shift').reset();
+            resetPhotoPreview('chk-general-preview', 'chk-general-placeholder');
+            resetPhotoPreview('chk-defect-preview', 'chk-defect-placeholder');
+            AppState.turnoId = '';
+            AppState.fechaInicioTurno = '';
+            AppState.userRut = '';
+            AppState.userName = '';
+            AppState.userRole = 'INSPECTOR';
+            AppState.movil = '';
+            AppState.cuadrante = '';
+            AppState.kmInicial = 0;
+        }
+
+        // --- DOM Initialization ---
+        window.addEventListener('DOMContentLoaded', () => {
+            startClock();
+            detectTimeSlot();
+            populateVehicleSelectDropdown();
+            updateCloudStatusUI();
+            syncBootstrapFromCloud();
+
+            window.addEventListener('online', () => {
+                flushOfflineQueue(true);
+            });
+
+            const overrideSelect = document.getElementById('rango-horario-override');
+            if (overrideSelect) {
+                overrideSelect.addEventListener('change', detectTimeSlot);
+            }
+        });
+    </script>
+</body>
+</html>
