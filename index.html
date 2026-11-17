@@ -911,14 +911,19 @@
                         <input type="url" id="input-script-url" class="w-full p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none font-mono text-[11px]" placeholder="https://script.google.com/macros/s/.../exec">
                     </div>
 
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-2">
                         <div>
                             <p class="font-bold text-slate-700">Cola de Sincronización Offline</p>
                             <p id="modal-queue-count" class="text-[11px] text-slate-500">0 registros pendientes de envío</p>
                         </div>
-                        <button type="button" onclick="flushOfflineQueue(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] shadow-xs">
-                            <i class="fa-solid fa-rotate mr-1"></i> Sincronizar Ahora
-                        </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="flushOfflineQueue(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-xs">
+                                <i class="fa-solid fa-rotate mr-1"></i> Sincronizar
+                            </button>
+                            <button type="button" onclick="clearOfflineQueue()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold px-2 py-1.5 rounded-lg text-[11px]" title="Vaciar cola atascada">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
@@ -1410,10 +1415,10 @@
             const pending = getQuadrantPendingTasks();
             const task = pending.find(t => t.id === taskId);
             if(task) {
+                document.getElementById('form-task-resolve').reset();
+                resetPhotoPreview('resolve-foto-preview', 'resolve-foto-placeholder');
                 document.getElementById('resolve-task-title').innerText = task.desc;
                 document.getElementById('resolve-task-id').value = task.id;
-                resetPhotoPreview('resolve-foto-preview', 'resolve-foto-placeholder');
-                document.getElementById('form-task-resolve').reset();
                 navigateTo('view-task-resolve');
             }
         }
@@ -1730,13 +1735,23 @@
             return (typeof google !== 'undefined' && google.script && google.script.run);
         }
 
+        let isFlushingQueue = false;
+
         function normalizeScriptUrl(rawUrl) {
             return String(rawUrl || '').trim().replace(/\/macros\/u\/\d+\/s\//, '/macros/s/');
         }
 
         function getGoogleScriptUrl() {
-            const raw = localStorage.getItem(STORAGE_KEYS.SCRIPT_URL) || DEFAULT_GOOGLE_SCRIPT_URL || '';
-            return normalizeScriptUrl(raw);
+            const stored = normalizeScriptUrl(localStorage.getItem(STORAGE_KEYS.SCRIPT_URL) || '');
+            const defUrl = normalizeScriptUrl(DEFAULT_GOOGLE_SCRIPT_URL);
+            // Si hay una URL oficial por defecto y lo guardado en localStorage está vacío o no es un script de Google válido, usar la oficial
+            if (!stored || !stored.includes('script.google.com/macros/s/')) {
+                if (defUrl) {
+                    localStorage.setItem(STORAGE_KEYS.SCRIPT_URL, defUrl);
+                }
+                return defUrl;
+            }
+            return stored;
         }
 
         function getSyncQueue() {
@@ -1748,8 +1763,30 @@
         }
 
         function saveSyncQueue(queue) {
-            localStorage.setItem(STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(queue));
+            try {
+                localStorage.setItem(STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(queue));
+            } catch (quotaErr) {
+                // Si localStorage supera los 5MB por fotos en alta resolución en cola, conservar los datos reduciendo fotos antiguas
+                const slimmed = queue.map((item, idx) => {
+                    if (idx < queue.length - 2) {
+                        const copy = Object.assign({}, item);
+                        delete copy.fotoBase64;
+                        delete copy.fotoGeneralBase64;
+                        delete copy.fotoDesperfectoBase64;
+                        return copy;
+                    }
+                    return item;
+                });
+                try {
+                    localStorage.setItem(STORAGE_KEYS.SYNC_QUEUE, JSON.stringify(slimmed));
+                } catch (e) {}
+            }
             updateCloudStatusUI();
+        }
+
+        function clearOfflineQueue() {
+            saveSyncQueue([]);
+            showToast('Cola de sincronización vaciada', 'bg-slate-700');
         }
 
         function appendLocalHistory(record) {
@@ -1789,8 +1826,8 @@
             if (menuStatus) {
                 if (nativeGas || url) {
                     menuStatus.innerText = queue.length > 0
-                        ? `Conectado a Drive • ${queue.length} registro(s) en cola`
-                        : 'Conectado a BD_Peña_Seguro_1410 en tiempo real';
+                        ? `Sincronizando con Drive • ${queue.length} pendiente(s)`
+                        : '✓ Conectado a BD_Peña_Seguro_1410 en tiempo real';
                 } else {
                     menuStatus.innerText = `Modo local activo • ${queue.length} registro(s) en cola para Drive`;
                 }
@@ -1816,20 +1853,17 @@
 
         function saveCloudConfig() {
             const input = document.getElementById('input-script-url');
-            const val = (input ? input.value : '').trim();
-            localStorage.setItem(STORAGE_KEYS.SCRIPT_URL, val);
+            const val = normalizeScriptUrl(input ? input.value : '');
+            localStorage.setItem(STORAGE_KEYS.SCRIPT_URL, val || normalizeScriptUrl(DEFAULT_GOOGLE_SCRIPT_URL));
             updateCloudStatusUI();
             closeCloudConfigModal();
-            if (val) {
-                showToast('URL de Google Sheets guardada', 'bg-emerald-600');
-                flushOfflineQueue(true);
-                syncBootstrapFromCloud();
-            } else {
-                showToast('Modo local activado', 'bg-blue-700');
-            }
+            showToast('URL de Google Sheets actualizada', 'bg-emerald-600');
+            flushOfflineQueue(true);
+            syncBootstrapFromCloud();
         }
 
-        function compressImageFileToBase64(file, maxDim = 1024, quality = 0.75) {
+        // Comprime cualquier foto a JPEG ligero (máx 800px, calidad 0.70 ~ 45KB) para subida instantánea a Drive
+        function compressImageFileToBase64(file, maxDim = 800, quality = 0.70) {
             return new Promise((resolve) => {
                 if (!file) return resolve('');
                 const reader = new FileReader();
@@ -1862,7 +1896,45 @@
             });
         }
 
-        async function sendPayloadToGoogleSheets(payload) {
+        // Envío HTTP robusto sin cookies de sesión multi-cuenta (credentials: 'omit')
+        async function postPayloadToScriptUrl(scriptUrl, payload) {
+            const bodyStr = JSON.stringify(payload);
+            try {
+                const res = await fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: bodyStr
+                });
+                if (res.ok || res.type === 'opaque') {
+                    try {
+                        const data = await res.json();
+                        if (data && data.ok === false) {
+                            throw new Error(data.error || 'Error reportado por Apps Script');
+                        }
+                        return { ok: true, data: data };
+                    } catch (parseIgnore) {
+                        return { ok: true };
+                    }
+                }
+            } catch (corsErr) {
+                // Fallback a no-cors con credentials: 'omit' si el navegador bloquea la lectura del redirect
+                await fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    credentials: 'omit',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: bodyStr
+                });
+                return { ok: true };
+            }
+            throw new Error('No se pudo completar el envío HTTP');
+        }
+
+        async function sendPayloadToGoogleSheets(payload, skipAutoFlush = false) {
             appendLocalHistory(payload);
 
             // 1. Si se ejecuta nativamente dentro de Google Apps Script Web App
@@ -1893,14 +1965,12 @@
             }
 
             try {
-                await fetch(scriptUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
+                const result = await postPayloadToScriptUrl(scriptUrl, payload);
                 updateCloudStatusUI();
-                return { ok: true };
+                if (!skipAutoFlush && getSyncQueue().length > 0) {
+                    setTimeout(() => flushOfflineQueue(false), 500);
+                }
+                return result;
             } catch (err) {
                 const queue = getSyncQueue();
                 queue.push(payload);
@@ -1910,6 +1980,7 @@
         }
 
         async function flushOfflineQueue(showFeedback = false) {
+            if (isFlushingQueue) return;
             const scriptUrl = getGoogleScriptUrl();
             const nativeGas = isRunningInsideGoogleAppsScript();
             const queue = getSyncQueue();
@@ -1923,32 +1994,42 @@
                 return;
             }
 
-            const remaining = [];
-            for (const item of queue) {
+            isFlushingQueue = true;
+            if (showFeedback) {
+                showToast(`Subiendo ${queue.length} registro(s) en cola a Drive...`, 'bg-blue-700');
+            }
+
+            const remaining = [...queue];
+            let uploadedCount = 0;
+
+            while (remaining.length > 0) {
+                const item = remaining[0];
                 try {
                     if (nativeGas) {
                         await new Promise((res, rej) => {
                             google.script.run.withSuccessHandler(res).withFailureHandler(rej).apiHandleAction(item);
                         });
                     } else {
-                        await fetch(scriptUrl, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify(item)
-                        });
+                        await postPayloadToScriptUrl(scriptUrl, item);
                     }
+                    // Si tuvo éxito, quitar de la cola inmediatamente y persistir el avance
+                    remaining.shift();
+                    uploadedCount++;
+                    saveSyncQueue(remaining);
                 } catch (e) {
-                    remaining.push(item);
+                    // Si falla la red en este elemento, detener el ciclo para reintentar luego
+                    break;
                 }
             }
 
+            isFlushingQueue = false;
             saveSyncQueue(remaining);
-            if (showFeedback) {
+
+            if (showFeedback || uploadedCount > 0) {
                 if (remaining.length === 0) {
-                    showToast('Cola sincronizada con Excel en Drive', 'bg-emerald-600');
-                } else {
-                    showToast(`Quedaron ${remaining.length} registros pendientes`, 'bg-amber-600');
+                    showToast(`✓ ${uploadedCount} registro(s) en cola subidos al Excel en Drive`, 'bg-emerald-600');
+                } else if (showFeedback) {
+                    showToast(`Subidos ${uploadedCount}. Quedan ${remaining.length} pendientes.`, 'bg-amber-600');
                 }
             }
         }
@@ -1995,7 +2076,12 @@
                 return;
             }
             try {
-                const res = await fetch(`${scriptUrl}?action=bootstrap`);
+                const res = await fetch(`${scriptUrl}?action=bootstrap`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    redirect: 'follow'
+                });
                 const data = await res.json();
                 applyBootstrapData(data, showFeedback);
             } catch (e) {
@@ -2079,7 +2165,6 @@
                 AppState.userName = matchedUser.nombre;
                 AppState.userRole = matchedUser.rol || 'INSPECTOR';
             } else {
-                // Si el RUT no está aún en la tabla local, permite ingreso como INSPECTOR
                 AppState.userRut = rutInput;
                 AppState.userName = rutInput;
                 AppState.userRole = 'INSPECTOR';
@@ -2089,6 +2174,7 @@
             document.getElementById('header-shift-display').innerText = AppState.userRole === 'ADMIN' ? 'ADMINISTRADOR' : 'EN TURNO';
 
             syncBootstrapFromCloud();
+            flushOfflineQueue(false);
 
             if (AppState.userRole === 'ADMIN') {
                 showToast(`Bienvenido Admin: ${AppState.userName}`, 'bg-amber-600');
@@ -2100,7 +2186,7 @@
         });
 
         // 1.5 Admin Forms Submit Handlers
-        document.getElementById('form-admin-user').addEventListener('submit', (e) => {
+        document.getElementById('form-admin-user').addEventListener('submit', async (e) => {
             e.preventDefault();
             const newUser = {
                 rut: document.getElementById('adm-user-rut').value.trim(),
@@ -2120,13 +2206,16 @@
                 users.push(newUser);
             }
             saveUsersDB(users);
-            sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_USER' }, newUser));
             renderAdminUsersList();
             resetAdminUserForm();
-            showToast(`Usuario ${newUser.rut} guardado en Excel Drive`, 'bg-emerald-600');
+            showToast(`Guardando usuario ${newUser.rut} en Excel...`, 'bg-blue-700');
+            const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_USER' }, newUser));
+            if (res && res.ok) {
+                showToast(`✓ Usuario ${newUser.rut} guardado en Excel Drive`, 'bg-emerald-600');
+            }
         });
 
-        document.getElementById('form-admin-task').addEventListener('submit', (e) => {
+        document.getElementById('form-admin-task').addEventListener('submit', async (e) => {
             e.preventDefault();
             const idInput = document.getElementById('adm-task-id').value.trim();
             const newTask = {
@@ -2145,14 +2234,17 @@
                 tasks.push(newTask);
             }
             saveTasksCatalogDB(tasks);
-            sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_TASK' }, newTask));
             renderAdminTasksList();
             updateBadgeAndTasks();
             resetAdminTaskForm();
-            showToast('Tarea guardada en Catálogo Excel Drive', 'bg-emerald-600');
+            showToast('Guardando tarea en Excel Drive...', 'bg-blue-700');
+            const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_TASK' }, newTask));
+            if (res && res.ok) {
+                showToast('✓ Tarea guardada en Catálogo Excel Drive', 'bg-emerald-600');
+            }
         });
 
-        document.getElementById('form-admin-fleet').addEventListener('submit', (e) => {
+        document.getElementById('form-admin-fleet').addEventListener('submit', async (e) => {
             e.preventDefault();
             const idInput = document.getElementById('adm-fleet-id').value.trim();
             const newUnit = {
@@ -2172,11 +2264,14 @@
                 fleet.push(newUnit);
             }
             saveFleetDB(fleet);
-            sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_VEHICLE' }, newUnit));
             renderAdminFleetList();
             document.getElementById('form-admin-fleet').reset();
             document.getElementById('adm-fleet-id').value = '';
-            showToast(`Unidad ${newUnit.nombre} guardada en Excel Drive`, 'bg-emerald-600');
+            showToast(`Guardando unidad ${newUnit.nombre} en Excel...`, 'bg-blue-700');
+            const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_VEHICLE' }, newUnit));
+            if (res && res.ok) {
+                showToast(`✓ Unidad ${newUnit.nombre} guardada en Excel Drive`, 'bg-emerald-600');
+            }
         });
 
         // 2. Form Setup
@@ -2207,6 +2302,12 @@
         // 2.5 Form Checklist Submit (Registra Apertura + Checklist + Fotos en Excel Drive)
         document.getElementById('form-checklist').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const origText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SUBIENDO A EXCEL DRIVE...`;
+            }
 
             const radioButtons = document.querySelectorAll('#checklist-container input[type="radio"]:checked');
             const respuestasChecklist = {};
@@ -2246,14 +2347,24 @@
                 fotoDesperfectoBase64: fotoDesperfectoBase64
             };
 
-            sendPayloadToGoogleSheets(payload);
-            showToast('Turno y Checklist guardados', 'bg-emerald-600');
+            const res = await sendPayloadToGoogleSheets(payload);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origText;
+            }
+            showToast(res && res.ok ? '✓ Turno y Checklist subidos a Excel Drive' : 'Guardado en cola local', 'bg-emerald-600');
             navigateTo('view-menu');
         });
 
         // 3. Form Procedure (Registra Procedimiento + Foto en Excel Drive)
         document.getElementById('form-procedure').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const origText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SUBIENDO PROCEDIMIENTO A DRIVE...`;
+            }
 
             const fotoInput = document.getElementById('proc-foto');
             const fotoBase64 = (fotoInput && fotoInput.files[0])
@@ -2264,7 +2375,7 @@
                 action: 'REGISTRAR_PROCEDIMIENTO',
                 procId: `PROC-${Date.now()}`,
                 fechaRegistro: new Date().toLocaleString('es-CL'),
-                turnoId: AppState.turnoId,
+                turnoId: AppState.turnoId || `T-${Date.now()}`,
                 rut: AppState.userRut,
                 rangoHorario: AppState.rangoHorario,
                 movil: AppState.movil,
@@ -2277,11 +2388,15 @@
                 fotoBase64: fotoBase64
             };
 
-            sendPayloadToGoogleSheets(payload);
-            showToast('Procedimiento registrado en Drive', 'bg-emerald-600');
+            const res = await sendPayloadToGoogleSheets(payload);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origText;
+            }
+            showToast(res && res.ok ? '✓ Procedimiento subido a Excel Drive' : 'Procedimiento guardado en cola', 'bg-emerald-600');
             e.target.reset();
             resetPhotoPreview('foto-preview', 'foto-placeholder');
-            setTimeout(() => navigateTo('view-menu'), 400);
+            navigateTo('view-menu');
         });
 
         // 4. Form Task Resolve (Registra Visto Bueno + Evidencia en Excel Drive)
@@ -2296,6 +2411,13 @@
                 return;
             }
 
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const origText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SUBIENDO EVIDENCIA A DRIVE...`;
+            }
+
             const fotoBase64 = await compressImageFileToBase64(fotoInput.files[0]);
 
             const payload = {
@@ -2303,7 +2425,7 @@
                 fechaRegistro: new Date().toLocaleString('es-CL'),
                 taskId: taskId,
                 taskDesc: taskDesc,
-                turnoId: AppState.turnoId,
+                turnoId: AppState.turnoId || `T-${Date.now()}`,
                 rut: AppState.userRut,
                 rangoHorario: AppState.rangoHorario,
                 movil: AppState.movil,
@@ -2313,21 +2435,24 @@
                 fotoBase64: fotoBase64
             };
 
-            sendPayloadToGoogleSheets(payload);
+            const res = await sendPayloadToGoogleSheets(payload);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origText;
+            }
 
             // Mark completed in localStorage shared database
-            markTaskIdCompleted(taskId, AppState.userRut);
+            if (taskId) {
+                markTaskIdCompleted(taskId, AppState.userRut);
+            }
 
-            showToast('Visto bueno guardado en Drive', 'bg-emerald-600');
+            showToast(res && res.ok ? '✓ Visto bueno y foto subidos a Drive' : 'Visto bueno en cola local', 'bg-emerald-600');
             updateBadgeAndTasks();
-
-            setTimeout(() => {
-                navigateTo('view-tasks');
-            }, 400);
+            navigateTo('view-tasks');
         });
 
         // 5. Form End Shift (Registra Cierre de Turno y Km Recorridos en Excel Drive)
-        document.getElementById('form-end-shift').addEventListener('submit', (e) => {
+        document.getElementById('form-end-shift').addEventListener('submit', async (e) => {
             e.preventDefault();
             const kmTermino = parseInt(document.getElementById('km-termino').value);
             const kmInicial = parseInt(AppState.kmInicial);
@@ -2335,6 +2460,13 @@
             if (kmTermino < kmInicial) {
                 showToast('Error: Km Término inferior a Km Inicial', 'bg-red-600');
                 return;
+            }
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const origText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> CERRANDO Y SUBIENDO A DRIVE...`;
             }
 
             const payload = {
@@ -2349,12 +2481,16 @@
                 kmTermino: kmTermino
             };
 
-            sendPayloadToGoogleSheets(payload);
+            const res = await sendPayloadToGoogleSheets(payload);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origText;
+            }
 
-            showToast('Turno finalizado y registrado', 'bg-blue-900');
+            showToast(res && res.ok ? '✓ Cierre de turno registrado en Excel Drive' : 'Cierre guardado en cola', 'bg-blue-900');
             setTimeout(() => {
                 navigateTo('view-login');
-            }, 800);
+            }, 600);
         });
 
         // --- Helper Tools ---
@@ -2452,6 +2588,14 @@
             populateVehicleSelectDropdown();
             updateCloudStatusUI();
             syncBootstrapFromCloud();
+
+            // Vaciar y subir automáticamente cualquier registro en cola al abrir la app y cada 15 segundos
+            setTimeout(() => flushOfflineQueue(false), 1000);
+            setInterval(() => {
+                if (getSyncQueue().length > 0) {
+                    flushOfflineQueue(false);
+                }
+            }, 15000);
 
             window.addEventListener('online', () => {
                 flushOfflineQueue(true);
