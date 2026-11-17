@@ -142,37 +142,44 @@
                         <h1 class="text-2xl font-black text-white tracking-wide mb-1">PEÑA SEGURO</h1>
                         <p class="text-blue-200 mb-6 text-xs text-center font-medium">Plataforma Web de Operaciones e Inspección Municipal</p>
                         
-                        <form id="form-login" class="w-full space-y-4">
+                        <form id="form-login" class="w-full space-y-3.5">
                             <div>
-                                <label class="block text-white text-xs font-bold mb-1" for="rut">RUT Funcionario o Usuario Admin</label>
+                                <label class="block text-white text-xs font-bold mb-1" for="login-select-funcionario">Seleccionar Funcionario (Base Oficial 1410)</label>
+                                <input type="text" id="login-filter-funcionario" oninput="populateLoginFuncionariosDropdown()" class="w-full p-2.5 mb-1.5 rounded-xl border-0 text-xs text-slate-800 font-semibold outline-none focus:ring-2 focus:ring-yellow-400" placeholder="🔍 Buscar funcionario por nombre o apellido...">
+                                <select id="login-select-funcionario" onchange="onSelectLoginFuncionario(this.value)" class="w-full p-2.5 rounded-xl border-0 text-xs text-slate-900 font-bold bg-white outline-none focus:ring-2 focus:ring-yellow-400">
+                                    <option value="">-- O elija su nombre de la lista --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-white text-xs font-bold mb-1" for="rut">Nombre / RUT / Usuario <span class="text-yellow-300">*</span></label>
                                 <div class="relative">
-                                    <input type="text" id="rut" class="w-full p-3 pl-10 rounded-xl border-0 focus:ring-2 focus:ring-yellow-400 outline-none text-slate-800 font-semibold" placeholder="Ej: 15.432.876-K o admin" required>
+                                    <input type="text" id="rut" class="w-full p-3 pl-10 rounded-xl border-0 focus:ring-2 focus:ring-yellow-400 outline-none text-slate-800 font-semibold text-xs" placeholder="Seleccione arriba o escriba su usuario/RUT" required>
                                     <i class="fa-solid fa-id-card absolute left-3.5 top-3.5 text-blue-900 opacity-60"></i>
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-white text-xs font-bold mb-1" for="password">Contraseña</label>
                                 <div class="relative">
-                                    <input type="password" id="password" class="w-full p-3 pl-10 rounded-xl border-0 focus:ring-2 focus:ring-yellow-400 outline-none text-slate-800 font-semibold" placeholder="••••••••" required>
+                                    <input type="password" id="password" class="w-full p-3 pl-10 rounded-xl border-0 focus:ring-2 focus:ring-yellow-400 outline-none text-slate-800 font-semibold" placeholder="Clave (Por defecto: 1410)" required>
                                     <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-blue-900 opacity-60"></i>
                                 </div>
                             </div>
-                            <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-[#1e3a8a] font-extrabold py-3.5 rounded-xl mt-4 transition-all shadow-lg active:scale-[0.98]">
+                            <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-[#1e3a8a] font-extrabold py-3.5 rounded-xl mt-2 transition-all shadow-lg active:scale-[0.98]">
                                 INICIAR SESIÓN
                             </button>
                         </form>
 
                         <!-- Quick Access / Demo Credentials Helper -->
                         <div class="w-full mt-4 pt-3 border-t border-blue-800/80 text-[11px] text-blue-200 space-y-1.5">
-                            <p class="font-bold text-yellow-300 text-center"><i class="fa-solid fa-key mr-1"></i> Accesos Rápidos de Prueba:</p>
+                            <p class="font-bold text-yellow-300 text-center"><i class="fa-solid fa-key mr-1"></i> Accesos Rápidos (Clave general: 1410):</p>
                             <div class="grid grid-cols-2 gap-2">
-                                <button type="button" onclick="fillDemoLogin('15.432.876-K', '1234')" class="bg-blue-900/70 hover:bg-blue-800 border border-blue-700 rounded-lg p-2 text-left transition-all">
+                                <button type="button" onclick="fillDemoLogin('AARON NATANAEL CACERES MORALES', '1410')" class="bg-blue-900/70 hover:bg-blue-800 border border-blue-700 rounded-lg p-2 text-left transition-all">
                                     <span class="block font-extrabold text-white"><i class="fa-solid fa-mobile-screen mr-1 text-emerald-400"></i> Vista Inspector</span>
-                                    <span class="text-[10px] text-blue-300">15.432.876-K / 1234</span>
+                                    <span class="text-[10px] text-blue-300">Inspector 1410 / Clave: 1410</span>
                                 </button>
                                 <button type="button" onclick="fillDemoLogin('admin', '1410')" class="bg-blue-900/70 hover:bg-blue-800 border border-blue-700 rounded-lg p-2 text-left transition-all">
                                     <span class="block font-extrabold text-yellow-300"><i class="fa-solid fa-user-shield mr-1"></i> Panel Admin</span>
-                                    <span class="text-[10px] text-blue-300">admin / 1410</span>
+                                    <span class="text-[10px] text-blue-300">admin / Clave: 1410</span>
                                 </button>
                             </div>
                         </div>
@@ -210,41 +217,38 @@
                             </select>
                         </div>
 
+                        <!-- Cargo Operativo -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="setup-cargo">Cargo Operativo <span class="text-red-500">*</span></label>
+                            <select id="setup-cargo" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-bold text-sm" required>
+                                <option value="INSPECTOR MUNICIPAL">INSPECTOR MUNICIPAL</option>
+                                <option value="JEFE DE TURNO">JEFE DE TURNO</option>
+                            </select>
+                        </div>
+
                         <!-- Móvil Dropdown -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1" for="movil">Móvil / Vehículo <span class="text-red-500">*</span></label>
-                            <select id="movil" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-medium text-sm" required>
-                                <option value="" disabled selected>Seleccione vehículo...</option>
-                                <optgroup label="Móviles">
-                                    <script>
-                                        for(let i=1; i<=20; i++) document.write(`<option value="Móvil ${i}">Móvil ${i}</option>`);
-                                    </script>
-                                </optgroup>
-                                <optgroup label="Camionetas">
-                                    <option value="Camioneta 1">Camioneta 1</option>
-                                    <option value="Camioneta 2">Camioneta 2</option>
-                                </optgroup>
-                                <optgroup label="Motocicletas">
-                                    <script>
-                                        for(let i=1; i<=9; i++) document.write(`<option value="Motocicleta ${i}">Motocicleta ${i}</option>`);
-                                    </script>
-                                </optgroup>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="movil">Móvil / Unidad <span class="text-red-500">*</span></label>
+                            <select id="movil" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-bold text-sm" required>
+                                <option value="" disabled selected>Seleccione unidad...</option>
                             </select>
                         </div>
 
                         <!-- Cuadrante Dropdown -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1" for="cuadrante">Cuadrante Asignado <span class="text-red-500">*</span></label>
-                            <select id="cuadrante" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-medium text-sm" required>
+                            <select id="cuadrante" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-bold text-sm" required>
                                 <option value="" disabled selected>Seleccione cuadrante...</option>
-                                <option value="SRA1">SRA1</option>
-                                <option value="252A">252A</option>
-                                <option value="252B">252B</option>
-                                <option value="252C">252C</option>
-                                <option value="SRC">SRC</option>
-                                <option value="SRB">SRB</option>
-                                <option value="253A">253A</option>
-                                <option value="253B">253B</option>
+                                <option value="252A">252A — Sector Centro / Norte</option>
+                                <option value="252B">252B — Sector Malloquito / Sur</option>
+                                <option value="252C">252C — Sector El Trapiche / Poniente</option>
+                                <option value="253A">253A — Sector Malloco Norte</option>
+                                <option value="253B">253B — Sector Malloco Sur / Las Praderas</option>
+                                <option value="SRA">SRA — Subsector Rural / Pelvín</option>
+                                <option value="SRB">SRB — Subsector Rural / Peñaflor Alto</option>
+                                <option value="SRC">SRC — Subsector Rural / Camino Valparaíso</option>
+                                <option value="SRA1">SRA1 — Subsector Especial / Mallarauco</option>
+                                <option value="VOLANTE / TODA LA COMUNA">VOLANTE / TODA LA COMUNA (Jefatura)</option>
                             </select>
                         </div>
 
@@ -422,86 +426,134 @@
                 </div>
             </section>
 
-            <!-- 4. PROCEDURE FORM VIEW -->
+            <!-- 4. PROCEDURE FORM VIEW (Integrado con BD Oficial + Envío Directo WhatsApp / Correo) -->
             <section id="view-procedure" class="view-section">
                 <div class="flex items-center gap-3 mb-4">
                     <button type="button" onclick="navigateTo('view-menu')" class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-300">
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
-                    <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight">Ingresar Procedimiento</h2>
+                    <div>
+                        <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight leading-none">Ingresar Procedimiento</h2>
+                        <span class="text-[10px] font-bold text-emerald-700"><i class="fa-brands fa-whatsapp"></i> Despacho directo por WhatsApp y Correo</span>
+                    </div>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4">
                     <form id="form-procedure" class="space-y-4">
                         
-                        <!-- Tipo de Procedimiento Dropdown -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-tipo">Tipo de Procedimiento <span class="text-red-500">*</span></label>
-                            <select id="proc-tipo" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white text-sm font-semibold text-slate-800" required>
-                                <option value="" disabled selected>Seleccione procedimiento...</option>
-                                <option value="Patrullajes">Patrullajes</option>
-                                <option value="Vigilancias">Vigilancias</option>
-                                <option value="Puntos fijos">Puntos fijos</option>
-                                <option value="Rondas preventivas">Rondas preventivas</option>
-                                <option value="Incivilidades">Incivilidades</option>
-                                <option value="Luminarias defectuosas">Luminarias defectuosas</option>
-                                <option value="Rucos">Rucos</option>
-                                <option value="Basura en vía pública">Basura en vía pública</option>
-                                <option value="Micro basurales">Micro basurales</option>
-                                <option value="Calles malas">Calles malas</option>
-                                <option value="Socavones">Socavones</option>
-                                <option value="Consumo de alcohol y drogas">Consumo de alcohol y drogas</option>
-                            </select>
+                        <!-- Tipo de Procedimiento Dropdown + Subcampos Oficiales -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-tipo">Tipo de Procedimiento <span class="text-red-500">*</span></label>
+                                <select id="proc-tipo" onchange="onProcTipoChange()" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white text-sm font-bold text-slate-800" required>
+                                    <option value="PATRULLAJE PREVENTIVO">PATRULLAJE PREVENTIVO</option>
+                                    <option value="VIGILANCIA ESPECIAL">VIGILANCIA ESPECIAL</option>
+                                    <option value="PUNTO FIJO">PUNTO FIJO</option>
+                                    <option value="VIGILANCIA PREVENTIVA">VIGILANCIA PREVENTIVA</option>
+                                    <option value="FISCALIZACIÓN">FISCALIZACIÓN (Parte / Infracción)</option>
+                                    <option value="REPORTE DE INCIVILIDADES">REPORTE DE INCIVILIDADES</option>
+                                    <option value="LUMINARIAS DEFECTUOSAS">LUMINARIAS DEFECTUOSAS</option>
+                                    <option value="SOCAVONES / CALLES MALAS">SOCAVONES / CALLES MALAS</option>
+                                </select>
+                            </div>
+
+                            <!-- Subcampos Condicionales: FISCALIZACIÓN -->
+                            <div id="proc-sub-fiscalizacion" class="hidden pt-2 border-t border-slate-200 space-y-2.5">
+                                <p class="text-[11px] font-extrabold text-amber-800 uppercase"><i class="fa-solid fa-file-invoice mr-1"></i> Datos de Fiscalización / Parte</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <input type="text" id="proc-num-parte" oninput="updateProcWhatsAppPreview()" class="w-full p-2.5 rounded-xl border border-amber-300 bg-white text-xs font-semibold" placeholder="N° de Parte (Ej: 14582)">
+                                    <input type="text" id="proc-infraccionado" oninput="updateProcWhatsAppPreview()" class="w-full p-2.5 rounded-xl border border-amber-300 bg-white text-xs font-semibold" placeholder="Nombre Infraccionado">
+                                    <input type="text" id="proc-testigo" oninput="updateProcWhatsAppPreview()" class="w-full p-2.5 rounded-xl border border-amber-300 bg-white text-xs font-semibold" placeholder="Inspector Testigo">
+                                </div>
+                            </div>
+
+                            <!-- Subcampos Condicionales: INCIVILIDADES -->
+                            <div id="proc-sub-incivilidades" class="hidden pt-2 border-t border-slate-200 space-y-1.5">
+                                <label class="block text-[11px] font-extrabold text-red-800 uppercase"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Tipo de Incivilidad Detectada</label>
+                                <select id="proc-tipo-incivilidad" onchange="updateProcWhatsAppPreview()" class="w-full p-2.5 rounded-xl border border-red-300 bg-white text-xs font-bold text-slate-900">
+                                    <option value="">Seleccione incivilidad...</option>
+                                    <option value="RUCOS O ASENTAMIENTOS">RUCOS O ASENTAMIENTOS</option>
+                                    <option value="CONSUMO DE DROGAS O ALCOHOL">CONSUMO DE DROGAS O ALCOHOL</option>
+                                    <option value="BACHES">BACHES</option>
+                                    <option value="SEÑALÉTICAS EN MAL ESTADO">SEÑALÉTICAS EN MAL ESTADO</option>
+                                    <option value="ÁRBOL CON PELIGRO DE CAÍDA">ÁRBOL CON PELIGRO DE CAÍDA</option>
+                                    <option value="BASURA EN LA VÍA PÚBLICA / MICROBASURAL">BASURA EN LA VÍA PÚBLICA / MICROBASURAL</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <!-- Dirección / Ubicación -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-direccion">Dirección / Ubicación <span class="text-red-500">*</span></label>
-                            <div class="relative flex">
-                                <input type="text" id="proc-direccion" class="w-full p-3 rounded-l-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm font-medium" placeholder="Calle, número, esquina..." required>
-                                <button type="button" onclick="getLocation('proc-direccion')" class="bg-blue-50 border border-l-0 border-slate-300 px-3.5 rounded-r-xl text-blue-700 font-bold hover:bg-blue-100 flex items-center justify-center" title="Obtener GPS">
-                                    <i class="fa-solid fa-crosshairs text-base"></i>
-                                </button>
+                        <!-- Selector Rápido de Villas, Poblaciones, CESFAM y Colegios de Peñaflor -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-slate-700">Villas, CESFAM y Colegios de Peñaflor</label>
+                                <button type="button" onclick="clearProcVillas()" id="btn-clear-proc-villas" class="hidden text-[10px] font-bold text-red-600 underline">Limpiar</button>
+                            </div>
+                            <input type="text" id="proc-filter-villas" oninput="populateProcVillasDropdown()" class="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-medium" placeholder="🔍 Filtrar villa, CESFAM, colegio o avenida...">
+                            <select id="proc-select-villa" onchange="addProcVilla(this.value)" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-800">
+                                <option value="">+ Agregar Villa, Población, CESFAM o Colegio...</option>
+                            </select>
+                            <div id="proc-villas-chips" class="flex flex-wrap gap-1.5"></div>
+
+                            <!-- Dirección / Ubicación Consolidada -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-direccion">Calle, Numeración o Sector <span class="text-red-500">*</span></label>
+                                <div class="relative flex">
+                                    <input type="text" id="proc-direccion" oninput="updateProcWhatsAppPreview()" class="w-full p-3 rounded-l-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-xs font-semibold bg-white" placeholder="Calle, número, villa o toque GPS..." required>
+                                    <button type="button" onclick="getLocation('proc-direccion')" class="bg-blue-600 border border-blue-600 px-3.5 rounded-r-xl text-white font-bold hover:bg-blue-700 flex items-center justify-center" title="Obtener GPS">
+                                        <i class="fa-solid fa-location-crosshairs text-base"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Observaciones -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-detalle">Observaciones / Detalle</label>
-                            <textarea id="proc-detalle" rows="3" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm" placeholder="Añada información descriptiva relevante..."></textarea>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" for="proc-detalle">Descripción del Procedimiento / Novedad <span class="text-red-500">*</span></label>
+                            <textarea id="proc-detalle" rows="3" oninput="updateProcWhatsAppPreview()" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-xs font-medium" placeholder="Detalle el procedimiento, hallazgos, resultados..." required></textarea>
                         </div>
 
                         <!-- Fotografía -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Fotografía del Procedimiento</label>
-                            <div class="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center bg-slate-50 relative">
-                                <input type="file" id="proc-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'foto-preview', 'foto-placeholder')">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Evidencia Fotográfica (Se adjunta en WhatsApp / Correo)</label>
+                            <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50 relative">
+                                <input type="file" id="proc-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'foto-preview', 'foto-placeholder'); updateProcWhatsAppPreview();">
                                 <div id="foto-placeholder" class="flex flex-col items-center pointer-events-none">
-                                    <i class="fa-solid fa-camera text-2xl text-slate-400 mb-1"></i>
-                                    <span class="text-xs text-blue-700 font-bold">Tomar Foto con Cámara</span>
+                                    <i class="fa-solid fa-camera text-2xl text-blue-600 mb-1"></i>
+                                    <span class="text-xs text-blue-800 font-bold">Tomar Foto o Seleccionar de Galería</span>
                                 </div>
                                 <img id="foto-preview" class="hidden max-h-36 mx-auto rounded-lg shadow-sm" alt="Preview">
                             </div>
                         </div>
 
-                        <!-- Notificaciones Correo -->
-                        <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-100">
-                            <p class="text-xs font-bold text-[#1e3a8a] mb-2 flex items-center gap-1.5"><i class="fa-solid fa-paper-plane"></i> Enviar Notificación Inmediata:</p>
-                            <div class="space-y-1.5">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="email-central" class="w-4 h-4 text-[#1e3a8a] rounded border-slate-300 focus:ring-[#1e3a8a]" checked>
-                                    <span class="text-xs font-medium text-slate-700">Central de Comunicaciones 1410</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="email-jefatura" class="w-4 h-4 text-[#1e3a8a] rounded border-slate-300 focus:ring-[#1e3a8a]">
-                                    <span class="text-xs font-medium text-slate-700">Jefatura de Turno Inspección</span>
-                                </label>
+                        <!-- Directorio de Correos Municipales (Multi-selección) -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs font-bold text-[#1e3a8a] flex items-center gap-1.5"><i class="fa-solid fa-envelope"></i> Destinatarios Correo Municipal (Opcional):</p>
+                                <span id="proc-email-count" class="text-[10px] font-extrabold bg-blue-100 text-[#1e3a8a] px-2 py-0.5 rounded-full">0 seleccionados</span>
+                            </div>
+                            <div id="proc-email-directories" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+                        </div>
+
+                        <!-- Vista Previa en Vivo estilo WhatsApp -->
+                        <div class="rounded-2xl overflow-hidden border border-emerald-300 shadow-xs">
+                            <div class="bg-[#075E54] text-white px-3.5 py-2 flex items-center justify-between text-xs font-bold">
+                                <span><i class="fa-brands fa-whatsapp mr-1"></i> Vista Previa Mensaje WhatsApp</span>
+                                <span class="text-[10px] bg-white/15 px-2 py-0.5 rounded-full">En Vivo</span>
+                            </div>
+                            <div class="bg-[#ECE5DD] p-3">
+                                <pre id="proc-wa-preview" class="bg-[#DCF8C6] text-slate-900 p-3 rounded-xl text-[11px] font-sans whitespace-pre-wrap leading-relaxed border border-emerald-200"></pre>
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl mt-2 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                            <i class="fa-solid fa-floppy-disk"></i> REGISTRAR PROCEDIMIENTO
-                        </button>
+                        <!-- Botones de Envío Directo WhatsApp y Correo -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                            <button type="submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm">
+                                <i class="fa-brands fa-whatsapp text-lg"></i> ENVIAR POR WHATSAPP
+                            </button>
+                            <button type="button" onclick="sendProcedureByEmail()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs">
+                                <i class="fa-solid fa-envelope"></i> ENVIAR POR CORREO
+                            </button>
+                        </div>
                     </form>
                 </div>
             </section>
@@ -528,30 +580,36 @@
                 </div>
             </section>
 
-            <!-- 6. TASK RESOLUTION VIEW -->
+            <!-- 6. TASK RESOLUTION VIEW (Envío Directo por WhatsApp con Foto) -->
             <section id="view-task-resolve" class="view-section">
                 <div class="flex items-center gap-3 mb-4">
                     <button type="button" onclick="navigateTo('view-tasks')" class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-300">
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
-                    <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight">Dar Visto Bueno a Tarea</h2>
+                    <div>
+                        <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight leading-none">Dar Visto Bueno a Tarea</h2>
+                        <span class="text-[10px] font-bold text-emerald-700"><i class="fa-brands fa-whatsapp"></i> Se envía con evidencia directo a WhatsApp</span>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
                     <div class="mb-4 bg-amber-50 p-3 rounded-xl border border-amber-200">
-                        <p class="text-[10px] text-amber-800 font-bold uppercase tracking-wider mb-1">Tarea asignada:</p>
-                        <p id="resolve-task-title" class="text-sm font-extrabold text-slate-800"></p>
+                        <p class="text-[10px] text-amber-800 font-bold uppercase tracking-wider mb-1">Tarea Programada Asignada:</p>
+                        <p id="resolve-task-title" class="text-xs font-extrabold text-slate-800 leading-snug"></p>
                     </div>
 
                     <form id="form-task-resolve" class="space-y-4">
                         <input type="hidden" id="resolve-task-id">
                         
-                        <!-- Dirección de Resolución -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1" for="resolve-direccion">Ubicación de Verificación <span class="text-red-500">*</span></label>
+                        <!-- Selector rápido de Villas del Cuadrante + Dirección -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700" for="resolve-direccion">Ubicación / Punto Verificado <span class="text-red-500">*</span></label>
+                            <select id="resolve-select-villa" onchange="if(this.value){ document.getElementById('resolve-direccion').value = this.value; this.value=''; }" class="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-xs font-semibold text-slate-800">
+                                <option value="">+ Elegir Villa, CESFAM, Colegio o Plaza del cuadrante...</option>
+                            </select>
                             <div class="relative flex">
-                                <input type="text" id="resolve-direccion" class="w-full p-3 rounded-l-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm font-medium" placeholder="Confirmar dirección/GPS..." required>
-                                <button type="button" onclick="getLocation('resolve-direccion')" class="bg-blue-50 border border-l-0 border-slate-300 px-3.5 rounded-r-xl text-blue-700 font-bold hover:bg-blue-100 flex items-center justify-center" title="Obtener GPS">
+                                <input type="text" id="resolve-direccion" class="w-full p-3 rounded-l-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-xs font-semibold" placeholder="Confirmar dirección o capturar GPS..." required>
+                                <button type="button" onclick="getLocation('resolve-direccion')" class="bg-blue-600 border border-blue-600 px-3.5 rounded-r-xl text-white font-bold hover:bg-blue-700 flex items-center justify-center" title="Obtener GPS">
                                     <i class="fa-solid fa-location-dot text-base"></i>
                                 </button>
                             </div>
@@ -559,25 +617,25 @@
 
                         <!-- Fotografía Obligatoria -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Evidencia Fotográfica (Mandatorio) <span class="text-red-500">*</span></label>
-                            <div class="border-2 border-dashed border-red-300 rounded-xl p-5 text-center bg-red-50/50 relative">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Evidencia Fotográfica (Mandatorio para WhatsApp) <span class="text-red-500">*</span></label>
+                            <div class="border-2 border-dashed border-emerald-400 rounded-xl p-5 text-center bg-emerald-50/40 relative">
                                 <input type="file" id="resolve-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'resolve-foto-preview', 'resolve-foto-placeholder')" required>
                                 <div id="resolve-foto-placeholder" class="flex flex-col items-center pointer-events-none">
-                                    <i class="fa-solid fa-camera text-2xl text-red-500 mb-1"></i>
-                                    <span class="text-xs text-red-700 font-extrabold">Capturar Evidencia Fotográfica</span>
-                                    <span class="text-[10px] text-red-500">Requerida para marcar visto bueno</span>
+                                    <i class="fa-solid fa-camera text-2xl text-emerald-600 mb-1"></i>
+                                    <span class="text-xs text-emerald-800 font-extrabold">Capturar Evidencia Fotográfica</span>
+                                    <span class="text-[10px] text-emerald-600">Se adjuntará automáticamente al enviar por WhatsApp</span>
                                 </div>
-                                <img id="resolve-foto-preview" class="hidden max-h-36 mx-auto rounded-lg shadow-sm border border-red-200" alt="Preview">
+                                <img id="resolve-foto-preview" class="hidden max-h-36 mx-auto rounded-lg shadow-sm border border-emerald-200" alt="Preview">
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1" for="resolve-detalle">Observaciones de Inspección</label>
-                            <textarea id="resolve-detalle" rows="2" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm" placeholder="Ej: Visto bueno otorgado. Sin novedades en el punto."></textarea>
+                            <textarea id="resolve-detalle" rows="2" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-xs" placeholder="Ej: Visto bueno otorgado. Sin novedades en el punto."></textarea>
                         </div>
 
-                        <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl mt-2 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                            <i class="fa-solid fa-check-circle text-yellow-400"></i> CONFIRMAR Y MARCAR COMPLETADA
+                        <button type="submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl mt-2 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> ENVIAR VISTO BUENO POR WHATSAPP
                         </button>
                     </form>
                 </div>
@@ -951,12 +1009,12 @@
         const SPREADSHEET_EDIT_URL = 'https://docs.google.com/spreadsheets/d/1E8xewBE2aUIzy0yUfydUc1ljiVWh09WVGwsAooD-_FQ/edit';
         const STORAGE_KEYS = {
             SCRIPT_URL: 'pena_seguro_google_script_url',
-            SYNC_QUEUE: 'pena_seguro_sync_queue',
-            LOCAL_HISTORY: 'pena_seguro_local_history',
-            COMPLETED_TASKS: 'pena_seguro_completed_tasks',
-            USERS_DB: 'pena_seguro_users_db',
-            TASKS_DB: 'pena_seguro_tasks_db',
-            FLEET_DB: 'pena_seguro_fleet_db'
+            SYNC_QUEUE: 'pena_seguro_sync_queue_v3',
+            LOCAL_HISTORY: 'pena_seguro_local_history_v3',
+            COMPLETED_TASKS: 'pena_seguro_completed_tasks_v3',
+            USERS_DB: 'pena_seguro_users_db_v3',
+            TASKS_DB: 'pena_seguro_tasks_db_v3',
+            FLEET_DB: 'pena_seguro_fleet_db_v3'
         };
 
         // --- Central State Object Declaration ---
@@ -965,50 +1023,292 @@
             fechaInicioTurno: '',
             userRut: '',
             userName: '',
+            userCargo: 'INSPECTOR MUNICIPAL',
             userRole: 'INSPECTOR',
             movil: '',
             cuadrante: '',
             kmInicial: 0,
             rangoHorario: 'MANANA',
+            procSelectedVillas: [],
+            procSelectedEmails: new Set(),
             cloudRecentShifts: [],
             cloudRecentProcedures: []
         };
 
-        // --- Base de Datos Inicial de Usuarios (Sincronizada con hoja "Usuarios" en Drive) ---
+        // --- Listado Oficial de Funcionarios Peña Seguro 1410 ---
+        const FUNCIONARIOS_LIST = [
+            'AARON NATANAEL CACERES MORALES',
+            'ADRIAN ANTONIO CIFUENTES MUÑOZ',
+            'ALDO GIORGIO SOTO LLORENTE',
+            'ALEJANDRO JESUS MARAMBIO HERNANDEZ',
+            'CARLOS MAURICIO ATENAS NAVARRO',
+            'CESAR ANTONIO CASTILLO MIRANDA',
+            'DIEGO ANDRES GONZALEZ ATENAS',
+            'DIEGO MAURICIO DISSI CUADRA',
+            'EDUARDO ANDRES VILLAGAS SALAZAR',
+            'ERWIN ORLANDO RODRIGUEZ ERICES',
+            'FELIPE GABRIEL GALLARDO CHACON',
+            'FRANCISCO JAVIER SOLIS GALAZ',
+            'HECTOR ANDRES ALEGRIA CERECEDA',
+            'HECTOR ANTONIO VALENZUELA ZUÑIGA',
+            'HECTOR EDUARDO VIDAL ORELLANA',
+            'HECTOR FELIPE GOMEZ ROMERO',
+            'HERIBERTO ANTONIO CANCINO VASQUEZ',
+            'IGNACIO ALEJANDRO ARRIAGADA LOBOS',
+            'IVAN JONATHAN MICHEL VILLARROEL MADRID',
+            'JAYSON ELIAS ALISTE URTUBIA',
+            'JERSON ANDRES ARANEDA ZAPATA',
+            'JORGE DEL CARMEN GUZMAN OYARZUN',
+            'JOSE ARSENIO CASTILLO HIDALGO',
+            'JOSE LUIS FUENTES MARQUEZ',
+            'JOSE LUIS ROJAS CALDERON',
+            'JUAN DEL TRANSITO HERNANDEZ CISTERNA',
+            'JUAN MANUEL URBINA RIVAS',
+            'JUAN MARCELO HERNANDEZ MELLADO',
+            'LUIS ALBERTO CONTRERAS RICHARD',
+            'LUIS ALBERTO GONZALEZ ESPINOSA',
+            'LUIS ALEJANDRO BENITEZ BENITEZ',
+            'LUIS ALEJANDRO YAÑEZ MAULEN',
+            'LUIS EDUARDO MORALES OSORIO',
+            'LUIS FELIPE LEIVA PAREJA',
+            'LUIS FELIPE PUEBLA CARCAMO',
+            'LUIS FRANCISCO RIOS PALMA',
+            'LUIS MALLEA CONTRERAS',
+            'LUIS RICARDO TORO CONTRERAS',
+            'MANUEL ALEJANDRO CARREÑO RODRIGUEZ',
+            'MANUEL ESTEBAN AGUSTO CABRERA',
+            'MAURICIO ALVARO PAILLAQUEO CARILAO',
+            'MAURICIO ANTONIO AYALA TORO',
+            'MICHAEL ANDRES COPELLI LECAROS',
+            'NICOLAS ANDRES VALENZUELA BERRIOS',
+            'ORLANDO POBLETE VERGARA',
+            'PATRICIO EDUARDO URRA TORRES',
+            'PATRICIO RAUL FUENTEALBA BARRIA',
+            'PLUTARCO ABURTO CERNA',
+            'RODRIGO ALEXIS DEL RIO URRA',
+            'RODRIGO HERNAN GONZALEZ REBOLLEDO',
+            'VANESSA VIRGINIA MERINO RAMIREZ',
+            'VICTOR ALONSO GARCIA DIAZ',
+            'VICTOR FABIAN FERNANDEZ ARAVENA',
+            'YASNA MARIA AGUILA ROBLES',
+            'YENNIFER CAROLINA RIOS LARA'
+        ];
+
+        // --- Base de Datos de Villas, Poblaciones, CESFAM y Colegios por Cuadrante ---
+        const PENAFLOR_QUADRANTS_DATA = {
+            'VOLANTE / TODA LA COMUNA': {
+                name: 'Cobertura Comunal Volante (Jefatura)',
+                villas: [
+                    'Edificio Consistorial / Municipalidad de Peñaflor',
+                    'Central de Cámaras y Operaciones 1410',
+                    'Portería Municipal Parque El Trapiche',
+                    'Portería Municipal Dirección de Operaciones / Aseo y Ornato',
+                    'Portería Municipal DIDECO / Tránsito',
+                    'Centro de Seguridad Comunitario Las Praderas',
+                    'Centro de Seguridad Comunitario Malloco',
+                    'Centro de Seguridad Comunitario Peñaflor Centro',
+                    'CESFAM Peñaflor (Alcalde Luis Araya Cereceda)',
+                    'CESFAM Dr. Fernando Monckeberg (Malloco)',
+                    'SAR Peñaflor / SAPU',
+                    'Plaza de Armas de Peñaflor',
+                    'Plaza de Malloco'
+                ]
+            },
+            '252A': {
+                name: 'Cuadrante 252A — Peñaflor Centro / Norte',
+                villas: [
+                    'Villa San Fernando', 'Población Nueva Peñaflor (JJ.VV. N°66)', 'Villa Santo Tomás',
+                    'Villa Valles del Sol', 'Villa Puertas de Peñaflor', 'Villa El Guindal', 'Villa Los Guindos',
+                    'Villa El Parrón', 'Villa Villarrialto', 'Plaza de Armas de Peñaflor',
+                    'Av. Vicuña Mackenna (Tramo Centro)', 'Av. Caupolicán / Manuel Rodríguez',
+                    'Calle Alcalde Luis Araya Cereceda', 'Calle Costa Rica / Calle Carrera',
+                    'CESFAM Peñaflor', 'SAR Peñaflor', 'Colegio American School',
+                    'Colegio Comercial de Peñaflor', 'Escuela Emilia Láscar', 'Jardín Infantil Puertas de Peñaflor'
+                ]
+            },
+            '252B': {
+                name: 'Cuadrante 252B — Malloquito / Sector Sur',
+                villas: [
+                    'Sector Malloquito', 'Villa Duralitte', 'Población 14 de Julio', 'Villa Los Diamelos Sur',
+                    'Villa El Prado', 'Villa Los Mandarinos', 'Villa El Delfín', 'Av. Malloquito / Av. del Parque',
+                    'Av. Rosales / Calle Salvador Silva', 'Colegio Sonia Plaza Castro', 'Escuela República de Israel'
+                ]
+            },
+            '252C': {
+                name: 'Cuadrante 252C — El Trapiche / Poniente',
+                villas: [
+                    'Parque Municipal El Trapiche', 'Villa Nueva Trapiche', 'Villa Alameda',
+                    'Condominio Townhouse Las Palmeras', 'Av. Las Palmeras', 'Camino El Trapiche',
+                    'Villa Los Aromos', 'Villa Santa Elena', 'Escuela Teresa de Calcuta'
+                ]
+            },
+            '253A': {
+                name: 'Cuadrante 253A — Malloco Norte',
+                villas: [
+                    'Plaza de Malloco', 'Villa Los Profesores', 'Villa Los Bosques 1 y 2',
+                    'Villa Las Lomas de Malloco', 'Villa Rucalemu', 'Villa Las Brisas', 'Villa Palma Real',
+                    'Villa Las Vertientes', 'Calle Toribio Larraín / La Mañana Interior',
+                    'CESFAM Dr. Fernando Monckeberg', 'Liceo Peñaflor / Escuela Malloco'
+                ]
+            },
+            '253B': {
+                name: 'Cuadrante 253B — Malloco Sur / Las Praderas',
+                villas: [
+                    'Población Las Praderas (Sector Amarillo)', 'Centro de Seguridad Comunitario Las Praderas',
+                    'Villa Berlín', 'Villa Víctor Domingo Silva', 'Villa Gabriela Mistral', 'Villa Fresia',
+                    'Villa Eliana del Pin', 'Sector Cruz del Sur / Rodrigo de Triana',
+                    'Av. La Paz / Calle Punta Arenas / Balmaceda / Miraflores',
+                    'Pasaje Ruda / Troncal / Tilo / Canela', 'Escuela Brasil', 'Colegio Altazor'
+                ]
+            },
+            'SRA': {
+                name: 'Cuadrante SRA — Subsector Rural Pelvín',
+                villas: ['Sector Pelvín', 'Camino a Pelvín', 'Parcelación Santa Rosa de Pelvín', 'Villa Rural Pelvín', 'Escuela Rural Pelvín']
+            },
+            'SRB': {
+                name: 'Cuadrante SRB — Subsector Rural Peñaflor Alto',
+                villas: ['Sector Peñaflor Alto', 'Camino El Guanaco', 'Parcelaciones Peñaflor Norte', 'Sector La Rinconada']
+            },
+            'SRC': {
+                name: 'Cuadrante SRC — Subsector Rural Camino Valparaíso',
+                villas: ['Camino a Valparaíso (Ruta G-78)', 'Sector Santa Cruz', 'Parcelaciones Camino Valparaíso', 'Calle Bilbao / Calle Florida']
+            },
+            'SRA1': {
+                name: 'Cuadrante SRA1 — Subsector Especial / Mallarauco',
+                villas: ['Cuesta de Mallarauco', 'Sector Los Polacos', 'Sector El Sotillo', 'Sector San Javier', 'Parcelaciones Agrícolas Poniente']
+            }
+        };
+
+        // --- Directorio de Correos Municipales ---
+        const EMAIL_DIRECTORIES = [
+            {
+                id: 'incivilidades',
+                department: 'Oficina de Incivilidades',
+                emails: [
+                    { name: 'Marco Serrano', email: 'marco.serrano@penaflor.cl' },
+                    { name: 'Alejandra Arenas', email: 'alejandra.arenas@penaflor.cl' }
+                ]
+            },
+            {
+                id: 'aseo_ornato',
+                department: 'Dirección de Aseo y Ornato',
+                emails: [
+                    { name: 'Luis Muñoz', email: 'luis.munoz@penaflor.cl' },
+                    { name: 'Jaime Aros', email: 'jaime.aros@penaflor.cl' },
+                    { name: 'Eduardo Muñoz', email: 'eduardo.munoz@penaflor.cl' },
+                    { name: 'Eduardo Oyarce', email: 'eduardo.oyarce@penaflor.cl' }
+                ]
+            },
+            {
+                id: 'transito',
+                department: 'Dirección de Tránsito',
+                emails: [
+                    { name: 'Pablo Cancino', email: 'pablo.cancino@penaflor.cl' },
+                    { name: 'Pedro Piña', email: 'pedro.pina@penaflor.cl' }
+                ]
+            },
+            {
+                id: 'obras',
+                department: 'Dirección de Obras Municipales',
+                emails: [
+                    { name: 'Marcela Brossard', email: 'marcela.brossard@penaflor.cl' },
+                    { name: 'Jorge Delgado', email: 'jorge.delgado@penaflor.cl' }
+                ]
+            },
+            {
+                id: 'seguridad_publica',
+                department: 'Seguridad Pública',
+                emails: [
+                    { name: 'Álvaro Navarro', email: 'alvaro.navarro@penaflor.cl' },
+                    { name: 'Juan Plaza', email: 'juan.plaza@penaflor.cl' },
+                    { name: 'Cristopher Maciel', email: 'cristopher.maciel@penaflor.cl' }
+                ]
+            }
+        ];
+
+        // --- Base de Datos Inicial de Usuarios (55 Funcionarios + Admins) ---
         const DEFAULT_USERS = [
-            { rut: 'admin', nombre: 'Administrador General 1410', cargo: 'Jefatura Operaciones', password: '1410', rol: 'ADMIN', estado: 'ACTIVO' },
-            { rut: '11.111.111-1', nombre: 'Cristopher Maciel', cargo: 'Coordinador Plataforma', password: '1410', rol: 'ADMIN', estado: 'ACTIVO' },
-            { rut: '15.432.876-K', nombre: 'Inspector Turno 1', cargo: 'Inspector Municipal', password: '1234', rol: 'INSPECTOR', estado: 'ACTIVO' },
-            { rut: '16.789.123-4', nombre: 'Inspector Motorizado 1', cargo: 'Inspector Motorizado', password: '1234', rol: 'INSPECTOR', estado: 'ACTIVO' }
+            { rut: 'admin', nombre: 'ADMINISTRADOR GENERAL 1410', cargo: 'JEFATURA OPERACIONES', password: '1410', rol: 'ADMIN', estado: 'ACTIVO' },
+            { rut: 'cristopher.maciel', nombre: 'CRISTOPHER MACIEL', cargo: 'COORDINADOR PLATAFORMA', password: '1410', rol: 'ADMIN', estado: 'ACTIVO' },
+            ...FUNCIONARIOS_LIST.map(f => ({
+                rut: f,
+                nombre: f,
+                cargo: 'INSPECTOR MUNICIPAL',
+                password: '1410',
+                rol: 'INSPECTOR',
+                estado: 'ACTIVO'
+            }))
         ];
 
-        // --- Catálogo Inicial de Tareas (Sincronizado con hoja "Catalogo_Tareas" en Drive) ---
+        // --- Catálogo Completo de Tareas Diarias Programadas (Sincronizado con Excel Drive) ---
         const DEFAULT_TASKS_CATALOG = [
-            { id: 'm_sra1_1', rango: 'MANANA', cuadrante: 'SRA1', desc: 'Fiscalización en Zona Escolar y Cruce Peatonal Balmaceda', estado: 'ACTIVA' },
-            { id: 'm_sra1_2', rango: 'MANANA', cuadrante: 'SRA1', desc: 'Ronda preventiva en comercio céntrico y paraderos', estado: 'ACTIVA' },
-            { id: 'm_sra1_3', rango: 'MANANA', cuadrante: 'SRA1', desc: 'Verificación de punto fijo en Plaza de Peñaflor', estado: 'ACTIVA' },
-            { id: 'm_252a_1', rango: 'MANANA', cuadrante: '252A', desc: 'Inspección de paraderos de locomoción colectiva', estado: 'ACTIVA' },
-            { id: 'm_252a_2', rango: 'MANANA', cuadrante: '252A', desc: 'Patrullaje preventivo en Villa Las Palmeras', estado: 'ACTIVA' },
-            { id: 'm_def_1', rango: 'MANANA', cuadrante: 'TODOS', desc: 'Patrullaje preventivo de cuadrante', estado: 'ACTIVA' },
-            { id: 'm_def_2', rango: 'MANANA', cuadrante: 'TODOS', desc: 'Fiscalización vehicular en punto crítico', estado: 'ACTIVA' },
-            { id: 't_sra1_1', rango: 'TARDE', cuadrante: 'SRA1', desc: 'Control de comercio ambulante no autorizado en Av. Balmaceda', estado: 'ACTIVA' },
-            { id: 't_sra1_2', rango: 'TARDE', cuadrante: 'SRA1', desc: 'Ronda en plazas cívicas y espacio público', estado: 'ACTIVA' },
-            { id: 't_sra1_3', rango: 'TARDE', cuadrante: 'SRA1', desc: 'Revisión de luminarias en eje principal', estado: 'ACTIVA' },
-            { id: 't_def_1', rango: 'TARDE', cuadrante: 'TODOS', desc: 'Ronda en zonas residenciales y parques', estado: 'ACTIVA' },
-            { id: 't_def_2', rango: 'TARDE', cuadrante: 'TODOS', desc: 'Monitoreo de focos de acumulación de basura', estado: 'ACTIVA' },
-            { id: 'n_sra1_1', rango: 'NOCHE', cuadrante: 'SRA1', desc: 'Vigilancia especial en botillerías y locales nocturnos', estado: 'ACTIVA' },
-            { id: 'n_sra1_2', rango: 'NOCHE', cuadrante: 'SRA1', desc: 'Fiscalización de rucos y personas en situación de calle', estado: 'ACTIVA' },
-            { id: 'n_sra1_3', rango: 'NOCHE', cuadrante: 'SRA1', desc: 'Patrullaje con baliza encendida por arterias principales', estado: 'ACTIVA' },
-            { id: 'n_def_1', rango: 'NOCHE', cuadrante: 'TODOS', desc: 'Patrullaje nocturno de alta visibilidad', estado: 'ACTIVA' },
-            { id: 'n_def_2', rango: 'NOCHE', cuadrante: 'TODOS', desc: 'Verificación de cierres perimetrales y luminarias apagadas', estado: 'ACTIVA' }
+            // MAÑANA
+            { id: 'm_252a_1', rango: 'MANANA', cuadrante: '252A', desc: '[07:15 - 08:30 | Punto Fijo] Mantener flujo de tránsito expedito en Manuel Rodríguez con Av. Caupolicán (2 Motoristas).', estado: 'ACTIVA' },
+            { id: 'm_252a_2', rango: 'MANANA', cuadrante: '252A', desc: '[07:15 - 08:30 | Fiscalización] Fiscalización afuera de Colegio American School para prevenir estacionamiento de apoderados en calle Caupolicán.', estado: 'ACTIVA' },
+            { id: 'm_252a_3', rango: 'MANANA', cuadrante: '252A', desc: '[07:30 - 08:00 | Vigilancia] Presencia de Seguridad Municipal en ingreso de estudiantes en Colegio Comercial de Peñaflor.', estado: 'ACTIVA' },
+            { id: 'm_252a_4', rango: 'MANANA', cuadrante: '252A', desc: '[08:00 - 15:00 | Patrullaje] Fiscalizar calle Costa Rica por vehículos estacionados sobre platabanda y salida de domicilios, cursar partes.', estado: 'ACTIVA' },
+            { id: 'm_252a_5', rango: 'MANANA', cuadrante: '252A', desc: '[Turno | Punto Fijo] Bancos Santander, Chile, Estado y ServiEstado cubiertos por Tangos y Móviles.', estado: 'ACTIVA' },
+            { id: 'm_252a_6', rango: 'MANANA', cuadrante: '252A', desc: '[Turno Miércoles | Transporte] Traslado de tallerista Margarita desde Villa San Fernando, El Comendador 993.', estado: 'ACTIVA' },
+            { id: 'm_252b_1', rango: 'MANANA', cuadrante: '252B', desc: '[11:00 | Vigilancia] Fiscalización y rondas continuas por sector cancha Los Diamelos Sur por denuncia vecinal de consumo de alcohol y drogas.', estado: 'ACTIVA' },
+            { id: 'm_252b_2', rango: 'MANANA', cuadrante: '252B', desc: '[Turno | Vigilancia] Rondas preventivas en Colegio Sonia Plaza Castro por alteración del orden público y comercio no autorizado.', estado: 'ACTIVA' },
+            { id: 'm_252c_1', rango: 'MANANA', cuadrante: '252C', desc: '[09:00 - 13:00 | Patrullaje] Jardín Infantil Puertas de Peñaflor: rondas preventivas de 09:00 a 13:00 hrs.', estado: 'ACTIVA' },
+            { id: 'm_252c_2', rango: 'MANANA', cuadrante: '252C', desc: '[12:00 | Patrullaje] Patrullaje preventivo intensivo en Av. Las Palmeras N°180 Casa C (medida de protección CAVD).', estado: 'ACTIVA' },
+            { id: 'm_252c_3', rango: 'MANANA', cuadrante: '252C', desc: '[12:30 | Vigilancia] Patrullajes preventivos y vigilancia especial en Villa Alameda, dejar registro en bitácora.', estado: 'ACTIVA' },
+            { id: 'm_253a_1', rango: 'MANANA', cuadrante: '253A', desc: '[07:00 - 08:00 | Punto Fijo] Mantener punto fijo de 07:00 a 08:00 hrs frente al Sector Amarillo Las Praderas.', estado: 'ACTIVA' },
+            { id: 'm_253a_2', rango: 'MANANA', cuadrante: '253A', desc: '[08:00 - 14:30 Sábado | Punto Fijo] Mantener punto fijo en Feria de Las Praderas los días sábado hasta su término.', estado: 'ACTIVA' },
+            { id: 'm_253a_3', rango: 'MANANA', cuadrante: '253A', desc: '[Turno | Patrullaje] Los Bosques 2: realizar patrullajes preventivos durante el turno por solicitud de Alcaldía.', estado: 'ACTIVA' },
+            { id: 'm_253b_1', rango: 'MANANA', cuadrante: '253B', desc: '[11:20 Sábado | Vigilancia] Multicancha Rodrigo de Triana al lado de la sede: rondas por talleres infantiles los días sábado.', estado: 'ACTIVA' },
+            { id: 'm_253b_2', rango: 'MANANA', cuadrante: '253B', desc: '[08:30 - 15:00 | Patrullaje] Sector Amarillo (Las Praderas): patrullaje permanente, descender del móvil y entrevistarse con el guardia del centro.', estado: 'ACTIVA' },
+            { id: 'm_253b_3', rango: 'MANANA', cuadrante: '253B', desc: '[Turno | Fiscalización] Fiscalizar vehículos mal estacionados en tramos Punta Arenas - Balmaceda y Punta Arenas - Miraflores.', estado: 'ACTIVA' },
+            { id: 'm_253b_4', rango: 'MANANA', cuadrante: '253B', desc: '[Turno | Patrullaje] Patrullajes preventivos y entrevistas de infantería con locatarios de florerías sector Av. La Paz.', estado: 'ACTIVA' },
+            { id: 'm_gen_1', rango: 'MANANA', cuadrante: 'TODOS', desc: '[11:00 | Vigilancia General] Ronda de plazas y multicanchas (El Parrón, Los Guindos, El Guindal, El Delfín, Malloquito, El Prado, Los Mandarinos, Berlín, Malloco, Las Lomas, Rucalemu, Las Brisas, Los Profesores). Retiro de rucos/incivilidades con foto.', estado: 'ACTIVA' },
+            { id: 'm_gen_2', rango: 'MANANA', cuadrante: 'TODOS', desc: '[12:00 | Patrullaje General] Calle Augusto Espinoza N°52, Villarrialto: fiscalización por vehículos mal estacionados (1 vez al día).', estado: 'ACTIVA' },
+            { id: 'm_gen_3', rango: 'MANANA', cuadrante: 'TODOS', desc: '[Turno | Patrullaje General] Pasar por todos los Centros de Salud Municipal, anotar registro en libro de guardia y enviar foto a Central.', estado: 'ACTIVA' },
+            { id: 'm_gen_4', rango: 'MANANA', cuadrante: 'TODOS', desc: '[Turno | Patrullaje General] Labor preventiva en colegios y liceos del recorrido, entrevistarse con portería y recordar fono 1410.', estado: 'ACTIVA' },
+            { id: 'm_gen_5', rango: 'MANANA', cuadrante: 'TODOS', desc: '[Turno | Fiscalización General] Fiscalización de Ferias Libres de la comuna.', estado: 'ACTIVA' },
+            // TARDE
+            { id: 't_252a_1', rango: 'TARDE', cuadrante: '252A', desc: '[15:40 | Escolta] Retiro de fondos Farmacia a Tesorería con apoyo de Tango y registro en bitácora de farmacia.', estado: 'ACTIVA' },
+            { id: 't_252a_2', rango: 'TARDE', cuadrante: '252A', desc: '[16:00 - 16:30 | Patrullaje] Colegio Comercial de Peñaflor: presencia de seguridad municipal en salida de estudiantes.', estado: 'ACTIVA' },
+            { id: 't_252a_3', rango: 'TARDE', cuadrante: '252A', desc: '[18:10 - 21:00 Lunes | Patrullaje] Vigilancia especial en cancha de Nueva Trapiche por práctica de patinaje artístico.', estado: 'ACTIVA' },
+            { id: 't_252a_4', rango: 'TARDE', cuadrante: '252A', desc: '[19:00 - 22:00 | Vigilancia] Rondas preventivas JJ.VV. N°66 Nueva Peñaflor, plaza costado jardín infantil y skate park.', estado: 'ACTIVA' },
+            { id: 't_252a_5', rango: 'TARDE', cuadrante: '252A', desc: '[Turno | Patrullaje] Ronda preventiva Villa Santo Tomás, Pasaje Santa Ana y Las Palmeras; recorrido pasajes Valles del Sol.', estado: 'ACTIVA' },
+            { id: 't_252a_6', rango: 'TARDE', cuadrante: '252A', desc: '[Turno | Vigilancia] Vigilancia preventiva en sede entrada Puertas de Peñaflor, inspeccionar interior y enviar fotografías.', estado: 'ACTIVA' },
+            { id: 't_252b_1', rango: 'TARDE', cuadrante: '252B', desc: '[18:30 | Vigilancia] Fiscalización y rondas continuas sector cancha Los Diamelos Sur por denuncia de consumo de alcohol y drogas.', estado: 'ACTIVA' },
+            { id: 't_252b_2', rango: 'TARDE', cuadrante: '252B', desc: '[Turno | Vigilancia] Av. del Parque y pasajes interiores por sospechosos merodeando los alrededores.', estado: 'ACTIVA' },
+            { id: 't_252b_3', rango: 'TARDE', cuadrante: '252B', desc: '[Turno | Patrullaje] 14 de Julio con Av. Malloquito y Villa Duralitte: rondas preventivas con balizas por robos de medidores.', estado: 'ACTIVA' },
+            { id: 't_252c_1', rango: 'TARDE', cuadrante: '252C', desc: '[16:45 | Vigilancia] Patrullajes preventivos y vigilancia especial en Villa Alameda, dejar registro en bitácora.', estado: 'ACTIVA' },
+            { id: 't_252c_2', rango: 'TARDE', cuadrante: '252C', desc: '[19:00 | Patrullaje] Patrullaje preventivo intensivo en Av. Las Palmeras N°180 Casa C y sitio eriazo costado Condominio Townhouse.', estado: 'ACTIVA' },
+            { id: 't_253a_1', rango: 'TARDE', cuadrante: '253A', desc: '[Turno | Patrullaje] Villa Los Profesores (ronda con aparato sonoro) y Los Bosques 2 durante todo el turno.', estado: 'ACTIVA' },
+            { id: 't_253b_1', rango: 'TARDE', cuadrante: '253B', desc: '[15:30 | Vigilancia] Ronda preventiva por Cruz del Sur con Calle 3 #997 (medida de protección).', estado: 'ACTIVA' },
+            { id: 't_253b_2', rango: 'TARDE', cuadrante: '253B', desc: '[16:15 Sábado | Patrullaje] Multicancha Rodrigo de Triana: rondas durante la tarde por talleres infantiles desde las 16:00 hrs.', estado: 'ACTIVA' },
+            { id: 't_253b_3', rango: 'TARDE', cuadrante: '253B', desc: '[22:00 - 22:30 | Vigilancia] Resguardar por 30 minutos la salida vespertina de estudiantes de Escuela Brasil.', estado: 'ACTIVA' },
+            { id: 't_253b_4', rango: 'TARDE', cuadrante: '253B', desc: '[Turno | Vigilancia] Resguardar salida de estudiantes de Colegio Altazor.', estado: 'ACTIVA' },
+            { id: 't_253b_5', rango: 'TARDE', cuadrante: '253B', desc: '[Turno | Patrullaje] Vigilancia preventiva en Pasaje Ruda, Troncal, Tilo, Canela y plaza del sector; fiscalización Punta Arenas.', estado: 'ACTIVA' },
+            { id: 't_gen_1', rango: 'TARDE', cuadrante: 'TODOS', desc: '[19:00 | Vigilancia General] Ronda general de plazas y multicanchas con respaldo fotográfico.', estado: 'ACTIVA' },
+            { id: 't_gen_2', rango: 'TARDE', cuadrante: 'TODOS', desc: '[Turno | Patrullaje General] Pasar por Centros de Salud Municipal y registrar asistencia en bitácora de guardia.', estado: 'ACTIVA' },
+            // NOCHE
+            { id: 'n_252a_1', rango: 'NOCHE', cuadrante: '252A', desc: '[05:00 | Patrullaje] El Guindal frente a Susaron, vigilancia paradero frente a Bokados, retorno por calle Carrera y Alcalde Luis Araya.', estado: 'ACTIVA' },
+            { id: 'n_252a_2', rango: 'NOCHE', cuadrante: '252A', desc: '[05:05 | Patrullaje] Alcalde Luis Araya Cereceda: resguardo de paradero Emilia Láscar / semáforo.', estado: 'ACTIVA' },
+            { id: 'n_252a_3', rango: 'NOCHE', cuadrante: '252A', desc: '[Turno | Vigilancia] Inspección interior sede entrada Puertas de Peñaflor (enviar fotografías) y entrevista con rondines Jardín Infantil.', estado: 'ACTIVA' },
+            { id: 'n_252b_1', rango: 'NOCHE', cuadrante: '252B', desc: '[23:30 Sáb/Dom | Vigilancia] Fiscalización y rondas continuas sector cancha Los Diamelos Sur por denuncia vecinal de alcohol y drogas.', estado: 'ACTIVA' },
+            { id: 'n_252b_2', rango: 'NOCHE', cuadrante: '252B', desc: '[Turno | Patrullaje] Rondas constantes en Malloquito, Villa Duralitte y 14 de Julio entre Larraín y Salvador Silva por robos.', estado: 'ACTIVA' },
+            { id: 'n_252c_1', rango: 'NOCHE', cuadrante: '252C', desc: '[Turno | Vigilancia] Vigilancia especial en Villa Alameda y foco preventivo en Av. Las Palmeras 180 (sitio eriazo costado Townhouse).', estado: 'ACTIVA' },
+            { id: 'n_253a_1', rango: 'NOCHE', cuadrante: '253A', desc: '[Turno | Patrullaje] Rondas preventivas por Toribio Larraín, Palma Real, Las Vertientes, La Mañana Interior y Los Bosques 2.', estado: 'ACTIVA' },
+            { id: 'n_253b_1', rango: 'NOCHE', cuadrante: '253B', desc: '[Turno | Patrullaje] Rondas Villa Víctor Domingo Silva, Gabriela Mistral, Fresia, Eliana del Pin, Pasaje Ruda, Troncal, Tilo y Canela.', estado: 'ACTIVA' },
+            { id: 'n_sra1_1', rango: 'NOCHE', cuadrante: 'SRA1', desc: '[Turno | Patrullaje] Ronda rural nocturna por Cuesta de Mallarauco, Los Polacos, El Sotillo y San Javier.', estado: 'ACTIVA' },
+            { id: 'n_gen_1', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[23:45 | Transporte General] Traslado de Omar Martínez Muñoz hasta su domicilio (lunes a viernes 23:45 - 00:00 hrs).', estado: 'ACTIVA' },
+            { id: 'n_gen_2', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[01:00 | Patrullaje General] Ronda nocturna de plazas y multicanchas con respaldo fotográfico.', estado: 'ACTIVA' },
+            { id: 'n_gen_3', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[05:15 | Patrullaje General] Paraderos tramo Malloquito desde Caupolicán hasta Eduardo Yáñez por Av. Rosales.', estado: 'ACTIVA' },
+            { id: 'n_gen_4', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[05:20 | Patrullaje General] Paraderos de Vicuña Mackenna dirección Peñaflor desde Bilbao.', estado: 'ACTIVA' },
+            { id: 'n_gen_5', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[05:25 | Patrullaje General] Paraderos de Bilbao hacia Eduardo Yáñez retornando por calle Florida a Vicuña Mackenna / Toribio Larraín.', estado: 'ACTIVA' },
+            { id: 'n_gen_6', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[Turno | Patrullaje General] Rondas permanentes Plaza de Peñaflor, Plaza de Malloco, paraderos Irarrázaval/Caupolicán y Centros de Salud Municipal.', estado: 'ACTIVA' }
         ];
 
-        // --- Flota Inicial (Sincronizada con hoja "Config_Flota" en Drive) ---
+        // --- Flota Oficial (MÓVIL 0-15, CAMIONETA 1-6, TANGO 1-9) ---
         const DEFAULT_FLEET = [
-            ...Array.from({ length: 20 }, (_, i) => ({ id: `MOV-${i+1}`, nombre: `Móvil ${i+1}`, tipo: 'Móvil', patente: `PF-MOV-${i+1}`, estado: 'OPERATIVO', cuadranteBase: 'SRA1' })),
-            { id: 'CAM-1', nombre: 'Camioneta 1', tipo: 'Camioneta', patente: 'PF-CAM-01', estado: 'OPERATIVO', cuadranteBase: 'SRB' },
-            { id: 'CAM-2', nombre: 'Camioneta 2', tipo: 'Camioneta', patente: 'PF-CAM-02', estado: 'OPERATIVO', cuadranteBase: '253A' },
-            ...Array.from({ length: 9 }, (_, i) => ({ id: `MOT-${i+1}`, nombre: `Motocicleta ${i+1}`, tipo: 'Motocicleta', patente: `PF-MOT-${i+1}`, estado: 'OPERATIVO', cuadranteBase: 'SRA1' }))
+            ...Array.from({ length: 16 }, (_, i) => ({ id: `MOV-${i}`, nombre: `MÓVIL ${i}`, tipo: 'Móvil', patente: `PF-MOV-${i}`, estado: 'OPERATIVO', cuadranteBase: '252A' })),
+            ...Array.from({ length: 6 }, (_, i) => ({ id: `CAM-${i+1}`, nombre: `CAMIONETA ${i+1}`, tipo: 'Camioneta', patente: `PF-CAM-${i+1}`, estado: 'OPERATIVO', cuadranteBase: 'SRB' })),
+            ...Array.from({ length: 9 }, (_, i) => ({ id: `TAN-${i+1}`, nombre: `TANGO ${i+1}`, tipo: 'Motocicleta', patente: `PF-TAN-${i+1}`, estado: 'OPERATIVO', cuadranteBase: '252A' }))
         ];
 
         function getUsersDB() {
@@ -1079,7 +1379,8 @@
 
         // --- Generate Dynamic Exhaustive Checklist based on Vehicle Type ---
         function generateChecklist() {
-            const isMoto = AppState.movil.toLowerCase().includes('moto');
+            const movLower = (AppState.movil || '').toLowerCase();
+            const isMoto = movLower.includes('moto') || movLower.includes('tango');
             const displayEl = document.getElementById('checklist-vehiculo-display');
             if(displayEl) displayEl.innerText = `${AppState.movil} • Cuadrante ${AppState.cuadrante}`;
             
@@ -1394,6 +1695,39 @@
             }
         }
 
+        function normalizeSearchText(str) {
+            return String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        function populateLoginFuncionariosDropdown() {
+            const select = document.getElementById('login-select-funcionario');
+            const filterInput = document.getElementById('login-filter-funcionario');
+            if (!select) return;
+
+            const q = normalizeSearchText(filterInput ? filterInput.value.trim() : '');
+            const users = getUsersDB().filter(u => u.estado !== 'INACTIVO');
+            const matches = users.filter(u =>
+                normalizeSearchText(u.nombre).includes(q) ||
+                normalizeSearchText(u.rut).includes(q)
+            );
+
+            select.innerHTML = `<option value="">-- Elija funcionario (${matches.length} disponibles) --</option>` +
+                matches.map(u => `<option value="${u.rut}">${u.nombre} ${u.rol === 'ADMIN' ? '(ADMIN)' : ''}</option>`).join('');
+
+            if (matches.length === 1 && q.length > 1) {
+                select.value = matches[0].rut;
+                onSelectLoginFuncionario(matches[0].rut);
+            }
+        }
+
+        function onSelectLoginFuncionario(val) {
+            if (!val) return;
+            const rutEl = document.getElementById('rut');
+            const passEl = document.getElementById('password');
+            if (rutEl) rutEl.value = val;
+            if (passEl && !passEl.value) passEl.value = '1410';
+        }
+
         function fillDemoLogin(rut, pass) {
             document.getElementById('rut').value = rut;
             document.getElementById('password').value = pass;
@@ -1403,6 +1737,12 @@
         function openNewProcedure() {
             resetPhotoPreview('foto-preview', 'foto-placeholder');
             document.getElementById('form-procedure').reset();
+            AppState.procSelectedVillas = [];
+            onProcTipoChange();
+            populateProcVillasDropdown();
+            renderProcVillasChips();
+            renderProcEmailDirectories();
+            updateProcWhatsAppPreview();
             navigateTo('view-procedure');
         }
 
@@ -1419,6 +1759,7 @@
                 resetPhotoPreview('resolve-foto-preview', 'resolve-foto-placeholder');
                 document.getElementById('resolve-task-title').innerText = task.desc;
                 document.getElementById('resolve-task-id').value = task.id;
+                populateResolveVillasDropdown();
                 navigateTo('view-task-resolve');
             }
         }
@@ -2274,6 +2615,278 @@
             }
         });
 
+        // ========================================================================
+        // FUNCIONES DE VILLAS, CORREOS Y DESPACHO DIRECTO WHATSAPP (PROCEDIMIENTOS Y TAREAS)
+        // ========================================================================
+        function onProcTipoChange() {
+            const tipo = document.getElementById('proc-tipo')?.value || '';
+            const subFisc = document.getElementById('proc-sub-fiscalizacion');
+            const subInci = document.getElementById('proc-sub-incivilidades');
+            if (subFisc) subFisc.classList.toggle('hidden', tipo !== 'FISCALIZACIÓN');
+            if (subInci) subInci.classList.toggle('hidden', tipo !== 'REPORTE DE INCIVILIDADES');
+            updateProcWhatsAppPreview();
+        }
+
+        function populateProcVillasDropdown() {
+            const select = document.getElementById('proc-select-villa');
+            const filterEl = document.getElementById('proc-filter-villas');
+            if (!select) return;
+
+            const activeQuad = AppState.cuadrante || '252A';
+            const q = normalizeSearchText(filterEl ? filterEl.value.trim() : '');
+
+            const orderedKeys = Object.keys(PENAFLOR_QUADRANTS_DATA).sort((a, b) => {
+                if (a === activeQuad) return -1;
+                if (b === activeQuad) return 1;
+                return 0;
+            });
+
+            let html = `<option value="">+ Agregar Villa, Población, CESFAM o Colegio...</option>`;
+            orderedKeys.forEach(quadKey => {
+                const quadObj = PENAFLOR_QUADRANTS_DATA[quadKey];
+                const matches = quadObj.villas.filter(v => !q || normalizeSearchText(v).includes(q) || normalizeSearchText(quadObj.name).includes(q));
+                if (matches.length === 0) return;
+                const groupLabel = quadKey === activeQuad ? `★ ${quadObj.name} (Cuadrante Activo)` : quadObj.name;
+                html += `<optgroup label="${groupLabel}">` +
+                    matches.map(v => `<option value="${v}">${AppState.procSelectedVillas.includes(v) ? '✓ ' + v : v}</option>`).join('') +
+                    `</optgroup>`;
+            });
+            select.innerHTML = html;
+        }
+
+        function populateResolveVillasDropdown() {
+            const select = document.getElementById('resolve-select-villa');
+            if (!select) return;
+            const activeQuad = AppState.cuadrante || '252A';
+            const orderedKeys = Object.keys(PENAFLOR_QUADRANTS_DATA).sort((a, b) => (a === activeQuad ? -1 : b === activeQuad ? 1 : 0));
+            let html = `<option value="">+ Elegir Villa, CESFAM, Colegio o Plaza del cuadrante...</option>`;
+            orderedKeys.forEach(quadKey => {
+                const quadObj = PENAFLOR_QUADRANTS_DATA[quadKey];
+                const groupLabel = quadKey === activeQuad ? `★ ${quadObj.name} (Cuadrante Activo)` : quadObj.name;
+                html += `<optgroup label="${groupLabel}">` +
+                    quadObj.villas.map(v => `<option value="${v}">${v}</option>`).join('') +
+                    `</optgroup>`;
+            });
+            select.innerHTML = html;
+        }
+
+        function addProcVilla(villa) {
+            if (!villa) return;
+            if (!AppState.procSelectedVillas.includes(villa)) {
+                AppState.procSelectedVillas.push(villa);
+                document.getElementById('proc-direccion').value = AppState.procSelectedVillas.join(' / ');
+            }
+            document.getElementById('proc-select-villa').value = '';
+            populateProcVillasDropdown();
+            renderProcVillasChips();
+            updateProcWhatsAppPreview();
+        }
+
+        function removeProcVilla(idx) {
+            AppState.procSelectedVillas.splice(idx, 1);
+            document.getElementById('proc-direccion').value = AppState.procSelectedVillas.join(' / ');
+            populateProcVillasDropdown();
+            renderProcVillasChips();
+            updateProcWhatsAppPreview();
+        }
+
+        function clearProcVillas() {
+            AppState.procSelectedVillas = [];
+            document.getElementById('proc-direccion').value = '';
+            populateProcVillasDropdown();
+            renderProcVillasChips();
+            updateProcWhatsAppPreview();
+        }
+
+        function renderProcVillasChips() {
+            const container = document.getElementById('proc-villas-chips');
+            const btnClear = document.getElementById('btn-clear-proc-villas');
+            if (btnClear) btnClear.classList.toggle('hidden', AppState.procSelectedVillas.length === 0);
+            if (!container) return;
+            container.innerHTML = AppState.procSelectedVillas.map((v, i) => `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-[#1e3a8a] text-[11px] font-bold border border-blue-200">
+                    <span>${v}</span>
+                    <button type="button" onclick="removeProcVilla(${i})" class="w-4 h-4 rounded-full bg-blue-200 hover:bg-red-500 hover:text-white flex items-center justify-center text-[10px] font-black">×</button>
+                </span>
+            `).join('');
+        }
+
+        function renderProcEmailDirectories() {
+            const container = document.getElementById('proc-email-directories');
+            const badge = document.getElementById('proc-email-count');
+            if (!container) return;
+
+            container.innerHTML = EMAIL_DIRECTORIES.map(dir => {
+                const allSelected = dir.emails.every(e => AppState.procSelectedEmails.has(e.email));
+                return `
+                    <div class="rounded-xl bg-white border border-slate-200 p-2.5 space-y-1.5">
+                        <label class="inline-flex items-center gap-2 text-xs font-extrabold text-[#1e3a8a] cursor-pointer">
+                            <input type="checkbox" ${allSelected ? 'checked' : ''} onchange="toggleProcDeptEmails('${dir.id}', this.checked)" class="rounded text-[#1e3a8a]">
+                            <span>${dir.department}</span>
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 pl-5">
+                            ${dir.emails.map(p => `
+                                <label class="inline-flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer truncate">
+                                    <input type="checkbox" ${AppState.procSelectedEmails.has(p.email) ? 'checked' : ''} onchange="toggleProcSingleEmail('${p.email}', this.checked)" class="rounded text-[#1e3a8a]">
+                                    <span class="truncate"><strong>${p.name}</strong> <span class="text-slate-400">(${p.email.split('@')[0]})</span></span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (badge) {
+                badge.innerText = `${AppState.procSelectedEmails.size} seleccionado(s)`;
+            }
+        }
+
+        function toggleProcDeptEmails(deptId, checked) {
+            const dir = EMAIL_DIRECTORIES.find(d => d.id === deptId);
+            if (!dir) return;
+            dir.emails.forEach(e => {
+                if (checked) AppState.procSelectedEmails.add(e.email);
+                else AppState.procSelectedEmails.delete(e.email);
+            });
+            renderProcEmailDirectories();
+        }
+
+        function toggleProcSingleEmail(email, checked) {
+            if (checked) AppState.procSelectedEmails.add(email);
+            else AppState.procSelectedEmails.delete(email);
+            renderProcEmailDirectories();
+        }
+
+        function buildProcedureFormattedMessage(forWhatsApp = true) {
+            const b = forWhatsApp ? '*' : '';
+            const shiftLabels = { 'MANANA': 'MAÑANA (07:00 A 15:00)', 'TARDE': 'TARDE (15:00 A 23:00)', 'NOCHE': 'NOCHE (23:00 A 07:00)' };
+            const nombre = AppState.userName || AppState.userRut || '[FUNCIONARIO]';
+            const movil = AppState.movil || '[SIN MÓVIL]';
+            const cuadrante = AppState.cuadrante || '[SIN CUADRANTE]';
+            const cargo = AppState.userCargo || 'INSPECTOR MUNICIPAL';
+            const turno = shiftLabels[AppState.rangoHorario] || AppState.rangoHorario;
+            const fecha = new Date().toLocaleString('es-CL');
+            const tipoProc = document.getElementById('proc-tipo')?.value || 'PATRULLAJE PREVENTIVO';
+            const calle = (document.getElementById('proc-direccion')?.value || '').trim() || '[SIN DIRECCIÓN / SECTOR]';
+            const desc = (document.getElementById('proc-detalle')?.value || '').trim() || '[SIN DESCRIPCIÓN]';
+            const hasFoto = !!(document.getElementById('proc-foto')?.files?.[0]);
+
+            const headerTitle = cuadrante === 'VOLANTE / TODA LA COMUNA'
+                ? 'REPORTE A JEFATURA - PEÑA SEGURO 1410'
+                : `REPORTE OPERATIVO CUADRANTE ${cuadrante} - 1410`;
+
+            const lines = [
+                `${b}🚨 ${headerTitle} 🚨${b}`,
+                ``,
+                `${b}• NOMBRE:${b} ${nombre}`,
+                `${b}• MÓVIL:${b} ${movil}`,
+                `${b}• CUADRANTE:${b} ${cuadrante}`,
+                `${b}• CARGO:${b} ${cargo}`,
+                `${b}• TURNO:${b} ${turno}`,
+                `${b}• FECHA Y HORA:${b} ${fecha}`,
+                `${b}• PROCEDIMIENTO:${b} ${tipoProc}`
+            ];
+
+            if (tipoProc === 'FISCALIZACIÓN') {
+                lines.push(`${b}  ↳ N° DE PARTE:${b} ${(document.getElementById('proc-num-parte')?.value || '').trim() || '[PENDIENTE]'}`);
+                lines.push(`${b}  ↳ INFRACCIONADO:${b} ${(document.getElementById('proc-infraccionado')?.value || '').trim() || '[PENDIENTE]'}`);
+                lines.push(`${b}  ↳ INSPECTOR TESTIGO:${b} ${(document.getElementById('proc-testigo')?.value || '').trim() || '[PENDIENTE]'}`);
+            } else if (tipoProc === 'REPORTE DE INCIVILIDADES') {
+                lines.push(`${b}  ↳ INCIVILIDAD:${b} ${document.getElementById('proc-tipo-incivilidad')?.value || '[SIN ESPECIFICAR]'}`);
+            }
+
+            lines.push(`${b}• CALLE O VILLA:${b} ${calle}`);
+            lines.push(``);
+            lines.push(`${b}• DESCRIPCIÓN:${b}`);
+            lines.push(desc);
+
+            if (hasFoto) {
+                lines.push(``);
+                lines.push(`${b}📎 EVIDENCIA FOTOGRÁFICA:${b} 1 fotografía adjunta.`);
+            }
+
+            return lines.join('\n');
+        }
+
+        function updateProcWhatsAppPreview() {
+            const pre = document.getElementById('proc-wa-preview');
+            if (pre) pre.textContent = buildProcedureFormattedMessage(true);
+        }
+
+        function copyTextSilently(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+        }
+
+        async function shareOrOpenWhatsApp(message, fileInputId, fileNamePrefix = 'Evidencia_1410') {
+            copyTextSilently(message);
+            const fileInput = document.getElementById(fileInputId);
+            const rawFile = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+            if (rawFile) {
+                const dataUrl = await compressImageFileToBase64(rawFile, 1200, 0.80);
+                // En móvil con soporte Web Share API Level 2: abre WhatsApp con foto + texto directamente
+                if (navigator.canShare && dataUrl) {
+                    try {
+                        const res = await fetch(dataUrl);
+                        const blob = await res.blob();
+                        const shareFile = new File([blob], `${fileNamePrefix}.jpg`, { type: 'image/jpeg' });
+                        if (navigator.canShare({ files: [shareFile] })) {
+                            showToast('Texto copiado. Elija WhatsApp para enviar foto + reporte.', 'bg-emerald-600');
+                            await navigator.share({
+                                files: [shareFile],
+                                text: message
+                            });
+                            return;
+                        }
+                    } catch (err) {
+                        if (err && err.name === 'AbortError') return;
+                    }
+                }
+
+                // En PC / Escritorio: descarga la foto comprimida y abre WhatsApp con el mensaje
+                if (dataUrl) {
+                    const a = document.createElement('a');
+                    a.href = dataUrl;
+                    a.download = `${fileNamePrefix}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+            }
+
+            const encoded = encodeURIComponent(message);
+            window.open(`https://wa.me/?text=${encoded}`, '_blank', 'noopener');
+        }
+
+        async function sendProcedureByEmail() {
+            const direccion = (document.getElementById('proc-direccion')?.value || '').trim();
+            const detalle = (document.getElementById('proc-detalle')?.value || '').trim();
+            if (!direccion || !detalle) {
+                showToast('Complete Calle/Villa y Descripción antes de enviar.', 'bg-amber-600');
+                return;
+            }
+            if (AppState.procSelectedEmails.size === 0) {
+                showToast('Seleccione al menos un destinatario del Directorio de Correos.', 'bg-amber-600');
+                return;
+            }
+
+            const recipients = Array.from(AppState.procSelectedEmails).join(',');
+            const tipoProc = document.getElementById('proc-tipo')?.value || 'PROCEDIMIENTO';
+            const subject = `REPORTE PEÑA SEGURO 1410 | Cuadrante ${AppState.cuadrante || 'SRA1'} | ${tipoProc}`;
+            const body = buildProcedureFormattedMessage(false);
+
+            const mailtoUrl = `mailto:${encodeURIComponent(recipients)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoUrl;
+            showToast('Abriendo cliente de correo con destinatarios y reporte.', 'bg-blue-700');
+        }
+
         // 2. Form Setup
         document.getElementById('form-setup').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -2281,6 +2894,7 @@
             
             AppState.turnoId = `T-${Date.now()}`;
             AppState.fechaInicioTurno = document.getElementById('current-datetime')?.innerText || new Date().toLocaleString('es-CL');
+            AppState.userCargo = document.getElementById('setup-cargo')?.value || 'INSPECTOR MUNICIPAL';
             AppState.movil = document.getElementById('movil').value;
             AppState.cuadrante = document.getElementById('cuadrante').value;
             AppState.kmInicial = document.getElementById('km-inicial').value;
@@ -2290,7 +2904,7 @@
             document.getElementById('header-shift-display').innerText = `${AppState.movil} • ${AppState.cuadrante}`;
             document.getElementById('display-time-slot').innerText = `TURNO ${shiftLabels[AppState.rangoHorario] || AppState.rangoHorario}`;
             document.getElementById('status-info').innerHTML = `Móvil: <strong>${AppState.movil}</strong> | Cuadrante: <strong>${AppState.cuadrante}</strong>`;
-            document.getElementById('status-km').innerText = `Km Inicial: ${AppState.kmInicial} km`;
+            document.getElementById('status-km').innerText = `Km Inicial: ${AppState.kmInicial} km • ${AppState.userCargo}`;
             document.getElementById('display-km-inicial').innerText = AppState.kmInicial;
             document.getElementById('km-termino').min = AppState.kmInicial;
 
@@ -2299,14 +2913,14 @@
             navigateTo('view-checklist');
         });
 
-        // 2.5 Form Checklist Submit (Registra Apertura + Checklist + Fotos en Excel Drive)
+        // 2.5 Form Checklist Submit -> SE GUARDA DIRECTAMENTE EN EL EXCEL DE GOOGLE DRIVE
         document.getElementById('form-checklist').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const origText = submitBtn ? submitBtn.innerHTML : '';
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SUBIENDO A EXCEL DRIVE...`;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GUARDANDO EN EXCEL DRIVE...`;
             }
 
             const radioButtons = document.querySelectorAll('#checklist-container input[type="radio"]:checked');
@@ -2334,7 +2948,7 @@
                 action: 'INICIO_TURNO_CHECKLIST',
                 turnoId: AppState.turnoId,
                 fechaInicio: AppState.fechaInicioTurno,
-                rut: AppState.userRut,
+                rut: AppState.userName || AppState.userRut,
                 rangoHorario: AppState.rangoHorario,
                 movil: AppState.movil,
                 cuadrante: AppState.cuadrante,
@@ -2352,101 +2966,104 @@
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = origText;
             }
-            showToast(res && res.ok ? '✓ Turno y Checklist subidos a Excel Drive' : 'Guardado en cola local', 'bg-emerald-600');
+            showToast(res && res.ok ? '✓ Inicio de Turno y Checklist guardados en Drive' : 'Guardado localmente', 'bg-emerald-600');
             navigateTo('view-menu');
         });
 
-        // 3. Form Procedure (Registra Procedimiento + Foto en Excel Drive)
+        // 3. Form Procedure -> SE ENVÍA DIRECTAMENTE POR WHATSAPP (CON FOTO Y FORMATO OFICIAL 1410)
         document.getElementById('form-procedure').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const origText = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SUBIENDO PROCEDIMIENTO A DRIVE...`;
+            const tipoProc = document.getElementById('proc-tipo')?.value || '';
+            if (tipoProc === 'FISCALIZACIÓN') {
+                const p1 = (document.getElementById('proc-num-parte')?.value || '').trim();
+                const p2 = (document.getElementById('proc-infraccionado')?.value || '').trim();
+                const p3 = (document.getElementById('proc-testigo')?.value || '').trim();
+                if (!p1 || !p2 || !p3) {
+                    showToast('Complete N° de Parte, Infraccionado e Inspector Testigo.', 'bg-amber-600');
+                    return;
+                }
+            }
+            if (tipoProc === 'REPORTE DE INCIVILIDADES' && !document.getElementById('proc-tipo-incivilidad')?.value) {
+                showToast('Seleccione el Tipo de Incivilidad detectada.', 'bg-amber-600');
+                return;
             }
 
-            const fotoInput = document.getElementById('proc-foto');
-            const fotoBase64 = (fotoInput && fotoInput.files[0])
-                ? await compressImageFileToBase64(fotoInput.files[0])
-                : '';
-
-            const payload = {
-                action: 'REGISTRAR_PROCEDIMIENTO',
-                procId: `PROC-${Date.now()}`,
+            const message = buildProcedureFormattedMessage(true);
+            appendLocalHistory({
+                action: 'PROCEDIMIENTO_WHATSAPP',
+                turnoId: AppState.turnoId,
                 fechaRegistro: new Date().toLocaleString('es-CL'),
-                turnoId: AppState.turnoId || `T-${Date.now()}`,
-                rut: AppState.userRut,
+                rut: AppState.userName || AppState.userRut,
                 rangoHorario: AppState.rangoHorario,
                 movil: AppState.movil,
                 cuadrante: AppState.cuadrante,
-                tipo: document.getElementById('proc-tipo').value,
-                direccion: document.getElementById('proc-direccion').value.trim(),
-                detalle: document.getElementById('proc-detalle').value.trim(),
-                notificarCentral: document.getElementById('email-central').checked,
-                notificarJefatura: document.getElementById('email-jefatura').checked,
-                fotoBase64: fotoBase64
-            };
+                tipo: tipoProc,
+                direccion: document.getElementById('proc-direccion')?.value.trim() || '',
+                detalle: document.getElementById('proc-detalle')?.value.trim() || ''
+            });
 
-            const res = await sendPayloadToGoogleSheets(payload);
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = origText;
-            }
-            showToast(res && res.ok ? '✓ Procedimiento subido a Excel Drive' : 'Procedimiento guardado en cola', 'bg-emerald-600');
+            await shareOrOpenWhatsApp(message, 'proc-foto', `PenaSeguro1410_Procedimiento_${Date.now()}`);
+            showToast('Abriendo WhatsApp con el reporte de procedimiento', 'bg-emerald-600');
             e.target.reset();
+            AppState.procSelectedVillas = [];
+            renderProcVillasChips();
             resetPhotoPreview('foto-preview', 'foto-placeholder');
             navigateTo('view-menu');
         });
 
-        // 4. Form Task Resolve (Registra Visto Bueno + Evidencia en Excel Drive)
+        // 4. Form Task Resolve -> SE ENVÍA DIRECTAMENTE POR WHATSAPP (CON EVIDENCIA FOTOGRÁFICA)
         document.getElementById('form-task-resolve').addEventListener('submit', async (e) => {
             e.preventDefault();
             const taskId = document.getElementById('resolve-task-id').value;
             const taskDesc = document.getElementById('resolve-task-title')?.innerText || '';
+            const direccion = document.getElementById('resolve-direccion')?.value.trim() || '';
+            const detalle = document.getElementById('resolve-detalle')?.value.trim() || 'Visto bueno otorgado en terreno. Sin novedades.';
             const fotoInput = document.getElementById('resolve-foto');
 
             if (!fotoInput.files || !fotoInput.files[0]) {
-                showToast('Error: Fotografía requerida', 'bg-red-600');
+                showToast('Error: Evidencia fotográfica requerida', 'bg-red-600');
                 return;
             }
 
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const origText = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> SUBIENDO EVIDENCIA A DRIVE...`;
-            }
+            const shiftLabels = { 'MANANA': 'MAÑANA (07:00 A 15:00)', 'TARDE': 'TARDE (15:00 A 23:00)', 'NOCHE': 'NOCHE (23:00 A 07:00)' };
+            const waLines = [
+                `*✅ VISTO BUENO TAREA PROGRAMADA - PEÑA SEGURO 1410 ✅*`,
+                ``,
+                `*• NOMBRE:* ${AppState.userName || AppState.userRut}`,
+                `*• MÓVIL:* ${AppState.movil || '-'}`,
+                `*• CUADRANTE:* ${AppState.cuadrante || '-'}`,
+                `*• CARGO:* ${AppState.userCargo || 'INSPECTOR MUNICIPAL'}`,
+                `*• TURNO:* ${shiftLabels[AppState.rangoHorario] || AppState.rangoHorario}`,
+                `*• FECHA Y HORA:* ${new Date().toLocaleString('es-CL')}`,
+                `*• TAREA CUMPLIDA:* ${taskDesc}`,
+                `*• UBICACIÓN VERIFICADA:* ${direccion}`,
+                ``,
+                `*• OBSERVACIONES:*`,
+                `${detalle}`,
+                ``,
+                `*📎 EVIDENCIA FOTOGRÁFICA:* 1 fotografía adjunta.`
+            ];
+            const message = waLines.join('\n');
 
-            const fotoBase64 = await compressImageFileToBase64(fotoInput.files[0]);
-
-            const payload = {
-                action: 'RESOLVER_TAREA',
+            appendLocalHistory({
+                action: 'TAREA_WHATSAPP',
+                turnoId: AppState.turnoId,
                 fechaRegistro: new Date().toLocaleString('es-CL'),
-                taskId: taskId,
-                taskDesc: taskDesc,
-                turnoId: AppState.turnoId || `T-${Date.now()}`,
-                rut: AppState.userRut,
+                rut: AppState.userName || AppState.userRut,
                 rangoHorario: AppState.rangoHorario,
                 movil: AppState.movil,
                 cuadrante: AppState.cuadrante,
-                direccion: document.getElementById('resolve-direccion').value.trim(),
-                detalle: document.getElementById('resolve-detalle').value.trim(),
-                fotoBase64: fotoBase64
-            };
+                taskDesc: taskDesc,
+                direccion: direccion,
+                detalle: detalle
+            });
 
-            const res = await sendPayloadToGoogleSheets(payload);
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = origText;
-            }
-
-            // Mark completed in localStorage shared database
             if (taskId) {
                 markTaskIdCompleted(taskId, AppState.userRut);
             }
 
-            showToast(res && res.ok ? '✓ Visto bueno y foto subidos a Drive' : 'Visto bueno en cola local', 'bg-emerald-600');
+            await shareOrOpenWhatsApp(message, 'resolve-foto', `PenaSeguro1410_Tarea_${taskId || Date.now()}`);
+            showToast('Tarea completada y enviada a WhatsApp', 'bg-emerald-600');
             updateBadgeAndTasks();
             navigateTo('view-tasks');
         });
@@ -2473,7 +3090,7 @@
                 action: 'CERRAR_TURNO',
                 fechaTermino: document.getElementById('end-datetime')?.innerText || new Date().toLocaleString('es-CL'),
                 turnoId: AppState.turnoId,
-                rut: AppState.userRut,
+                rut: AppState.userName || AppState.userRut,
                 rangoHorario: AppState.rangoHorario,
                 movil: AppState.movil,
                 cuadrante: AppState.cuadrante,
@@ -2487,7 +3104,7 @@
                 submitBtn.innerHTML = origText;
             }
 
-            showToast(res && res.ok ? '✓ Cierre de turno registrado en Excel Drive' : 'Cierre guardado en cola', 'bg-blue-900');
+            showToast(res && res.ok ? '✓ Cierre de turno registrado en Excel Drive' : 'Cierre guardado localmente', 'bg-blue-900');
             setTimeout(() => {
                 navigateTo('view-login');
             }, 600);
@@ -2530,12 +3147,14 @@
                         const lat = pos.coords.latitude.toFixed(5);
                         const lon = pos.coords.longitude.toFixed(5);
                         input.value = `GPS Peñaflor (${lat}, ${lon})`;
+                        updateProcWhatsAppPreview();
                         showToast("Coordenadas GPS reales obtenidas", "bg-emerald-600");
                     },
                     () => {
                         const lat = (-33.6120 + (Math.random()*0.008)).toFixed(4);
                         const lon = (-70.8750 + (Math.random()*0.008)).toFixed(4);
                         input.value = `Av. Balmaceda 1410, Peñaflor (${lat}, ${lon})`;
+                        updateProcWhatsAppPreview();
                         showToast("Coordenadas GPS obtenidas", "bg-emerald-600");
                     },
                     { timeout: 5000 }
@@ -2545,6 +3164,7 @@
                     const lat = (-33.6120 + (Math.random()*0.008)).toFixed(4);
                     const lon = (-70.8750 + (Math.random()*0.008)).toFixed(4);
                     input.value = `Av. Balmaceda 1410, Peñaflor (${lat}, ${lon})`;
+                    updateProcWhatsAppPreview();
                     showToast("Coordenadas GPS obtenidas", "bg-emerald-600");
                 }, 600);
             }
@@ -2579,17 +3199,21 @@
             AppState.movil = '';
             AppState.cuadrante = '';
             AppState.kmInicial = 0;
+            populateLoginFuncionariosDropdown();
         }
 
         // --- DOM Initialization ---
         window.addEventListener('DOMContentLoaded', () => {
+            // Limpiar cualquier cola antigua de versiones previas para que no quede nada atascado
+            localStorage.removeItem('pena_seguro_sync_queue');
+
             startClock();
             detectTimeSlot();
+            populateLoginFuncionariosDropdown();
             populateVehicleSelectDropdown();
             updateCloudStatusUI();
             syncBootstrapFromCloud();
 
-            // Vaciar y subir automáticamente cualquier registro en cola al abrir la app y cada 15 segundos
             setTimeout(() => flushOfflineQueue(false), 1000);
             setInterval(() => {
                 if (getSyncQueue().length > 0) {
