@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Peña Seguro - Inspectores Municipal</title>
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Peña Seguro 1410">
+    <title>Peña Seguro 1410 - Inspectores y Reportes</title>
+    <link id="pwa-manifest-link" rel="manifest" href="manifest.json">
+    <link id="pwa-apple-icon" rel="apple-touch-icon">
+    <link id="pwa-favicon" rel="icon" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -106,12 +114,15 @@
                 <button type="button" id="btn-switch-admin" onclick="toggleAdminInspectorMode()" class="hidden px-2.5 py-1.5 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-[#1e3a8a] text-[11px] font-black flex items-center gap-1 shadow" title="Cambiar entre Vista Móvil y Panel Admin">
                     <i class="fa-solid fa-user-gear"></i> <span id="btn-switch-admin-text">Admin</span>
                 </button>
+                <button type="button" onclick="triggerInstallPWA()" class="w-8 h-8 rounded-lg bg-emerald-500 hover:bg-emerald-400 border border-emerald-300 flex items-center justify-center text-slate-950 font-black" title="Instalar App en escritorio del celular">
+                    <i class="fa-solid fa-mobile-screen-button text-xs"></i>
+                </button>
                 <button type="button" onclick="openCloudConfigModal()" class="w-8 h-8 rounded-lg bg-blue-800/80 hover:bg-blue-700 border border-blue-600 flex items-center justify-center text-white relative" title="Configuración Google Drive / Excel">
                     <i class="fa-solid fa-cloud-arrow-up text-xs" id="header-cloud-icon"></i>
                     <span id="header-sync-badge" class="hidden absolute -top-1.5 -right-1.5 bg-amber-400 text-blue-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span>
                 </button>
-                <button type="button" onclick="navigateTo('view-login')" class="w-8 h-8 rounded-lg bg-red-600/80 hover:bg-red-600 border border-red-400 flex items-center justify-center text-white" title="Cerrar Sesión">
-                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                <button type="button" onclick="handleHeaderExitClick()" class="w-8 h-8 rounded-lg bg-red-600/80 hover:bg-red-600 border border-red-400 flex items-center justify-center text-white" title="Cerrar Turno / Salir">
+                    <i class="fa-solid fa-power-off text-xs"></i>
                 </button>
             </div>
         </header>
@@ -123,6 +134,9 @@
             <section id="view-login" class="view-section active">
                 <div class="flex flex-col items-center justify-center min-h-[85vh] py-6">
                     <div class="bg-[#1e3a8a] w-full p-6 rounded-2xl shadow-2xl flex flex-col items-center border border-blue-800 relative">
+                        <button type="button" onclick="triggerInstallPWA()" class="absolute top-4 left-4 text-slate-950 bg-emerald-400 hover:bg-emerald-300 text-[11px] font-black flex items-center gap-1 px-2.5 py-1.5 rounded-lg shadow" title="Agregar al escritorio del celular">
+                            <i class="fa-solid fa-mobile-screen-button"></i> <span id="login-install-text">Instalar App</span>
+                        </button>
                         <button type="button" onclick="openCloudConfigModal()" class="absolute top-4 right-4 text-blue-200 hover:text-yellow-400 text-xs flex items-center gap-1 bg-blue-900/70 px-2.5 py-1.5 rounded-lg border border-blue-700" title="Conectar Google Sheets / Drive">
                             <i class="fa-solid fa-table"></i> <span id="login-cloud-status">Excel Drive</span>
                         </button>
@@ -337,18 +351,30 @@
             <!-- 3. OPERATIONAL MENU VIEW -->
             <section id="view-menu" class="view-section">
                 
-                <!-- Active Info Card -->
-                <div class="mb-5 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                    <div class="flex justify-between items-center mb-2">
+                <!-- Active Info Card + Cumplimiento de Agendamientos -->
+                <div class="mb-5 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2.5">
+                    <div class="flex justify-between items-center">
                         <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> TURNO ACTIVO
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> TURNO ACTIVO (SESIÓN PROTEGIDA)
                         </span>
                         <span id="display-time-slot" class="text-[11px] font-extrabold text-[#1e3a8a] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                             <!-- Shift Slot -->
                         </span>
                     </div>
-                    <p id="status-info" class="text-sm font-semibold text-slate-800"></p>
-                    <p id="status-km" class="text-xs text-slate-500 font-mono mt-0.5"></p>
+                    <div>
+                        <p id="status-info" class="text-sm font-semibold text-slate-800"></p>
+                        <p id="status-km" class="text-xs text-slate-500 font-mono mt-0.5"></p>
+                    </div>
+                    <!-- Barra de Progreso de Agendamientos -->
+                    <div class="pt-2 border-t border-slate-100">
+                        <div class="flex justify-between items-center text-[11px] font-bold mb-1">
+                            <span class="text-slate-600"><i class="fa-solid fa-calendar-check text-blue-600 mr-1"></i> Cumplimiento Agendamientos:</span>
+                            <span id="menu-agendamiento-stats" class="text-[#1e3a8a]">0 / 0 (0%)</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                            <div id="menu-agendamiento-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5 px-1">Menú de Operaciones</div>
@@ -545,14 +571,19 @@
                             </div>
                         </div>
 
-                        <!-- Botones de Envío Directo WhatsApp y Correo -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                            <button type="submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm">
-                                <i class="fa-brands fa-whatsapp text-lg"></i> ENVIAR POR WHATSAPP
+                        <!-- Botones de Registro en Planilla + Envío WhatsApp / Correo -->
+                        <div class="space-y-2 pt-1">
+                            <button type="submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs sm:text-sm">
+                                <i class="fa-brands fa-whatsapp text-lg"></i> GUARDAR EN PLANILLA + ENVIAR WHATSAPP
                             </button>
-                            <button type="button" onclick="sendProcedureByEmail()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs">
-                                <i class="fa-solid fa-envelope"></i> ENVIAR POR CORREO
-                            </button>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" onclick="submitProcedureOnlyToSheet()" id="btn-proc-only-sheet" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] text-xs">
+                                    <i class="fa-solid fa-file-excel"></i> SOLO GUARDAR EN PLANILLA
+                                </button>
+                                <button type="button" onclick="sendProcedureByEmail()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] text-xs">
+                                    <i class="fa-solid fa-envelope"></i> PLANILLA + CORREO
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -565,14 +596,20 @@
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
                     <div>
-                        <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight leading-none">Tareas del Cuadrante</h2>
+                        <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight leading-none">Agendamientos del Cuadrante</h2>
                         <span id="task-rango-indicator" class="text-[10px] font-bold text-slate-500"></span>
                     </div>
                 </div>
                 
-                <div class="bg-blue-900 text-white p-3 rounded-xl mb-4 text-xs font-semibold flex justify-between items-center shadow-sm">
-                    <span>Cuadrante: <strong id="task-cuadrante-label" class="text-yellow-400 font-extrabold text-sm"></strong></span>
-                    <span id="task-rango-badge" class="bg-yellow-400 text-blue-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase"></span>
+                <div class="bg-blue-900 text-white p-3.5 rounded-xl mb-4 text-xs font-semibold space-y-2 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <span>Cuadrante: <strong id="task-cuadrante-label" class="text-yellow-400 font-extrabold text-sm"></strong></span>
+                        <span id="task-rango-badge" class="bg-yellow-400 text-blue-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase"></span>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] text-blue-200 pt-1 border-t border-blue-800">
+                        <span>Progreso de Agendamientos:</span>
+                        <strong id="tasks-view-progress-label" class="text-emerald-300">0 / 0 cumplidos</strong>
+                    </div>
                 </div>
 
                 <div id="tasks-container" class="space-y-3">
@@ -580,7 +617,7 @@
                 </div>
             </section>
 
-            <!-- 6. TASK RESOLUTION VIEW (Envío Directo por WhatsApp con Foto) -->
+            <!-- 6. TASK RESOLUTION VIEW (Guarda en Planilla + Envía a WhatsApp) -->
             <section id="view-task-resolve" class="view-section">
                 <div class="flex items-center gap-3 mb-4">
                     <button type="button" onclick="navigateTo('view-tasks')" class="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-300">
@@ -588,7 +625,7 @@
                     </button>
                     <div>
                         <h2 class="text-lg font-bold text-[#1e3a8a] uppercase tracking-tight leading-none">Dar Visto Bueno a Tarea</h2>
-                        <span class="text-[10px] font-bold text-emerald-700"><i class="fa-brands fa-whatsapp"></i> Se envía con evidencia directo a WhatsApp</span>
+                        <span class="text-[10px] font-bold text-emerald-700"><i class="fa-solid fa-file-excel"></i> Se registra en Planilla Drive + WhatsApp</span>
                     </div>
                 </div>
 
@@ -617,13 +654,13 @@
 
                         <!-- Fotografía Obligatoria -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Evidencia Fotográfica (Mandatorio para WhatsApp) <span class="text-red-500">*</span></label>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Evidencia Fotográfica (Mandatorio) <span class="text-red-500">*</span></label>
                             <div class="border-2 border-dashed border-emerald-400 rounded-xl p-5 text-center bg-emerald-50/40 relative">
                                 <input type="file" id="resolve-foto" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this, 'resolve-foto-preview', 'resolve-foto-placeholder')" required>
                                 <div id="resolve-foto-placeholder" class="flex flex-col items-center pointer-events-none">
                                     <i class="fa-solid fa-camera text-2xl text-emerald-600 mb-1"></i>
                                     <span class="text-xs text-emerald-800 font-extrabold">Capturar Evidencia Fotográfica</span>
-                                    <span class="text-[10px] text-emerald-600">Se adjuntará automáticamente al enviar por WhatsApp</span>
+                                    <span class="text-[10px] text-emerald-600">Se guarda en Drive y se adjunta en WhatsApp</span>
                                 </div>
                                 <img id="resolve-foto-preview" class="hidden max-h-36 mx-auto rounded-lg shadow-sm border border-emerald-200" alt="Preview">
                             </div>
@@ -634,9 +671,14 @@
                             <textarea id="resolve-detalle" rows="2" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none text-xs" placeholder="Ej: Visto bueno otorgado. Sin novedades en el punto."></textarea>
                         </div>
 
-                        <button type="submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl mt-2 shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm">
-                            <i class="fa-brands fa-whatsapp text-lg"></i> ENVIAR VISTO BUENO POR WHATSAPP
-                        </button>
+                        <div class="space-y-2 pt-1">
+                            <button type="submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs sm:text-sm">
+                                <i class="fa-brands fa-whatsapp text-lg"></i> GUARDAR EN PLANILLA + ENVIAR WHATSAPP
+                            </button>
+                            <button type="button" onclick="submitTaskOnlyToSheet()" id="btn-task-only-sheet" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs">
+                                <i class="fa-solid fa-file-excel text-emerald-400"></i> SOLO GUARDAR VISTO BUENO EN PLANILLA
+                            </button>
+                        </div>
                     </form>
                 </div>
             </section>
@@ -659,6 +701,15 @@
                         <div class="bg-red-50/70 p-3 rounded-xl border border-red-100 text-center">
                             <p class="text-[11px] text-red-800 uppercase font-bold tracking-wider">Fecha y Hora de Término (Automática)</p>
                             <p id="end-datetime" class="text-base font-mono font-extrabold text-red-600 mt-0.5"></p>
+                        </div>
+
+                        <!-- Resumen de Cumplimiento de Agendamientos en el Cierre -->
+                        <div id="end-shift-agendamientos-box" class="bg-blue-50 p-3 rounded-xl border border-blue-200 text-xs space-y-1">
+                            <p class="font-extrabold text-[#1e3a8a] flex items-center justify-between">
+                                <span><i class="fa-solid fa-list-check mr-1"></i> Resumen Agendamientos del Turno:</span>
+                                <span id="end-shift-tasks-summary">0 / 0</span>
+                            </p>
+                            <p id="end-shift-tasks-warning" class="text-[11px] text-slate-600"></p>
                         </div>
 
                         <div class="bg-slate-50 p-3 rounded-xl flex justify-between items-center text-xs border border-slate-200">
@@ -995,6 +1046,38 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal Guía de Instalación en Escritorio del Celular (PWA Android / iOS) -->
+        <div id="install-guide-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-end sm:items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                <div class="bg-[#1e3a8a] text-white p-4 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen-button text-emerald-400 text-lg"></i>
+                        <div>
+                            <h3 class="text-sm font-extrabold uppercase tracking-wide">Instalar en Escritorio del Celular</h3>
+                            <p class="text-[10px] text-blue-200">Acceso directo con memoria caché activa</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="document.getElementById('install-guide-modal').classList.add('hidden')" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+                <div class="p-4 space-y-3 text-xs text-slate-700">
+                    <p class="font-bold text-slate-800">Sigue estos pasos según tu teléfono para dejar el ícono de Peña Seguro 1410 en tu pantalla de inicio:</p>
+                    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+                        <p class="font-extrabold text-emerald-900"><i class="fa-brands fa-android text-emerald-600 mr-1"></i> En Android (Chrome / Edge / Samsung):</p>
+                        <p class="text-[11px]">Toca el menú de los <strong>3 puntos (⋮)</strong> arriba a la derecha del navegador y selecciona <strong>"Instalar aplicación"</strong> o <strong>"Agregar a la pantalla principal"</strong>.</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-blue-50 border border-blue-200 space-y-1">
+                        <p class="font-extrabold text-[#1e3a8a]"><i class="fa-brands fa-apple text-slate-800 mr-1"></i> En iPhone / iPad (Safari):</p>
+                        <p class="text-[11px]">Toca el botón <strong>Compartir</strong> (cuadrado con flecha hacia arriba en la barra inferior) y selecciona <strong>"Agregar a Inicio"</strong>.</p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('install-guide-modal').classList.add('hidden')" class="w-full bg-[#1e3a8a] text-white font-extrabold py-2.5 rounded-xl">
+                        ENTENDIDO
+                    </button>
+                </div>
+            </div>
+        </div>
         
         <!-- Toast Notification -->
         <div id="toast"><span id="toast-message">Acción exitosa</span></div>
@@ -1009,16 +1092,20 @@
         const SPREADSHEET_EDIT_URL = 'https://docs.google.com/spreadsheets/d/1E8xewBE2aUIzy0yUfydUc1ljiVWh09WVGwsAooD-_FQ/edit';
         const STORAGE_KEYS = {
             SCRIPT_URL: 'pena_seguro_google_script_url',
-            SYNC_QUEUE: 'pena_seguro_sync_queue_v3',
-            LOCAL_HISTORY: 'pena_seguro_local_history_v3',
-            COMPLETED_TASKS: 'pena_seguro_completed_tasks_v3',
-            USERS_DB: 'pena_seguro_users_db_v3',
-            TASKS_DB: 'pena_seguro_tasks_db_v3',
-            FLEET_DB: 'pena_seguro_fleet_db_v3'
+            ACTIVE_SESSION: 'pena_seguro_active_session_v4',
+            SYNC_QUEUE: 'pena_seguro_sync_queue_v4',
+            LOCAL_HISTORY: 'pena_seguro_local_history_v4',
+            COMPLETED_TASKS: 'pena_seguro_completed_tasks_v4',
+            USERS_DB: 'pena_seguro_users_db_v4',
+            TASKS_DB: 'pena_seguro_tasks_db_v4',
+            FLEET_DB: 'pena_seguro_fleet_db_v4'
         };
 
         // --- Central State Object Declaration ---
         const AppState = {
+            isLoggedIn: false,
+            turnoActivo: false,
+            currentView: 'view-login',
             turnoId: '',
             fechaInicioTurno: '',
             userRut: '',
@@ -1301,7 +1388,38 @@
             { id: 'n_gen_3', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[05:15 | Patrullaje General] Paraderos tramo Malloquito desde Caupolicán hasta Eduardo Yáñez por Av. Rosales.', estado: 'ACTIVA' },
             { id: 'n_gen_4', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[05:20 | Patrullaje General] Paraderos de Vicuña Mackenna dirección Peñaflor desde Bilbao.', estado: 'ACTIVA' },
             { id: 'n_gen_5', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[05:25 | Patrullaje General] Paraderos de Bilbao hacia Eduardo Yáñez retornando por calle Florida a Vicuña Mackenna / Toribio Larraín.', estado: 'ACTIVA' },
-            { id: 'n_gen_6', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[Turno | Patrullaje General] Rondas permanentes Plaza de Peñaflor, Plaza de Malloco, paraderos Irarrázaval/Caupolicán y Centros de Salud Municipal.', estado: 'ACTIVA' }
+            { id: 'n_gen_6', rango: 'NOCHE', cuadrante: 'TODOS', desc: '[Turno | Patrullaje General] Rondas permanentes Plaza de Peñaflor, Plaza de Malloco, paraderos Irarrázaval/Caupolicán y Centros de Salud Municipal.', estado: 'ACTIVA' },
+            // VOLANTE / TODA LA COMUNA (JEFATURA Y MOTORISTAS VOLANTES)
+            { id: 'v_man_1', rango: 'MANANA', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[07:00 hrs | Check List Equipo] Fiscalizar que todo el equipo operativo realice su Check List vehicular y de equipamiento al inicio del turno (07:00 hrs).', estado: 'ACTIVA' },
+            { id: 'v_man_2', rango: 'MANANA', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 07:00 a 15:00 | Rondas Porterías] Realizar rondas de supervisión a porterías municipales dentro del horario del turno.', estado: 'ACTIVA' },
+            { id: 'v_man_3', rango: 'MANANA', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 07:00 a 15:00 | Uniforme y EPP] Fiscalizar que todos los conductores y patrulleros porten correctamente su uniforme institucional y EPP.', estado: 'ACTIVA' },
+            { id: 'v_man_4', rango: 'MANANA', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 07:00 a 15:00 | Centros Comunitarios] Fiscalizar los Centros de Seguridad Comunitarios dentro del turno, verificando cumplimiento de labor.', estado: 'ACTIVA' },
+            { id: 'v_man_5', rango: 'MANANA', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 07:00 a 15:00 | Coordinación Terreno] Coordinar y supervisar en terreno los servicios agendados durante el turno.', estado: 'ACTIVA' },
+            { id: 'v_man_6', rango: 'MANANA', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Todo el Turno | Procedimientos Relevantes] Concurrir y estar presente en cada procedimiento de relevancia operativa durante todo el turno.', estado: 'ACTIVA' },
+            { id: 'v_tar_1', rango: 'TARDE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[15:00 hrs | Check List Equipo] Fiscalizar que todo el equipo operativo realice su Check List vehicular y de equipamiento al inicio del turno (15:00 hrs).', estado: 'ACTIVA' },
+            { id: 'v_tar_2', rango: 'TARDE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 15:00 a 23:00 | Rondas Porterías] Realizar rondas de supervisión a porterías municipales dentro del horario del turno.', estado: 'ACTIVA' },
+            { id: 'v_tar_3', rango: 'TARDE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 15:00 a 23:00 | Uniforme y EPP] Fiscalizar que todos los conductores y patrulleros porten correctamente su uniforme institucional y EPP.', estado: 'ACTIVA' },
+            { id: 'v_tar_4', rango: 'TARDE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 15:00 a 23:00 | Centros Comunitarios] Fiscalizar los Centros de Seguridad Comunitarios dentro del turno, verificando cumplimiento de labor.', estado: 'ACTIVA' },
+            { id: 'v_tar_5', rango: 'TARDE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 15:00 a 23:00 | Coordinación Terreno] Coordinar y supervisar en terreno los servicios agendados durante el turno.', estado: 'ACTIVA' },
+            { id: 'v_tar_6', rango: 'TARDE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Todo el Turno | Procedimientos Relevantes] Concurrir y estar presente en cada procedimiento de relevancia operativa durante todo el turno.', estado: 'ACTIVA' },
+            { id: 'v_noc_1', rango: 'NOCHE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[23:00 hrs | Check List Equipo] Fiscalizar que todo el equipo operativo realice su Check List vehicular y de equipamiento al inicio del turno (23:00 hrs).', estado: 'ACTIVA' },
+            { id: 'v_noc_2', rango: 'NOCHE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 23:00 a 07:00 | Rondas Porterías] Realizar rondas de supervisión a porterías municipales dentro del horario del turno.', estado: 'ACTIVA' },
+            { id: 'v_noc_3', rango: 'NOCHE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 23:00 a 07:00 | Uniforme y EPP] Fiscalizar que todos los conductores y patrulleros porten correctamente su uniforme institucional y EPP.', estado: 'ACTIVA' },
+            { id: 'v_noc_4', rango: 'NOCHE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 23:00 a 07:00 | Centros Comunitarios] Fiscalizar los Centros de Seguridad Comunitarios dentro del turno, verificando cumplimiento de labor.', estado: 'ACTIVA' },
+            { id: 'v_noc_5', rango: 'NOCHE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Turno 23:00 a 07:00 | Coordinación Terreno] Coordinar y supervisar en terreno los servicios agendados durante el turno.', estado: 'ACTIVA' },
+            { id: 'v_noc_6', rango: 'NOCHE', cuadrante: 'VOLANTE / TODA LA COMUNA', desc: '[Todo el Turno | Procedimientos Relevantes] Concurrir y estar presente en cada procedimiento de relevancia operativa durante todo el turno.', estado: 'ACTIVA' },
+            // SECTORES RURALES SRA, SRB, SRC, SRA1
+            { id: 'm_sra_1', rango: 'MANANA', cuadrante: 'SRA', desc: '[Turno | Patrullaje Rural] Patrullaje preventivo por Sector Pelvín, Camino a Pelvín y Escuela Rural Pelvín.', estado: 'ACTIVA' },
+            { id: 't_sra_1', rango: 'TARDE', cuadrante: 'SRA', desc: '[Turno | Patrullaje Rural] Ronda preventiva en Parcelación Santa Rosa de Pelvín y Villa Rural Pelvín.', estado: 'ACTIVA' },
+            { id: 'n_sra_1', rango: 'NOCHE', cuadrante: 'SRA', desc: '[Turno | Vigilancia Nocturna] Patrullaje nocturno con baliza encendida por Camino a Pelvín y accesos rurales.', estado: 'ACTIVA' },
+            { id: 'm_srb_1', rango: 'MANANA', cuadrante: 'SRB', desc: '[Turno | Patrullaje Rural] Patrullaje preventivo por Peñaflor Alto, Camino El Guanaco y Sector La Rinconada.', estado: 'ACTIVA' },
+            { id: 't_srb_1', rango: 'TARDE', cuadrante: 'SRB', desc: '[Turno | Patrullaje Rural] Ronda preventiva en Parcelaciones Peñaflor Norte y Camino El Guanaco.', estado: 'ACTIVA' },
+            { id: 'n_srb_1', rango: 'NOCHE', cuadrante: 'SRB', desc: '[Turno | Vigilancia Nocturna] Vigilancia nocturna de alta visibilidad en Sector Peñaflor Alto y La Rinconada.', estado: 'ACTIVA' },
+            { id: 'm_src_1', rango: 'MANANA', cuadrante: 'SRC', desc: '[Turno | Patrullaje Rural] Patrullaje preventivo por Camino a Valparaíso (Ruta G-78), Sector Santa Cruz y Calle Bilbao.', estado: 'ACTIVA' },
+            { id: 't_src_1', rango: 'TARDE', cuadrante: 'SRC', desc: '[Turno | Patrullaje Rural] Ronda preventiva en Parcelaciones Camino Valparaíso y Calle Florida.', estado: 'ACTIVA' },
+            { id: 'n_src_1', rango: 'NOCHE', cuadrante: 'SRC', desc: '[Turno | Vigilancia Nocturna] Ronda nocturna por Ruta G-78, Sector Santa Cruz y paraderos rurales.', estado: 'ACTIVA' },
+            { id: 'm_sra1_r1', rango: 'MANANA', cuadrante: 'SRA1', desc: '[Turno | Patrullaje Rural] Patrullaje preventivo por Cuesta de Mallarauco, Los Polacos, El Sotillo y San Javier.', estado: 'ACTIVA' },
+            { id: 't_sra1_r1', rango: 'TARDE', cuadrante: 'SRA1', desc: '[Turno | Patrullaje Rural] Ronda preventiva en Cuesta de Mallarauco y Parcelaciones Agrícolas Poniente.', estado: 'ACTIVA' }
         ];
 
         // --- Flota Oficial (MÓVIL 0-15, CAMIONETA 1-6, TANGO 1-9) ---
@@ -1593,19 +1711,111 @@
         }
 
         // --- Get Active Tasks for Quadrant & Shift (Dinámico desde Catálogo Admin / Excel Drive) ---
-        function getQuadrantPendingTasks() {
-            const quad = (AppState.cuadrante || 'SRA1').toUpperCase();
+        function getQuadrantAllTasks() {
+            const quad = (AppState.cuadrante || '252A').toUpperCase();
             const shift = (AppState.rangoHorario || 'MANANA').toUpperCase();
             const catalog = getTasksCatalogDB();
 
-            const matching = catalog.filter(t =>
-                t.estado !== 'INACTIVA' &&
-                t.rango === shift &&
-                (t.cuadrante === quad || t.cuadrante === 'TODOS' || t.cuadrante === 'DEFAULT')
-            );
+            return catalog.filter(t => {
+                if (t.estado === 'INACTIVA') return false;
+                if (t.rango !== shift) return false;
+                if (quad === 'VOLANTE / TODA LA COMUNA') {
+                    return t.cuadrante === 'VOLANTE / TODA LA COMUNA' || t.cuadrante === 'TODOS';
+                }
+                return t.cuadrante === quad || t.cuadrante === 'TODOS' || t.cuadrante === 'DEFAULT';
+            });
+        }
 
+        function getQuadrantPendingTasks() {
+            const allTasks = getQuadrantAllTasks();
             const completedIds = getCompletedTaskIds();
-            return matching.filter(t => !completedIds.includes(t.id));
+            return allTasks.filter(t => !completedIds.includes(t.id));
+        }
+
+        // --- Persistencia de Sesión y Turno en Memoria Caché (localStorage) ---
+        function saveActiveSessionState() {
+            try {
+                if (!AppState.isLoggedIn) {
+                    localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
+                    return;
+                }
+                const sessionPayload = {
+                    isLoggedIn: AppState.isLoggedIn,
+                    turnoActivo: AppState.turnoActivo,
+                    currentView: AppState.currentView,
+                    turnoId: AppState.turnoId,
+                    fechaInicioTurno: AppState.fechaInicioTurno,
+                    userRut: AppState.userRut,
+                    userName: AppState.userName,
+                    userCargo: AppState.userCargo,
+                    userRole: AppState.userRole,
+                    movil: AppState.movil,
+                    cuadrante: AppState.cuadrante,
+                    kmInicial: AppState.kmInicial,
+                    rangoHorario: AppState.rangoHorario
+                };
+                localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify(sessionPayload));
+            } catch (e) {}
+        }
+
+        function restoreActiveSessionState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
+                if (!raw) return false;
+                const saved = JSON.parse(raw);
+                if (!saved || !saved.isLoggedIn) return false;
+
+                AppState.isLoggedIn = true;
+                AppState.turnoActivo = !!saved.turnoActivo;
+                AppState.turnoId = saved.turnoId || '';
+                AppState.fechaInicioTurno = saved.fechaInicioTurno || '';
+                AppState.userRut = saved.userRut || '';
+                AppState.userName = saved.userName || saved.userRut || '';
+                AppState.userCargo = saved.userCargo || 'INSPECTOR MUNICIPAL';
+                AppState.userRole = saved.userRole || 'INSPECTOR';
+                AppState.movil = saved.movil || '';
+                AppState.cuadrante = saved.cuadrante || '';
+                AppState.kmInicial = saved.kmInicial || 0;
+                AppState.rangoHorario = saved.rangoHorario || 'MANANA';
+
+                document.getElementById('header-rut-display').innerText = AppState.userName || AppState.userRut;
+
+                if (AppState.turnoActivo && AppState.movil && AppState.cuadrante) {
+                    const shiftLabels = { 'MANANA': 'Mañana', 'TARDE': 'Tarde', 'NOCHE': 'Noche' };
+                    document.getElementById('header-shift-display').innerText = `${AppState.movil} • ${AppState.cuadrante}`;
+                    document.getElementById('display-time-slot').innerText = `TURNO ${shiftLabels[AppState.rangoHorario] || AppState.rangoHorario}`;
+                    document.getElementById('status-info').innerHTML = `Móvil: <strong>${AppState.movil}</strong> | Cuadrante: <strong>${AppState.cuadrante}</strong>`;
+                    document.getElementById('status-km').innerText = `Km Inicial: ${AppState.kmInicial} km • ${AppState.userCargo}`;
+                    document.getElementById('display-km-inicial').innerText = AppState.kmInicial;
+                    document.getElementById('km-termino').min = AppState.kmInicial;
+                } else {
+                    document.getElementById('header-shift-display').innerText = AppState.userRole === 'ADMIN' ? 'ADMINISTRADOR' : 'EN TURNO';
+                }
+
+                updateBadgeAndTasks();
+
+                let targetView = saved.currentView || (AppState.turnoActivo ? 'view-menu' : (AppState.userRole === 'ADMIN' ? 'view-admin' : 'view-setup'));
+                if (targetView === 'view-login' || targetView === 'view-checklist') {
+                    targetView = AppState.turnoActivo ? 'view-menu' : 'view-setup';
+                }
+                navigateTo(targetView, true);
+                showToast(`Sesión activa restaurada: ${AppState.userName}`, 'bg-emerald-600');
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function handleHeaderExitClick() {
+            if (AppState.turnoActivo) {
+                showToast('Turno activo: Ingrese el Km de término para cerrar el turno y la sesión', 'bg-amber-600');
+                navigateTo('view-end-shift');
+                return;
+            }
+            AppState.isLoggedIn = false;
+            AppState.turnoActivo = false;
+            localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
+            navigateTo('view-login');
         }
 
         function populateVehicleSelectDropdown() {
@@ -1649,7 +1859,7 @@
         }
 
         // --- View Navigation ---
-        function navigateTo(viewId) {
+        function navigateTo(viewId, skipReset = false) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             const target = document.getElementById(viewId);
             if(target) target.classList.add('active');
@@ -1676,20 +1886,25 @@
             if (viewId === 'view-admin') {
                 renderAllAdminPanels();
             }
+            if (viewId === 'view-end-shift') {
+                updateBadgeAndTasks();
+            }
             
             const header = document.getElementById('main-header');
             if (viewId === 'view-login') {
                 if(header) header.classList.add('hidden');
-                resetApp();
+                if (!skipReset) resetApp();
             } else {
                 if(header) header.classList.remove('hidden');
+                AppState.currentView = viewId;
+                saveActiveSessionState();
             }
         }
 
         function toggleAdminInspectorMode() {
             const isAdminView = document.getElementById('view-admin')?.classList.contains('active');
             if (isAdminView) {
-                navigateTo(AppState.movil ? 'view-menu' : 'view-setup');
+                navigateTo(AppState.turnoActivo ? 'view-menu' : 'view-setup');
             } else {
                 navigateTo('view-admin');
             }
@@ -1752,8 +1967,8 @@
         }
 
         function openTaskResolve(taskId) {
-            const pending = getQuadrantPendingTasks();
-            const task = pending.find(t => t.id === taskId);
+            const allTasks = getQuadrantAllTasks();
+            const task = allTasks.find(t => t.id === taskId);
             if(task) {
                 document.getElementById('form-task-resolve').reset();
                 resetPhotoPreview('resolve-foto-preview', 'resolve-foto-placeholder');
@@ -1765,7 +1980,12 @@
         }
 
         function updateBadgeAndTasks() {
+            const allTasks = getQuadrantAllTasks();
             const pending = getQuadrantPendingTasks();
+            const total = allTasks.length;
+            const completedCount = Math.max(0, total - pending.length);
+            const pct = total > 0 ? Math.round((completedCount / total) * 100) : 100;
+
             const badge = document.getElementById('task-badge');
             if (badge) {
                 badge.innerText = pending.length;
@@ -1776,7 +1996,32 @@
             
             const sub = document.getElementById('task-menu-subtitle');
             if (sub) {
-                sub.innerText = `${AppState.cuadrante || 'SRA1'} • ${pending.length} pendiente(s)`;
+                sub.innerText = `${AppState.cuadrante || '252A'} • ${pending.length} pendiente(s) de ${total}`;
+            }
+
+            const statsEl = document.getElementById('menu-agendamiento-stats');
+            if (statsEl) {
+                statsEl.innerText = `${completedCount} / ${total} cumplidos (${pct}%)`;
+            }
+            const barEl = document.getElementById('menu-agendamiento-bar');
+            if (barEl) {
+                barEl.style.width = `${pct}%`;
+            }
+
+            const tasksProgLabel = document.getElementById('tasks-view-progress-label');
+            if (tasksProgLabel) {
+                tasksProgLabel.innerText = `${completedCount} de ${total} cumplidos (${pct}%)`;
+            }
+
+            const endSummary = document.getElementById('end-shift-tasks-summary');
+            const endWarn = document.getElementById('end-shift-tasks-warning');
+            if (endSummary) {
+                endSummary.innerText = `${completedCount} / ${total} cumplidos (${pct}%)`;
+            }
+            if (endWarn) {
+                endWarn.innerText = pending.length > 0
+                    ? `⚠️ Atención: Aún quedan ${pending.length} agendamiento(s) pendientes en este cuadrante.`
+                    : `✓ Todos los agendamientos programados del turno fueron cumplidos.`;
             }
 
             if(document.getElementById('view-tasks')?.classList.contains('active')) {
@@ -1785,7 +2030,7 @@
         }
 
         function renderTasks() {
-            const quad = AppState.cuadrante || 'SRA1';
+            const quad = AppState.cuadrante || '252A';
             const shift = AppState.rangoHorario || 'MANANA';
             
             const labelEl = document.getElementById('task-cuadrante-label');
@@ -1802,18 +2047,20 @@
             if(!container) return;
             container.innerHTML = '';
 
-            const pending = getQuadrantPendingTasks();
+            const allTasks = getQuadrantAllTasks();
+            const completedIds = getCompletedTaskIds();
+            const pending = allTasks.filter(t => !completedIds.includes(t.id));
+            const completed = allTasks.filter(t => completedIds.includes(t.id));
 
             if (pending.length === 0) {
-                container.innerHTML = `
-                    <div class="p-6 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
-                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                container.innerHTML += `
+                    <div class="p-5 text-center bg-white rounded-2xl border border-emerald-200 shadow-sm mb-3">
+                        <div class="w-11 h-11 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 text-lg">
                             <i class="fa-solid fa-check-double"></i>
                         </div>
-                        <h3 class="font-bold text-slate-800 text-base mb-1">¡Sin Tareas Pendientes!</h3>
-                        <p class="text-xs text-slate-500">Todas las tareas de este rango horario en el cuadrante <strong>${quad}</strong> ya fueron completadas.</p>
+                        <h3 class="font-bold text-slate-800 text-sm mb-0.5">¡Todos los Agendamientos Cumplidos!</h3>
+                        <p class="text-xs text-slate-500">Se completaron las ${allTasks.length} tareas programadas para <strong>${quad}</strong>.</p>
                     </div>`;
-                return;
             }
 
             pending.forEach(task => {
@@ -1831,6 +2078,28 @@
                 `;
                 container.appendChild(card);
             });
+
+            if (completed.length > 0) {
+                const compHeader = document.createElement('div');
+                compHeader.className = "pt-3 pb-1 text-[11px] font-extrabold text-emerald-700 uppercase tracking-wider px-1";
+                compHeader.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Agendamientos Cumplidos (${completed.length})`;
+                container.appendChild(compHeader);
+
+                completed.forEach(task => {
+                    const card = document.createElement('div');
+                    card.className = "bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-200 flex items-center justify-between gap-3 opacity-85";
+                    card.innerHTML = `
+                        <div class="flex-1">
+                            <span class="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 uppercase">✓ Cumplido • ${task.cuadrante}</span>
+                            <p class="text-xs font-semibold text-slate-700 mt-1 leading-snug line-through">${task.desc}</p>
+                        </div>
+                        <div class="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
         }
 
         // ========================================================================
@@ -2491,7 +2760,10 @@
             const passInput = document.getElementById('password').value.trim();
 
             const users = getUsersDB();
-            const matchedUser = users.find(u => u.rut.toLowerCase() === rutInput.toLowerCase());
+            const matchedUser = users.find(u =>
+                u.rut.toLowerCase() === rutInput.toLowerCase() ||
+                (u.nombre && u.nombre.toLowerCase() === rutInput.toLowerCase())
+            );
 
             if (matchedUser) {
                 if (matchedUser.estado === 'INACTIVO') {
@@ -2504,23 +2776,29 @@
                 }
                 AppState.userRut = matchedUser.rut;
                 AppState.userName = matchedUser.nombre;
+                AppState.userCargo = matchedUser.cargo || 'INSPECTOR MUNICIPAL';
                 AppState.userRole = matchedUser.rol || 'INSPECTOR';
             } else {
                 AppState.userRut = rutInput;
                 AppState.userName = rutInput;
+                AppState.userCargo = 'INSPECTOR MUNICIPAL';
                 AppState.userRole = 'INSPECTOR';
             }
 
+            AppState.isLoggedIn = true;
             document.getElementById('header-rut-display').innerText = `${AppState.userName || AppState.userRut}`;
-            document.getElementById('header-shift-display').innerText = AppState.userRole === 'ADMIN' ? 'ADMINISTRADOR' : 'EN TURNO';
+            document.getElementById('header-shift-display').innerText = AppState.userRole === 'ADMIN' ? 'ADMINISTRADOR' : 'CONFIGURANDO TURNO';
 
             syncBootstrapFromCloud();
             flushOfflineQueue(false);
 
             if (AppState.userRole === 'ADMIN') {
+                AppState.turnoActivo = false;
+                saveActiveSessionState('view-admin');
                 showToast(`Bienvenido Admin: ${AppState.userName}`, 'bg-amber-600');
                 navigateTo('view-admin');
             } else {
+                saveActiveSessionState('view-setup');
                 showToast(`Sesión Iniciada: ${AppState.userName}`, 'bg-blue-700');
                 navigateTo('view-setup');
             }
@@ -2755,481 +3033,4 @@
             if (checked) AppState.procSelectedEmails.add(email);
             else AppState.procSelectedEmails.delete(email);
             renderProcEmailDirectories();
-        }
-
-        function buildProcedureFormattedMessage(forWhatsApp = true) {
-            const b = forWhatsApp ? '*' : '';
-            const shiftLabels = { 'MANANA': 'MAÑANA (07:00 A 15:00)', 'TARDE': 'TARDE (15:00 A 23:00)', 'NOCHE': 'NOCHE (23:00 A 07:00)' };
-            const nombre = AppState.userName || AppState.userRut || '[FUNCIONARIO]';
-            const movil = AppState.movil || '[SIN MÓVIL]';
-            const cuadrante = AppState.cuadrante || '[SIN CUADRANTE]';
-            const cargo = AppState.userCargo || 'INSPECTOR MUNICIPAL';
-            const turno = shiftLabels[AppState.rangoHorario] || AppState.rangoHorario;
-            const fecha = new Date().toLocaleString('es-CL');
-            const tipoProc = document.getElementById('proc-tipo')?.value || 'PATRULLAJE PREVENTIVO';
-            const calle = (document.getElementById('proc-direccion')?.value || '').trim() || '[SIN DIRECCIÓN / SECTOR]';
-            const desc = (document.getElementById('proc-detalle')?.value || '').trim() || '[SIN DESCRIPCIÓN]';
-            const hasFoto = !!(document.getElementById('proc-foto')?.files?.[0]);
-
-            const headerTitle = cuadrante === 'VOLANTE / TODA LA COMUNA'
-                ? 'REPORTE A JEFATURA - PEÑA SEGURO 1410'
-                : `REPORTE OPERATIVO CUADRANTE ${cuadrante} - 1410`;
-
-            const lines = [
-                `${b}🚨 ${headerTitle} 🚨${b}`,
-                ``,
-                `${b}• NOMBRE:${b} ${nombre}`,
-                `${b}• MÓVIL:${b} ${movil}`,
-                `${b}• CUADRANTE:${b} ${cuadrante}`,
-                `${b}• CARGO:${b} ${cargo}`,
-                `${b}• TURNO:${b} ${turno}`,
-                `${b}• FECHA Y HORA:${b} ${fecha}`,
-                `${b}• PROCEDIMIENTO:${b} ${tipoProc}`
-            ];
-
-            if (tipoProc === 'FISCALIZACIÓN') {
-                lines.push(`${b}  ↳ N° DE PARTE:${b} ${(document.getElementById('proc-num-parte')?.value || '').trim() || '[PENDIENTE]'}`);
-                lines.push(`${b}  ↳ INFRACCIONADO:${b} ${(document.getElementById('proc-infraccionado')?.value || '').trim() || '[PENDIENTE]'}`);
-                lines.push(`${b}  ↳ INSPECTOR TESTIGO:${b} ${(document.getElementById('proc-testigo')?.value || '').trim() || '[PENDIENTE]'}`);
-            } else if (tipoProc === 'REPORTE DE INCIVILIDADES') {
-                lines.push(`${b}  ↳ INCIVILIDAD:${b} ${document.getElementById('proc-tipo-incivilidad')?.value || '[SIN ESPECIFICAR]'}`);
-            }
-
-            lines.push(`${b}• CALLE O VILLA:${b} ${calle}`);
-            lines.push(``);
-            lines.push(`${b}• DESCRIPCIÓN:${b}`);
-            lines.push(desc);
-
-            if (hasFoto) {
-                lines.push(``);
-                lines.push(`${b}📎 EVIDENCIA FOTOGRÁFICA:${b} 1 fotografía adjunta.`);
-            }
-
-            return lines.join('\n');
-        }
-
-        function updateProcWhatsAppPreview() {
-            const pre = document.getElementById('proc-wa-preview');
-            if (pre) pre.textContent = buildProcedureFormattedMessage(true);
-        }
-
-        function copyTextSilently(text) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); } catch (e) {}
-            document.body.removeChild(ta);
-        }
-
-        async function shareOrOpenWhatsApp(message, fileInputId, fileNamePrefix = 'Evidencia_1410') {
-            copyTextSilently(message);
-            const fileInput = document.getElementById(fileInputId);
-            const rawFile = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-
-            if (rawFile) {
-                const dataUrl = await compressImageFileToBase64(rawFile, 1200, 0.80);
-                // En móvil con soporte Web Share API Level 2: abre WhatsApp con foto + texto directamente
-                if (navigator.canShare && dataUrl) {
-                    try {
-                        const res = await fetch(dataUrl);
-                        const blob = await res.blob();
-                        const shareFile = new File([blob], `${fileNamePrefix}.jpg`, { type: 'image/jpeg' });
-                        if (navigator.canShare({ files: [shareFile] })) {
-                            showToast('Texto copiado. Elija WhatsApp para enviar foto + reporte.', 'bg-emerald-600');
-                            await navigator.share({
-                                files: [shareFile],
-                                text: message
-                            });
-                            return;
-                        }
-                    } catch (err) {
-                        if (err && err.name === 'AbortError') return;
-                    }
-                }
-
-                // En PC / Escritorio: descarga la foto comprimida y abre WhatsApp con el mensaje
-                if (dataUrl) {
-                    const a = document.createElement('a');
-                    a.href = dataUrl;
-                    a.download = `${fileNamePrefix}.jpg`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }
-            }
-
-            const encoded = encodeURIComponent(message);
-            window.open(`https://wa.me/?text=${encoded}`, '_blank', 'noopener');
-        }
-
-        async function sendProcedureByEmail() {
-            const direccion = (document.getElementById('proc-direccion')?.value || '').trim();
-            const detalle = (document.getElementById('proc-detalle')?.value || '').trim();
-            if (!direccion || !detalle) {
-                showToast('Complete Calle/Villa y Descripción antes de enviar.', 'bg-amber-600');
-                return;
-            }
-            if (AppState.procSelectedEmails.size === 0) {
-                showToast('Seleccione al menos un destinatario del Directorio de Correos.', 'bg-amber-600');
-                return;
-            }
-
-            const recipients = Array.from(AppState.procSelectedEmails).join(',');
-            const tipoProc = document.getElementById('proc-tipo')?.value || 'PROCEDIMIENTO';
-            const subject = `REPORTE PEÑA SEGURO 1410 | Cuadrante ${AppState.cuadrante || 'SRA1'} | ${tipoProc}`;
-            const body = buildProcedureFormattedMessage(false);
-
-            const mailtoUrl = `mailto:${encodeURIComponent(recipients)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.location.href = mailtoUrl;
-            showToast('Abriendo cliente de correo con destinatarios y reporte.', 'bg-blue-700');
-        }
-
-        // 2. Form Setup
-        document.getElementById('form-setup').addEventListener('submit', (e) => {
-            e.preventDefault();
-            detectTimeSlot(); // Re-detect time slot
-            
-            AppState.turnoId = `T-${Date.now()}`;
-            AppState.fechaInicioTurno = document.getElementById('current-datetime')?.innerText || new Date().toLocaleString('es-CL');
-            AppState.userCargo = document.getElementById('setup-cargo')?.value || 'INSPECTOR MUNICIPAL';
-            AppState.movil = document.getElementById('movil').value;
-            AppState.cuadrante = document.getElementById('cuadrante').value;
-            AppState.kmInicial = document.getElementById('km-inicial').value;
-            
-            const shiftLabels = { 'MANANA': 'Mañana', 'TARDE': 'Tarde', 'NOCHE': 'Noche' };
-            
-            document.getElementById('header-shift-display').innerText = `${AppState.movil} • ${AppState.cuadrante}`;
-            document.getElementById('display-time-slot').innerText = `TURNO ${shiftLabels[AppState.rangoHorario] || AppState.rangoHorario}`;
-            document.getElementById('status-info').innerHTML = `Móvil: <strong>${AppState.movil}</strong> | Cuadrante: <strong>${AppState.cuadrante}</strong>`;
-            document.getElementById('status-km').innerText = `Km Inicial: ${AppState.kmInicial} km • ${AppState.userCargo}`;
-            document.getElementById('display-km-inicial').innerText = AppState.kmInicial;
-            document.getElementById('km-termino').min = AppState.kmInicial;
-
-            updateBadgeAndTasks();
-            generateChecklist();
-            navigateTo('view-checklist');
-        });
-
-        // 2.5 Form Checklist Submit -> SE GUARDA DIRECTAMENTE EN EL EXCEL DE GOOGLE DRIVE
-        document.getElementById('form-checklist').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const origText = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GUARDANDO EN EXCEL DRIVE...`;
-            }
-
-            const radioButtons = document.querySelectorAll('#checklist-container input[type="radio"]:checked');
-            const respuestasChecklist = {};
-            const itemsMalosList = [];
-
-            radioButtons.forEach(radio => {
-                respuestasChecklist[radio.name] = radio.value;
-                if (radio.value === 'Malo') {
-                    itemsMalosList.push(radio.name);
-                }
-            });
-
-            const genFotoInput = document.getElementById('chk-general-foto');
-            const defFotoInput = document.getElementById('chk-defect-foto');
-
-            const fotoGeneralBase64 = (genFotoInput && genFotoInput.files[0])
-                ? await compressImageFileToBase64(genFotoInput.files[0])
-                : '';
-            const fotoDesperfectoBase64 = (defFotoInput && defFotoInput.files[0])
-                ? await compressImageFileToBase64(defFotoInput.files[0])
-                : '';
-
-            const payload = {
-                action: 'INICIO_TURNO_CHECKLIST',
-                turnoId: AppState.turnoId,
-                fechaInicio: AppState.fechaInicioTurno,
-                rut: AppState.userName || AppState.userRut,
-                rangoHorario: AppState.rangoHorario,
-                movil: AppState.movil,
-                cuadrante: AppState.cuadrante,
-                kmInicial: AppState.kmInicial,
-                estadoChecklist: itemsMalosList.length > 0 ? 'CON OBSERVACIONES' : 'OK',
-                itemsMalos: itemsMalosList.length > 0 ? itemsMalosList.join(', ') : 'Ninguno',
-                observaciones: document.getElementById('checklist-observaciones')?.value.trim() || '',
-                respuestasChecklist: respuestasChecklist,
-                fotoGeneralBase64: fotoGeneralBase64,
-                fotoDesperfectoBase64: fotoDesperfectoBase64
-            };
-
-            const res = await sendPayloadToGoogleSheets(payload);
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = origText;
-            }
-            showToast(res && res.ok ? '✓ Inicio de Turno y Checklist guardados en Drive' : 'Guardado localmente', 'bg-emerald-600');
-            navigateTo('view-menu');
-        });
-
-        // 3. Form Procedure -> SE ENVÍA DIRECTAMENTE POR WHATSAPP (CON FOTO Y FORMATO OFICIAL 1410)
-        document.getElementById('form-procedure').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const tipoProc = document.getElementById('proc-tipo')?.value || '';
-            if (tipoProc === 'FISCALIZACIÓN') {
-                const p1 = (document.getElementById('proc-num-parte')?.value || '').trim();
-                const p2 = (document.getElementById('proc-infraccionado')?.value || '').trim();
-                const p3 = (document.getElementById('proc-testigo')?.value || '').trim();
-                if (!p1 || !p2 || !p3) {
-                    showToast('Complete N° de Parte, Infraccionado e Inspector Testigo.', 'bg-amber-600');
-                    return;
-                }
-            }
-            if (tipoProc === 'REPORTE DE INCIVILIDADES' && !document.getElementById('proc-tipo-incivilidad')?.value) {
-                showToast('Seleccione el Tipo de Incivilidad detectada.', 'bg-amber-600');
-                return;
-            }
-
-            const message = buildProcedureFormattedMessage(true);
-            appendLocalHistory({
-                action: 'PROCEDIMIENTO_WHATSAPP',
-                turnoId: AppState.turnoId,
-                fechaRegistro: new Date().toLocaleString('es-CL'),
-                rut: AppState.userName || AppState.userRut,
-                rangoHorario: AppState.rangoHorario,
-                movil: AppState.movil,
-                cuadrante: AppState.cuadrante,
-                tipo: tipoProc,
-                direccion: document.getElementById('proc-direccion')?.value.trim() || '',
-                detalle: document.getElementById('proc-detalle')?.value.trim() || ''
-            });
-
-            await shareOrOpenWhatsApp(message, 'proc-foto', `PenaSeguro1410_Procedimiento_${Date.now()}`);
-            showToast('Abriendo WhatsApp con el reporte de procedimiento', 'bg-emerald-600');
-            e.target.reset();
-            AppState.procSelectedVillas = [];
-            renderProcVillasChips();
-            resetPhotoPreview('foto-preview', 'foto-placeholder');
-            navigateTo('view-menu');
-        });
-
-        // 4. Form Task Resolve -> SE ENVÍA DIRECTAMENTE POR WHATSAPP (CON EVIDENCIA FOTOGRÁFICA)
-        document.getElementById('form-task-resolve').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const taskId = document.getElementById('resolve-task-id').value;
-            const taskDesc = document.getElementById('resolve-task-title')?.innerText || '';
-            const direccion = document.getElementById('resolve-direccion')?.value.trim() || '';
-            const detalle = document.getElementById('resolve-detalle')?.value.trim() || 'Visto bueno otorgado en terreno. Sin novedades.';
-            const fotoInput = document.getElementById('resolve-foto');
-
-            if (!fotoInput.files || !fotoInput.files[0]) {
-                showToast('Error: Evidencia fotográfica requerida', 'bg-red-600');
-                return;
-            }
-
-            const shiftLabels = { 'MANANA': 'MAÑANA (07:00 A 15:00)', 'TARDE': 'TARDE (15:00 A 23:00)', 'NOCHE': 'NOCHE (23:00 A 07:00)' };
-            const waLines = [
-                `*✅ VISTO BUENO TAREA PROGRAMADA - PEÑA SEGURO 1410 ✅*`,
-                ``,
-                `*• NOMBRE:* ${AppState.userName || AppState.userRut}`,
-                `*• MÓVIL:* ${AppState.movil || '-'}`,
-                `*• CUADRANTE:* ${AppState.cuadrante || '-'}`,
-                `*• CARGO:* ${AppState.userCargo || 'INSPECTOR MUNICIPAL'}`,
-                `*• TURNO:* ${shiftLabels[AppState.rangoHorario] || AppState.rangoHorario}`,
-                `*• FECHA Y HORA:* ${new Date().toLocaleString('es-CL')}`,
-                `*• TAREA CUMPLIDA:* ${taskDesc}`,
-                `*• UBICACIÓN VERIFICADA:* ${direccion}`,
-                ``,
-                `*• OBSERVACIONES:*`,
-                `${detalle}`,
-                ``,
-                `*📎 EVIDENCIA FOTOGRÁFICA:* 1 fotografía adjunta.`
-            ];
-            const message = waLines.join('\n');
-
-            appendLocalHistory({
-                action: 'TAREA_WHATSAPP',
-                turnoId: AppState.turnoId,
-                fechaRegistro: new Date().toLocaleString('es-CL'),
-                rut: AppState.userName || AppState.userRut,
-                rangoHorario: AppState.rangoHorario,
-                movil: AppState.movil,
-                cuadrante: AppState.cuadrante,
-                taskDesc: taskDesc,
-                direccion: direccion,
-                detalle: detalle
-            });
-
-            if (taskId) {
-                markTaskIdCompleted(taskId, AppState.userRut);
-            }
-
-            await shareOrOpenWhatsApp(message, 'resolve-foto', `PenaSeguro1410_Tarea_${taskId || Date.now()}`);
-            showToast('Tarea completada y enviada a WhatsApp', 'bg-emerald-600');
-            updateBadgeAndTasks();
-            navigateTo('view-tasks');
-        });
-
-        // 5. Form End Shift (Registra Cierre de Turno y Km Recorridos en Excel Drive)
-        document.getElementById('form-end-shift').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const kmTermino = parseInt(document.getElementById('km-termino').value);
-            const kmInicial = parseInt(AppState.kmInicial);
-            
-            if (kmTermino < kmInicial) {
-                showToast('Error: Km Término inferior a Km Inicial', 'bg-red-600');
-                return;
-            }
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const origText = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> CERRANDO Y SUBIENDO A DRIVE...`;
-            }
-
-            const payload = {
-                action: 'CERRAR_TURNO',
-                fechaTermino: document.getElementById('end-datetime')?.innerText || new Date().toLocaleString('es-CL'),
-                turnoId: AppState.turnoId,
-                rut: AppState.userName || AppState.userRut,
-                rangoHorario: AppState.rangoHorario,
-                movil: AppState.movil,
-                cuadrante: AppState.cuadrante,
-                kmInicial: kmInicial,
-                kmTermino: kmTermino
-            };
-
-            const res = await sendPayloadToGoogleSheets(payload);
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = origText;
-            }
-
-            showToast(res && res.ok ? '✓ Cierre de turno registrado en Excel Drive' : 'Cierre guardado localmente', 'bg-blue-900');
-            setTimeout(() => {
-                navigateTo('view-login');
-            }, 600);
-        });
-
-        // --- Helper Tools ---
-        function previewImage(input, previewId, placeholderId) {
-            const preview = document.getElementById(previewId);
-            const placeholder = document.getElementById(placeholderId);
-            
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                    placeholder.classList.add('hidden');
-                }
-                reader.readAsDataURL(input.files[0]);
-            } else {
-                resetPhotoPreview(previewId, placeholderId);
-            }
-        }
-
-        function resetPhotoPreview(previewId, placeholderId) {
-            const preview = document.getElementById(previewId);
-            const placeholder = document.getElementById(placeholderId);
-            if(preview && placeholder) {
-                preview.classList.add('hidden');
-                preview.src = '';
-                placeholder.classList.remove('hidden');
-            }
-        }
-
-        function getLocation(inputId) {
-            const input = document.getElementById(inputId);
-            input.value = "Obteniendo GPS...";
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const lat = pos.coords.latitude.toFixed(5);
-                        const lon = pos.coords.longitude.toFixed(5);
-                        input.value = `GPS Peñaflor (${lat}, ${lon})`;
-                        updateProcWhatsAppPreview();
-                        showToast("Coordenadas GPS reales obtenidas", "bg-emerald-600");
-                    },
-                    () => {
-                        const lat = (-33.6120 + (Math.random()*0.008)).toFixed(4);
-                        const lon = (-70.8750 + (Math.random()*0.008)).toFixed(4);
-                        input.value = `Av. Balmaceda 1410, Peñaflor (${lat}, ${lon})`;
-                        updateProcWhatsAppPreview();
-                        showToast("Coordenadas GPS obtenidas", "bg-emerald-600");
-                    },
-                    { timeout: 5000 }
-                );
-            } else {
-                setTimeout(() => {
-                    const lat = (-33.6120 + (Math.random()*0.008)).toFixed(4);
-                    const lon = (-70.8750 + (Math.random()*0.008)).toFixed(4);
-                    input.value = `Av. Balmaceda 1410, Peñaflor (${lat}, ${lon})`;
-                    updateProcWhatsAppPreview();
-                    showToast("Coordenadas GPS obtenidas", "bg-emerald-600");
-                }, 600);
-            }
-        }
-
-        function showToast(message, bgColorClass = 'bg-emerald-600') {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-message');
-            
-            if(!toast || !toastMsg) return;
-            toast.className = ''; 
-            toastMsg.innerText = message;
-            toast.className = `show ${bgColorClass}`;
-            
-            setTimeout(() => {
-                toast.className = toast.className.replace('show', '').trim();
-            }, 2800);
-        }
-
-        function resetApp() {
-            document.getElementById('form-login').reset();
-            document.getElementById('form-setup').reset();
-            document.getElementById('form-checklist').reset();
-            document.getElementById('form-end-shift').reset();
-            resetPhotoPreview('chk-general-preview', 'chk-general-placeholder');
-            resetPhotoPreview('chk-defect-preview', 'chk-defect-placeholder');
-            AppState.turnoId = '';
-            AppState.fechaInicioTurno = '';
-            AppState.userRut = '';
-            AppState.userName = '';
-            AppState.userRole = 'INSPECTOR';
-            AppState.movil = '';
-            AppState.cuadrante = '';
-            AppState.kmInicial = 0;
-            populateLoginFuncionariosDropdown();
-        }
-
-        // --- DOM Initialization ---
-        window.addEventListener('DOMContentLoaded', () => {
-            // Limpiar cualquier cola antigua de versiones previas para que no quede nada atascado
-            localStorage.removeItem('pena_seguro_sync_queue');
-
-            startClock();
-            detectTimeSlot();
-            populateLoginFuncionariosDropdown();
-            populateVehicleSelectDropdown();
-            updateCloudStatusUI();
-            syncBootstrapFromCloud();
-
-            setTimeout(() => flushOfflineQueue(false), 1000);
-            setInterval(() => {
-                if (getSyncQueue().length > 0) {
-                    flushOfflineQueue(false);
-                }
-            }, 15000);
-
-            window.addEventListener('online', () => {
-                flushOfflineQueue(true);
-            });
-
-            const overrideSelect = document.getElementById('rango-horario-override');
-            if (overrideSelect) {
-                overrideSelect.addEventListener('change', detectTimeSlot);
-            }
-        });
-    </script>
-</body>
-</html>
+                                          }
