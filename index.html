@@ -922,22 +922,26 @@
                 <div id="admin-maintenance-alert-banner" class="hidden mb-4 rounded-2xl border-2 p-4 shadow-sm"></div>
 
                 <!-- Admin Navigation Tabs -->
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+                <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-4">
                     <button type="button" onclick="switchAdminTab('users')" id="admin-tab-btn-users" class="admin-tab-btn bg-[#1e3a8a] text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-users-gear text-yellow-400"></i> Usuarios y Claves
+                        <i class="fa-solid fa-users-gear text-yellow-400"></i> Usuarios
                     </button>
                     <button type="button" onclick="switchAdminTab('tasks')" id="admin-tab-btn-tasks" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-list-check text-blue-700"></i> Tareas Cuadrante
+                        <i class="fa-solid fa-list-check text-blue-700"></i> Tareas
                     </button>
                     <button type="button" onclick="switchAdminTab('fleet')" id="admin-tab-btn-fleet" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-car-side text-blue-700"></i> Flota / Móviles
+                        <i class="fa-solid fa-car-side text-blue-700"></i> Flota
                     </button>
                     <button type="button" onclick="switchAdminTab('maintenance')" id="admin-tab-btn-maintenance" class="admin-tab-btn relative bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-screwdriver-wrench text-amber-600"></i> Mantenciones
                         <span id="admin-maint-tab-badge" class="hidden ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white">0</span>
                     </button>
+                    <button type="button" onclick="switchAdminTab('alerts')" id="admin-tab-btn-alerts" class="admin-tab-btn relative bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-bell text-red-600"></i> Alertas Flota
+                        <span id="admin-alerts-tab-badge" class="hidden ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white">0</span>
+                    </button>
                     <button type="button" onclick="switchAdminTab('monitor')" id="admin-tab-btn-monitor" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-chart-line text-emerald-600"></i> Monitor en Vivo
+                        <i class="fa-solid fa-chart-line text-emerald-600"></i> Monitor
                     </button>
                 </div>
 
@@ -1180,6 +1184,59 @@
                     </div>
                 </div>
 
+                <!-- TAB 3.7: CENTRO DE ALERTAS Y NOVEDADES DEL CHECKLIST (CAMBIOS, REPOSICIONES, DOCUMENTOS) -->
+                <div id="admin-panel-alerts" class="admin-panel-section hidden space-y-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-red-50 p-3.5 rounded-2xl border border-red-200 shadow-xs">
+                            <p class="text-[10px] font-extrabold text-red-700 uppercase">Críticas (Docs / Luces / Frenos)</p>
+                            <p id="kpi-alerts-crit" class="text-2xl font-black text-red-700 mt-1">0</p>
+                        </div>
+                        <div class="bg-orange-50 p-3.5 rounded-2xl border border-orange-200 shadow-xs">
+                            <p class="text-[10px] font-extrabold text-orange-800 uppercase">Altas (Eléctrico / Extintor)</p>
+                            <p id="kpi-alerts-high" class="text-2xl font-black text-orange-700 mt-1">0</p>
+                        </div>
+                        <div class="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 shadow-xs">
+                            <p class="text-[10px] font-extrabold text-amber-800 uppercase">Medias (Reposición / Fluidos)</p>
+                            <p id="kpi-alerts-med" class="text-2xl font-black text-amber-700 mt-1">0</p>
+                        </div>
+                        <div class="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 shadow-xs">
+                            <p class="text-[10px] font-extrabold text-emerald-700 uppercase">Resueltas / Atendidas</p>
+                            <p id="kpi-alerts-resolved" class="text-2xl font-black text-emerald-700 mt-1">0</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-[#1e3a8a] flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bell text-red-600"></i> Centro de Notificaciones de Flota (Checklist Pre-Turno)
+                                </h3>
+                                <p class="text-[11px] text-slate-500">Control automático de documentos vencidos, cambio de luces, reposición de extintor/botiquín/conos, fluidos y fallas mecánicas.</p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" onclick="setAdminAlertStatusFilter('PENDIENTE')" id="alert-status-PENDIENTE" class="px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold bg-red-600 text-white shadow-xs">Pendientes</button>
+                                <button type="button" onclick="setAdminAlertStatusFilter('RESUELTO')" id="alert-status-RESUELTO" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-slate-100 text-slate-700">Resueltas</button>
+                                <button type="button" onclick="setAdminAlertStatusFilter('ALL')" id="alert-status-ALL" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-slate-100 text-slate-700">Todas</button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <button type="button" onclick="setAdminAlertCategoryFilter('ALL')" id="alert-cat-ALL" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-[#1e3a8a] text-white">Todas</button>
+                                <button type="button" onclick="setAdminAlertCategoryFilter('DOCUMENTACION')" id="alert-cat-DOCUMENTACION" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700">📄 Documentos</button>
+                                <button type="button" onclick="setAdminAlertCategoryFilter('LUCES_ELECTRICO')" id="alert-cat-LUCES_ELECTRICO" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700">💡 Luces / Eléctrico</button>
+                                <button type="button" onclick="setAdminAlertCategoryFilter('MECANICA_NEUMATICOS')" id="alert-cat-MECANICA_NEUMATICOS" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700">🔧 Mecánica</button>
+                                <button type="button" onclick="setAdminAlertCategoryFilter('FLUIDOS')" id="alert-cat-FLUIDOS" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700">🛢️ Fluidos</button>
+                                <button type="button" onclick="setAdminAlertCategoryFilter('EQUIPAMIENTO')" id="alert-cat-EQUIPAMIENTO" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700">🧯 Equipamiento</button>
+                                <button type="button" onclick="setAdminAlertCategoryFilter('CARROCERIA')" id="alert-cat-CARROCERIA" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700">🚗 Carrocería</button>
+                            </div>
+                            <input type="text" id="adm-alerts-search" oninput="renderAdminFleetAlertsPanel()" class="p-2 rounded-lg border border-slate-300 text-xs" placeholder="Buscar móvil, ítem o inspector...">
+                        </div>
+
+                        <div id="admin-alerts-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[540px] overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+
                 <!-- TAB 4: MONITOR OPERATIVO Y REGISTROS EN EXCEL DRIVE -->
                 <div id="admin-panel-monitor" class="admin-panel-section hidden space-y-4">
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1359,6 +1416,9 @@
                         <button type="button" id="maint-modal-admin-btn" onclick="goToAdminMaintenanceFromModal()" class="hidden flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-extrabold py-2.5 px-3 rounded-xl shadow flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-screwdriver-wrench text-amber-300"></i> IR A MANTENCIONES
                         </button>
+                        <button type="button" id="maint-modal-alerts-btn" onclick="goToAdminAlertsFromModal()" class="hidden flex-1 bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 px-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-bell text-amber-300"></i> VER ALERTAS CHECKLIST
+                        </button>
                         <button type="button" onclick="closeMaintenanceAlertModal()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2.5 px-3 rounded-xl">
                             ENTENDIDO
                         </button>
@@ -1417,7 +1477,8 @@
             COMPLETED_TASKS: 'pena_seguro_completed_tasks_v4',
             USERS_DB: 'pena_seguro_users_db_v4',
             TASKS_DB: 'pena_seguro_tasks_db_v4',
-            FLEET_DB: 'pena_seguro_fleet_db_v4'
+            FLEET_DB: 'pena_seguro_fleet_db_v4',
+            FLEET_ALERTS: 'pena_seguro_fleet_alerts_v4'
         };
 
         // --- Central State Object Declaration ---
@@ -1441,6 +1502,8 @@
             cloudRecentProcedures: [],
             maintAlertShownThisLogin: false,
             adminMaintFilter: 'ALL',
+            adminAlertStatusFilter: 'PENDIENTE',
+            adminAlertCategoryFilter: 'ALL',
             confirmedKmOverride: ''
         };
 
@@ -1945,6 +2008,120 @@
         function saveFleetDB(list) {
             localStorage.setItem(STORAGE_KEYS.FLEET_DB, JSON.stringify(list));
             populateVehicleSelectDropdown();
+        }
+
+        // --- Clasificación Profesional de Alertas del Checklist (Documentos, Luces, Reposiciones, Mecánica, Fluidos) ---
+        const CHECKLIST_ITEM_META = {
+            // Documentación
+            auto_doc_padron: { label: 'Padrón del vehículo', categoria: 'DOCUMENTACION', prioridad: 'ALTA', accionAtrasada: 'Renovar Padrón del vehículo', accionNoPorta: 'Reponer copia de Padrón en móvil' },
+            moto_doc_padron: { label: 'Padrón del vehículo', categoria: 'DOCUMENTACION', prioridad: 'ALTA', accionAtrasada: 'Renovar Padrón de motocicleta', accionNoPorta: 'Reponer copia de Padrón en moto' },
+            auto_doc_permiso: { label: 'Permiso de Circulación', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Renovar Permiso de Circulación vencido', accionNoPorta: 'Reponer Permiso de Circulación en móvil' },
+            moto_doc_permiso: { label: 'Permiso de Circulación', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Renovar Permiso de Circulación vencido', accionNoPorta: 'Reponer Permiso de Circulación en moto' },
+            auto_doc_revtech: { label: 'Revisión Técnica', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Gestionar Revisión Técnica vencida (urgente)', accionNoPorta: 'Reponer certificado de Revisión Técnica' },
+            moto_doc_revtech: { label: 'Revisión Técnica', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Gestionar Revisión Técnica vencida (urgente)', accionNoPorta: 'Reponer certificado de Revisión Técnica' },
+            auto_doc_soap: { label: 'Seguro Obligatorio (SOAP)', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Renovar Seguro Obligatorio SOAP vencido', accionNoPorta: 'Reponer póliza SOAP en móvil' },
+            moto_doc_soap: { label: 'Seguro Obligatorio (SOAP)', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Renovar Seguro Obligatorio SOAP vencido', accionNoPorta: 'Reponer póliza SOAP en moto' },
+
+            // Fluidos
+            auto_flu_combustible: { label: 'Nivel de Combustible', categoria: 'FLUIDOS', prioridad: 'MEDIA', accion: 'Cargar combustible antes de patrullaje' },
+            moto_niv_combustible: { label: 'Nivel de Combustible', categoria: 'FLUIDOS', prioridad: 'MEDIA', accion: 'Cargar combustible en motocicleta' },
+            auto_flu_aceite: { label: 'Aceite de motor', categoria: 'FLUIDOS', prioridad: 'CRITICA', accion: 'Rellenar o cambiar aceite de motor (nivel crítico)' },
+            moto_niv_aceite: { label: 'Nivel de Aceite de motor', categoria: 'FLUIDOS', prioridad: 'CRITICA', accion: 'Rellenar o cambiar aceite de motor en moto' },
+            auto_flu_frenos: { label: 'Líquido de frenos', categoria: 'FLUIDOS', prioridad: 'CRITICA', accion: 'Revisar fuga y rellenar líquido de frenos' },
+            moto_niv_frenos: { label: 'Líquido de frenos', categoria: 'FLUIDOS', prioridad: 'CRITICA', accion: 'Revisar y rellenar líquido de frenos en moto' },
+            auto_flu_refrigerante: { label: 'Refrigerante / Agua de motor', categoria: 'FLUIDOS', prioridad: 'ALTA', accion: 'Rellenar refrigerante y revisar temperatura' },
+
+            // Luces y Sistema Eléctrico
+            auto_ele_luces: { label: 'Luces principales (Altas y Bajas)', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de ampolletas / reparación de luces principales' },
+            moto_ele_luces: { label: 'Luz delantera (Alta y Baja)', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de foco / ampolleta delantera de moto' },
+            auto_ele_intermitentes: { label: 'Intermitentes y Hazard', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Cambio de luces intermitentes / revisión eléctrica' },
+            moto_ele_guinos: { label: 'Guiños / Intermitentes', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Cambio de guiños / intermitentes de moto' },
+            auto_ele_frenoreversa: { label: 'Luces de freno y reversa', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de luces de freno / reversa' },
+            moto_ele_freno: { label: 'Luz trasera y luz de freno', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de luz trasera / sensor de freno' },
+            auto_ele_baliza: { label: 'Baliza LED destelladora', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Reparar o reemplazar baliza LED de emergencia' },
+            moto_ele_baliza: { label: 'Baliza LED de motocicleta', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Reparar o reemplazar baliza LED de moto' },
+            auto_ele_sirena: { label: 'Sirena y perifoneo / megáfono', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Revisar sirena / módulo de perifoneo' },
+            moto_ele_sirena: { label: 'Sirena y Claxon / Bocina', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Reparar sirena / bocina de moto' },
+            auto_ele_radio: { label: 'Radio comunicador base / móvil', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Revisar o reemplazar radio comunicador 1410' },
+            moto_ele_radio: { label: 'Radio Handie / Comunicador', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Revisar o reponer radio portátil / batería' },
+
+            // Neumáticos y Mecánica
+            auto_neu_delanteros: { label: 'Neumáticos delanteros', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio o reparación de neumáticos delanteros' },
+            auto_neu_traseros: { label: 'Neumáticos traseros', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio o reparación de neumáticos traseros' },
+            auto_neu_repuesto: { label: 'Neumático de repuesto', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Reponer o reparar neumático de repuesto' },
+            auto_mec_gata: { label: 'Gata hidráulica y llave de ruedas', categoria: 'MECANICA_NEUMATICOS', prioridad: 'MEDIA', accion: 'Reponer gata hidráulica / llave de ruedas' },
+            auto_mec_frenomano: { label: 'Freno de mano / estacionamiento', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Regular o reparar freno de mano en taller' },
+            moto_neu_delantero: { label: 'Neumático delantero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de neumático delantero de moto' },
+            moto_neu_trasero: { label: 'Neumático trasero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de neumático trasero de moto' },
+            moto_fre_delantero: { label: 'Freno delantero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de pastillas / revisión freno delantero' },
+            moto_fre_trasero: { label: 'Freno trasero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de pastillas / revisión freno trasero' },
+            moto_trans_cadena: { label: 'Cadena y transmisión (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Tensar, lubricar o cambiar kit de arrastre' },
+            moto_mec_espejos: { label: 'Espejos, pata y estanque (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Reparar o reemplazar espejos / pata de apoyo' },
+
+            // Equipamiento y Seguridad
+            auto_seg_extintor: { label: 'Extintor de incendios', categoria: 'EQUIPAMIENTO', prioridad: 'ALTA', accion: 'Recargar o reemplazar extintor vencido/descargado' },
+            moto_seg_extintor: { label: 'Extintor de incendios', categoria: 'EQUIPAMIENTO', prioridad: 'ALTA', accion: 'Recargar o reponer extintor' },
+            auto_seg_botiquin: { label: 'Botiquín de primeros auxilios', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer insumos faltantes del botiquín' },
+            moto_seg_botiquin: { label: 'Botiquín de primeros auxilios', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer insumos faltantes del botiquín' },
+            auto_seg_triangulos: { label: 'Triángulos / Conos de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer conos / triángulos de seguridad' },
+            moto_seg_triangulos: { label: 'Triángulos / Conos de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer conos de seguridad' },
+            auto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chalecos reflectantes en móvil' },
+            moto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chaleco reflectante' },
+            moto_seg_casco: { label: 'Casco homologado y protecciones', categoria: 'EQUIPAMIENTO', prioridad: 'CRITICA', accion: 'Reponer casco homologado / guantes de motorista' },
+
+            // Carrocería e Interior
+            auto_car_parabrisas: { label: 'Parabrisas y vidrios', categoria: 'CARROCERIA', prioridad: 'ALTA', accion: 'Reparar o cambiar parabrisas / vidrio trizado' },
+            auto_car_espejos: { label: 'Espejos retrovisores', categoria: 'CARROCERIA', prioridad: 'ALTA', accion: 'Reemplazar espejo retrovisor dañado' },
+            auto_car_carroceria: { label: 'Carrocería', categoria: 'CARROCERIA', prioridad: 'MEDIA', accion: 'Evaluar daño de carrocería / desabolladura' },
+            auto_car_cinturones: { label: 'Cinturones de seguridad', categoria: 'CARROCERIA', prioridad: 'CRITICA', accion: 'Reparar o reemplazar cinturón de seguridad' },
+            auto_car_aseo: { label: 'Aseo interior y exterior', categoria: 'CARROCERIA', prioridad: 'MEDIA', accion: 'Programar lavado y sanitización de unidad' }
+        };
+
+        const ALERT_CATEGORY_INFO = {
+            DOCUMENTACION: { label: 'Documentación', icon: 'fa-file-contract', badgeClass: 'bg-purple-100 text-purple-800 border-purple-200' },
+            LUCES_ELECTRICO: { label: 'Luces / Eléctrico', icon: 'fa-lightbulb', badgeClass: 'bg-amber-100 text-amber-900 border-amber-200' },
+            MECANICA_NEUMATICOS: { label: 'Mecánica / Neumáticos', icon: 'fa-wrench', badgeClass: 'bg-red-100 text-red-800 border-red-200' },
+            FLUIDOS: { label: 'Fluidos / Combustible', icon: 'fa-droplet', badgeClass: 'bg-blue-100 text-blue-800 border-blue-200' },
+            EQUIPAMIENTO: { label: 'Equipamiento / EPP', icon: 'fa-kit-medical', badgeClass: 'bg-teal-100 text-teal-800 border-teal-200' },
+            CARROCERIA: { label: 'Carrocería / Interior', icon: 'fa-car-burst', badgeClass: 'bg-slate-200 text-slate-800 border-slate-300' },
+            OTROS: { label: 'Otros', icon: 'fa-triangle-exclamation', badgeClass: 'bg-slate-200 text-slate-700 border-slate-300' }
+        };
+
+        function classifyChecklistDefect(itemId, estadoReportado) {
+            const meta = CHECKLIST_ITEM_META[itemId] || {
+                label: itemId,
+                categoria: 'OTROS',
+                prioridad: 'MEDIA',
+                accion: 'Revisar ítem reportado en checklist'
+            };
+            let accion = meta.accion || 'Revisar / Gestionar reposición';
+            if (estadoReportado === 'Atrasada' && meta.accionAtrasada) accion = meta.accionAtrasada;
+            if (estadoReportado === 'No porta' && meta.accionNoPorta) accion = meta.accionNoPorta;
+            return {
+                itemId,
+                itemLabel: meta.label,
+                estadoReportado,
+                categoria: meta.categoria,
+                prioridad: meta.prioridad,
+                accionRecomendada: accion
+            };
+        }
+
+        function getFleetAlertsDB() {
+            try {
+                const list = JSON.parse(localStorage.getItem(STORAGE_KEYS.FLEET_ALERTS));
+                return Array.isArray(list) ? list : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveFleetAlertsDB(list) {
+            localStorage.setItem(STORAGE_KEYS.FLEET_ALERTS, JSON.stringify(list));
+        }
+
+        function getPendingFleetAlerts() {
+            return getFleetAlertsDB().filter(a => (a.estadoGestion || 'PENDIENTE') === 'PENDIENTE');
         }
 
         // Helper to get completed tasks from localStorage
@@ -2733,7 +2910,7 @@
         // ADMINISTRATOR PANEL FUNCTIONS (USUARIOS, TAREAS, FLOTA, MONITOR)
         // ========================================================================
         function switchAdminTab(tabName) {
-            ['users', 'tasks', 'fleet', 'maintenance', 'monitor'].forEach(t => {
+            ['users', 'tasks', 'fleet', 'maintenance', 'alerts', 'monitor'].forEach(t => {
                 const panel = document.getElementById(`admin-panel-${t}`);
                 const btn = document.getElementById(`admin-tab-btn-${t}`);
                 if (panel) panel.classList.toggle('hidden', t !== tabName);
@@ -2752,6 +2929,7 @@
             renderAdminFleetList();
             renderAdminMaintenanceBanner();
             renderAdminMaintenancePanel();
+            renderAdminFleetAlertsPanel();
             renderAdminMonitor();
         }
 
@@ -2973,7 +3151,13 @@
         function renderAdminMaintenanceBanner() {
             const banner = document.getElementById('admin-maintenance-alert-banner');
             const badge = document.getElementById('admin-maint-tab-badge');
+            const alertsBadge = document.getElementById('admin-alerts-tab-badge');
             const alerts = getFleetMaintenanceAlerts();
+            const pendingChecklistAlerts = getPendingFleetAlerts();
+            const priorityRank = { CRITICA: 0, ALTA: 1, MEDIA: 2 };
+            const sortedChecklist = [...pendingChecklistAlerts].sort((a, b) => (priorityRank[a.prioridad] ?? 3) - (priorityRank[b.prioridad] ?? 3));
+            const critChecklistCount = sortedChecklist.filter(a => a.prioridad === 'CRITICA').length;
+            const highChecklistCount = sortedChecklist.filter(a => a.prioridad === 'ALTA').length;
 
             if (badge) {
                 if (alerts.totalAlertas > 0) {
@@ -2987,20 +3171,34 @@
                 }
             }
 
+            if (alertsBadge) {
+                if (sortedChecklist.length > 0) {
+                    alertsBadge.innerText = sortedChecklist.length;
+                    alertsBadge.classList.remove('hidden');
+                    alertsBadge.className = critChecklistCount > 0
+                        ? 'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white animate-pulse'
+                        : (highChecklistCount > 0
+                            ? 'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-orange-500 text-white'
+                            : 'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-900');
+                } else {
+                    alertsBadge.classList.add('hidden');
+                }
+            }
+
             if (!banner) return;
-            if (alerts.totalAlertas === 0) {
+            if (alerts.totalAlertas === 0 && sortedChecklist.length === 0) {
                 banner.classList.add('hidden');
                 return;
             }
 
-            const hasOverdue = alerts.vencidos.length > 0;
+            const hasUrgent = alerts.vencidos.length > 0 || critChecklistCount > 0;
             banner.classList.remove('hidden');
-            banner.className = hasOverdue
+            banner.className = hasUrgent
                 ? 'mb-4 rounded-2xl border-2 border-red-400 bg-gradient-to-r from-red-50 via-white to-amber-50 p-4 shadow-sm'
                 : 'mb-4 rounded-2xl border-2 border-amber-400 bg-amber-50/90 p-4 shadow-sm';
 
-            const previewItems = [...alerts.vencidos, ...alerts.proximos].slice(0, 6);
-            const chipsHtml = previewItems.map(({ unit, maint }) => {
+            const previewMaint = [...alerts.vencidos, ...alerts.proximos].slice(0, 4);
+            const maintChipsHtml = previewMaint.map(({ unit, maint }) => {
                 const isOver = maint.status === 'VENCIDO';
                 const icon = maint.isMoto ? 'fa-motorcycle' : 'fa-car-side';
                 const detail = isOver
@@ -3013,27 +3211,56 @@
                     </span>`;
             }).join('');
 
-            const extraCount = alerts.totalAlertas - previewItems.length;
+            const previewCheck = sortedChecklist.slice(0, 4);
+            const checkChipsHtml = previewCheck.map(al => {
+                const cat = ALERT_CATEGORY_INFO[al.categoria] || ALERT_CATEGORY_INFO.OTROS;
+                const chipColor = al.prioridad === 'CRITICA'
+                    ? 'bg-red-600 text-white border-red-700'
+                    : (al.prioridad === 'ALTA'
+                        ? 'bg-orange-100 text-orange-900 border-orange-300'
+                        : 'bg-amber-100 text-amber-900 border-amber-300');
+                return `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-extrabold border ${chipColor}">
+                        <i class="fa-solid ${cat.icon}"></i>
+                        ${al.movil}: ${al.itemLabel} (${al.estadoReportado})
+                    </span>`;
+            }).join('');
+
+            const extraMaint = Math.max(0, alerts.totalAlertas - previewMaint.length);
+            const extraCheck = Math.max(0, sortedChecklist.length - previewCheck.length);
+            const summaryParts = [];
+            if (alerts.vencidos.length > 0) summaryParts.push(`${alerts.vencidos.length} mant. vencida(s)`);
+            if (alerts.proximos.length > 0) summaryParts.push(`${alerts.proximos.length} próxima(s)`);
+            if (sortedChecklist.length > 0) summaryParts.push(`${sortedChecklist.length} novedad(es) de checklist`);
 
             banner.innerHTML = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="space-y-1.5">
+                    <div class="space-y-2">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${hasOverdue ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}">
-                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Alerta de Mantención de Flota
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${hasUrgent ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}">
+                                <i class="fa-solid fa-bell mr-1"></i> Centro de Alertas de Flota
                             </span>
-                            <span class="text-xs font-extrabold ${hasOverdue ? 'text-red-800' : 'text-amber-900'}">
-                                ${alerts.vencidos.length > 0 ? `${alerts.vencidos.length} vencido(s)` : ''}${alerts.vencidos.length > 0 && alerts.proximos.length > 0 ? ' • ' : ''}${alerts.proximos.length > 0 ? `${alerts.proximos.length} próximo(s) (≤ 500 km)` : ''}
+                            <span class="text-xs font-extrabold ${hasUrgent ? 'text-red-800' : 'text-amber-900'}">
+                                ${summaryParts.join(' • ')}
                             </span>
                         </div>
                         <div class="flex flex-wrap gap-1.5">
-                            ${chipsHtml}
-                            ${extraCount > 0 ? `<span class="text-[11px] font-bold text-slate-600 self-center">+${extraCount} unidad(es) más</span>` : ''}
+                            ${maintChipsHtml}
+                            ${extraMaint > 0 ? `<span class="text-[11px] font-bold text-slate-600 self-center">+${extraMaint} mantención(es)</span>` : ''}
+                            ${checkChipsHtml}
+                            ${extraCheck > 0 ? `<span class="text-[11px] font-bold text-slate-600 self-center">+${extraCheck} novedad(es) más</span>` : ''}
                         </div>
                     </div>
-                    <button type="button" onclick="switchAdminTab('maintenance')" class="shrink-0 bg-[#1e3a8a] hover:bg-blue-900 text-white text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-screwdriver-wrench text-amber-300"></i> Verificar Mantenciones
-                    </button>
+                    <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+                        ${sortedChecklist.length > 0 ? `
+                        <button type="button" onclick="switchAdminTab('alerts')" class="bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-bell text-amber-300"></i> Ver Alertas (${sortedChecklist.length})
+                        </button>` : ''}
+                        ${alerts.totalAlertas > 0 ? `
+                        <button type="button" onclick="switchAdminTab('maintenance')" class="bg-[#1e3a8a] hover:bg-blue-900 text-white text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-screwdriver-wrench text-amber-300"></i> Mantenciones (${alerts.totalAlertas})
+                        </button>` : ''}
+                    </div>
                 </div>
             `;
         }
@@ -3313,41 +3540,100 @@
             const modal = document.getElementById('maintenance-alert-modal');
             const body = document.getElementById('maint-modal-body');
             const titleEl = document.getElementById('maint-modal-title');
+            const subtitleEl = document.getElementById('maint-modal-subtitle');
             const headerEl = document.getElementById('maint-modal-header');
             const adminBtn = document.getElementById('maint-modal-admin-btn');
+            const alertsBtn = document.getElementById('maint-modal-alerts-btn');
             if (!modal || !body) return;
 
             const alerts = getFleetMaintenanceAlerts();
-            if (!force && alerts.totalAlertas === 0) return;
+            const isAdmin = role === 'ADMIN';
+            const pendingChecklist = isAdmin ? getPendingFleetAlerts() : [];
+            const priorityRank = { CRITICA: 0, ALTA: 1, MEDIA: 2 };
+            const sortedChecklist = [...pendingChecklist].sort((a, b) => (priorityRank[a.prioridad] ?? 3) - (priorityRank[b.prioridad] ?? 3));
+            const critChecklistCount = sortedChecklist.filter(a => a.prioridad === 'CRITICA').length;
+            const totalCombined = alerts.totalAlertas + sortedChecklist.length;
 
-            const hasOverdue = alerts.vencidos.length > 0;
+            if (!force && totalCombined === 0) return;
+
+            const hasUrgent = alerts.vencidos.length > 0 || critChecklistCount > 0;
             if (headerEl) {
-                headerEl.className = hasOverdue
+                headerEl.className = hasUrgent
                     ? 'bg-gradient-to-r from-red-700 via-red-600 to-amber-600 text-white p-4 flex justify-between items-center'
-                    : (alerts.proximos.length > 0
+                    : (totalCombined > 0
                         ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white p-4 flex justify-between items-center'
                         : 'bg-gradient-to-r from-emerald-700 to-emerald-600 text-white p-4 flex justify-between items-center');
             }
             if (titleEl) {
-                titleEl.innerText = hasOverdue
-                    ? '🚨 ALERTA: Unidades Listas para Mantención'
-                    : (alerts.proximos.length > 0
-                        ? '⚠️ AVISO: Unidades Cerca de Mantención (≤ 500 km)'
-                        : '✓ Control de Mantenciones de Flota');
+                if (alerts.vencidos.length > 0 && sortedChecklist.length > 0) {
+                    titleEl.innerText = '🚨 ALERTAS DE FLOTA: Mantención y Checklist';
+                } else if (sortedChecklist.length > 0 && alerts.totalAlertas === 0) {
+                    titleEl.innerText = critChecklistCount > 0
+                        ? '🚨 ALERTAS CRÍTICAS DE CHECKLIST DE FLOTA'
+                        : '🔔 NOVEDADES PENDIENTES DE CHECKLIST';
+                } else if (alerts.vencidos.length > 0) {
+                    titleEl.innerText = '🚨 ALERTA: Unidades Listas para Mantención';
+                } else if (alerts.proximos.length > 0) {
+                    titleEl.innerText = '⚠️ AVISO: Unidades Cerca de Mantención (≤ 500 km)';
+                } else {
+                    titleEl.innerText = '✓ Control de Mantenciones de Flota';
+                }
+            }
+            if (subtitleEl) {
+                subtitleEl.innerText = sortedChecklist.length > 0
+                    ? 'Mantenciones por Km + Novedades de Luces, Documentos y Equipamiento'
+                    : 'Móviles/Camionetas cada 10.000 km • Motos aceite cada 3.000 km';
             }
             if (adminBtn) {
-                adminBtn.classList.toggle('hidden', role !== 'ADMIN');
+                adminBtn.classList.toggle('hidden', !isAdmin || (alerts.totalAlertas === 0 && sortedChecklist.length > 0));
+            }
+            if (alertsBtn) {
+                alertsBtn.classList.toggle('hidden', !isAdmin || sortedChecklist.length === 0);
             }
 
-            if (alerts.totalAlertas === 0) {
+            if (totalCombined === 0) {
                 body.innerHTML = `
                     <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-center space-y-1">
                         <i class="fa-solid fa-circle-check text-2xl text-emerald-600"></i>
-                        <p class="font-extrabold">Toda la flota con kilometraje registrado se encuentra al día.</p>
-                        <p class="text-[11px] text-emerald-700">Móviles/Camionetas cada 10.000 km • Motocicletas cambio de aceite cada 3.000 km (aviso 500 km antes).</p>
+                        <p class="font-extrabold">Toda la flota se encuentra al día y sin novedades pendientes.</p>
+                        <p class="text-[11px] text-emerald-700">Móviles/Camionetas cada 10.000 km • Motos cambio de aceite cada 3.000 km (aviso 500 km antes).</p>
                     </div>`;
             } else {
                 const sections = [];
+                if (sortedChecklist.length > 0) {
+                    const topAlerts = sortedChecklist.slice(0, 5);
+                    const checklistCardsHtml = topAlerts.map(al => {
+                        const cat = ALERT_CATEGORY_INFO[al.categoria] || ALERT_CATEGORY_INFO.OTROS;
+                        const isCrit = al.prioridad === 'CRITICA';
+                        const isHigh = al.prioridad === 'ALTA';
+                        const cardBorder = isCrit ? 'border-red-300 bg-red-50/90' : (isHigh ? 'border-orange-300 bg-orange-50/80' : 'border-amber-200 bg-amber-50/70');
+                        const prioBadge = isCrit
+                            ? 'bg-red-600 text-white'
+                            : (isHigh ? 'bg-orange-500 text-white' : 'bg-amber-400 text-slate-900');
+                        return `
+                            <div class="p-2.5 rounded-xl border ${cardBorder} space-y-1">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-black text-slate-900 text-xs flex items-center gap-1.5">
+                                        <i class="fa-solid ${cat.icon} text-slate-700"></i> ${al.movil} • ${al.itemLabel}
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${prioBadge}">${al.prioridad}</span>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Estado: <span class="text-red-700">${al.estadoReportado}</span> • ${al.inspector || 'Inspector'}</p>
+                                <p class="text-[11px] font-semibold text-[#1e3a8a]"><i class="fa-solid fa-wrench mr-1"></i>${al.accionRecomendada}</p>
+                            </div>
+                        `;
+                    }).join('');
+                    const extraCnt = sortedChecklist.length - topAlerts.length;
+                    sections.push(`
+                        <div class="space-y-2">
+                            <p class="text-[11px] font-black text-red-700 uppercase flex items-center gap-1">
+                                <i class="fa-solid fa-bell animate-pulse"></i> Alertas de Checklist Pendientes (${sortedChecklist.length})
+                            </p>
+                            ${checklistCardsHtml}
+                            ${extraCnt > 0 ? `<p class="text-[11px] font-bold text-slate-500 text-center">+${extraCnt} alerta(s) adicional(es) en la pestaña Alertas Flota</p>` : ''}
+                        </div>
+                    `);
+                }
                 if (alerts.vencidos.length > 0) {
                     sections.push(`
                         <div class="space-y-2">
@@ -3368,7 +3654,7 @@
                         </div>
                     `);
                 }
-                if (role !== 'ADMIN') {
+                if (!isAdmin) {
                     sections.push(`
                         <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-[#1e3a8a] font-semibold">
                             <i class="fa-solid fa-circle-info mr-1"></i> Si se le asigna alguna de estas unidades, informe al <strong>Administrador de Mantención / Jefe de Turno</strong> para coordinar el taller o cambio de aceite.
@@ -3393,13 +3679,235 @@
             }
         }
 
+        function goToAdminAlertsFromModal() {
+            closeMaintenanceAlertModal();
+            if (AppState.userRole === 'ADMIN') {
+                navigateTo('view-admin');
+                switchAdminTab('alerts');
+            }
+        }
+
         function maybeShowLoginMaintenanceAlert(role) {
             if (AppState.maintAlertShownThisLogin) return;
+            const effectiveRole = role || AppState.userRole;
             const alerts = getFleetMaintenanceAlerts();
-            if (alerts.totalAlertas > 0) {
+            const pendingChecklist = effectiveRole === 'ADMIN' ? getPendingFleetAlerts() : [];
+            if (alerts.totalAlertas > 0 || pendingChecklist.length > 0) {
                 AppState.maintAlertShownThisLogin = true;
-                openMaintenanceAlertModal({ role: role || AppState.userRole, force: false });
+                openMaintenanceAlertModal({ role: effectiveRole, force: false });
             }
+        }
+
+        // ========================================================================
+        // CENTRO DE ALERTAS DE FLOTA (CHECKLIST: LUCES, DOCUMENTOS, REPOSICIONES)
+        // ========================================================================
+        function setAdminAlertStatusFilter(status) {
+            AppState.adminAlertStatusFilter = status;
+            ['PENDIENTE', 'RESUELTO', 'ALL'].forEach(st => {
+                const btn = document.getElementById(`alert-status-${st}`);
+                if (!btn) return;
+                if (st === status) {
+                    const activeColor = st === 'PENDIENTE' ? 'bg-red-600 text-white' : (st === 'RESUELTO' ? 'bg-emerald-600 text-white' : 'bg-[#1e3a8a] text-white');
+                    btn.className = `px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold ${activeColor} shadow-xs`;
+                } else {
+                    btn.className = 'px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-slate-100 text-slate-700';
+                }
+            });
+            renderAdminFleetAlertsPanel();
+        }
+
+        function setAdminAlertCategoryFilter(cat) {
+            AppState.adminAlertCategoryFilter = cat;
+            ['ALL', 'DOCUMENTACION', 'LUCES_ELECTRICO', 'MECANICA_NEUMATICOS', 'FLUIDOS', 'EQUIPAMIENTO', 'CARROCERIA'].forEach(c => {
+                const btn = document.getElementById(`alert-cat-${c}`);
+                if (!btn) return;
+                btn.className = c === cat
+                    ? 'px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-[#1e3a8a] text-white'
+                    : 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700';
+            });
+            renderAdminFleetAlertsPanel();
+        }
+
+        function renderAdminFleetAlertsPanel() {
+            const container = document.getElementById('admin-alerts-list');
+            const allAlerts = getFleetAlertsDB();
+            const pending = allAlerts.filter(a => (a.estadoGestion || 'PENDIENTE') === 'PENDIENTE');
+            const resolved = allAlerts.filter(a => a.estadoGestion === 'RESUELTO');
+
+            const critCount = pending.filter(a => a.prioridad === 'CRITICA').length;
+            const highCount = pending.filter(a => a.prioridad === 'ALTA').length;
+            const medCount = pending.filter(a => a.prioridad !== 'CRITICA' && a.prioridad !== 'ALTA').length;
+
+            const elCrit = document.getElementById('kpi-alerts-crit');
+            const elHigh = document.getElementById('kpi-alerts-high');
+            const elMed = document.getElementById('kpi-alerts-med');
+            const elRes = document.getElementById('kpi-alerts-resolved');
+            if (elCrit) elCrit.innerText = critCount;
+            if (elHigh) elHigh.innerText = highCount;
+            if (elMed) elMed.innerText = medCount;
+            if (elRes) elRes.innerText = resolved.length;
+
+            if (!container) return;
+
+            const statusFilter = AppState.adminAlertStatusFilter || 'PENDIENTE';
+            const catFilter = AppState.adminAlertCategoryFilter || 'ALL';
+            const search = (document.getElementById('adm-alerts-search')?.value || '').trim().toLowerCase();
+
+            const priorityRank = { CRITICA: 0, ALTA: 1, MEDIA: 2 };
+            const filtered = allAlerts.filter(a => {
+                const st = a.estadoGestion || 'PENDIENTE';
+                if (statusFilter !== 'ALL' && st !== statusFilter) return false;
+                if (catFilter !== 'ALL' && a.categoria !== catFilter) return false;
+                if (search) {
+                    const hay = `${a.movil || ''} ${a.itemLabel || ''} ${a.estadoReportado || ''} ${a.accionRecomendada || ''} ${a.inspector || ''} ${a.observaciones || ''}`.toLowerCase();
+                    if (!hay.includes(search)) return false;
+                }
+                return true;
+            }).sort((a, b) => {
+                const stA = (a.estadoGestion || 'PENDIENTE') === 'PENDIENTE' ? 0 : 1;
+                const stB = (b.estadoGestion || 'PENDIENTE') === 'PENDIENTE' ? 0 : 1;
+                if (stA !== stB) return stA - stB;
+                return (priorityRank[a.prioridad] ?? 3) - (priorityRank[b.prioridad] ?? 3);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full p-8 text-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 space-y-2">
+                        <i class="fa-solid fa-circle-check text-3xl text-emerald-500"></i>
+                        <p class="text-sm font-extrabold text-slate-700">No hay alertas para el filtro seleccionado</p>
+                        <p class="text-xs text-slate-500">Cuando un inspector reporte luces quemadas, documentos vencidos, faltantes o fallas en el checklist, aparecerán automáticamente aquí.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(al => {
+                const isPending = (al.estadoGestion || 'PENDIENTE') === 'PENDIENTE';
+                const cat = ALERT_CATEGORY_INFO[al.categoria] || ALERT_CATEGORY_INFO.OTROS;
+                const isCrit = al.prioridad === 'CRITICA';
+                const isHigh = al.prioridad === 'ALTA';
+                const borderClass = !isPending
+                    ? 'border-emerald-200 bg-emerald-50/40'
+                    : (isCrit ? 'border-red-300 bg-red-50/60' : (isHigh ? 'border-orange-300 bg-orange-50/50' : 'border-amber-200 bg-amber-50/40'));
+                const prioBadge = isCrit
+                    ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white">CRÍTICA</span>'
+                    : (isHigh
+                        ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-500 text-white">ALTA</span>'
+                        : '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-900">MEDIA</span>');
+                const safeId = String(al.id || '').replace(/'/g, "\\'");
+                const photoLinkHtml = al.foto && String(al.foto).startsWith('http')
+                    ? `<a href="${al.foto}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:underline"><i class="fa-solid fa-camera"></i> Ver foto evidencia</a>`
+                    : '';
+
+                return `
+                    <div class="rounded-2xl border-2 ${borderClass} p-3.5 shadow-xs flex flex-col justify-between gap-3">
+                        <div class="space-y-2">
+                            <div class="flex items-start justify-between gap-2 flex-wrap">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    ${prioBadge}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${cat.badgeClass}">
+                                        <i class="fa-solid ${cat.icon} mr-1"></i>${cat.label}
+                                    </span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isPending ? 'bg-red-100 text-red-700' : 'bg-emerald-600 text-white'}">
+                                    ${isPending ? 'PENDIENTE' : '✓ RESUELTA'}
+                                </span>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-black text-slate-900">${al.movil || 'Unidad'} <span class="text-xs font-bold text-slate-500">${al.cuadrante ? `• ${al.cuadrante}` : ''}</span></p>
+                                <p class="text-xs font-extrabold text-red-700 mt-0.5">
+                                    ${al.itemLabel || 'Ítem Checklist'} — <span class="underline">${al.estadoReportado || 'Observación'}</span>
+                                </p>
+                            </div>
+
+                            <div class="p-2.5 rounded-xl bg-white/90 border border-slate-200 text-xs space-y-1">
+                                <p class="font-extrabold text-[#1e3a8a] flex items-start gap-1.5">
+                                    <i class="fa-solid fa-screwdriver-wrench mt-0.5 shrink-0"></i>
+                                    <span>${al.accionRecomendada || 'Revisar / Gestionar reposición'}</span>
+                                </p>
+                                ${al.observaciones ? `<p class="text-[11px] text-slate-600"><strong>Obs:</strong> ${al.observaciones}</p>` : ''}
+                            </div>
+
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 flex-wrap gap-1">
+                                <span><i class="fa-solid fa-user-shield mr-1"></i>${al.inspector || 'Inspector'}</span>
+                                <span><i class="fa-regular fa-clock mr-1"></i>${al.fecha || ''}</span>
+                            </div>
+                            ${photoLinkHtml}
+                        </div>
+
+                        ${isPending ? `
+                        <div class="flex gap-2 pt-2 border-t border-slate-200/80">
+                            <button type="button" onclick="resolveFleetAlert('${safeId}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold py-2 px-2.5 rounded-xl shadow-xs flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-check-double"></i> Marcar Resuelta
+                            </button>
+                            <button type="button" onclick="shareFleetAlertWhatsApp('${safeId}')" class="bg-[#25D366] hover:bg-[#1ebe5d] text-white text-xs font-extrabold py-2 px-3 rounded-xl shadow-xs flex items-center justify-center gap-1.5" title="Enviar orden de trabajo por WhatsApp">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> Orden
+                            </button>
+                        </div>` : `
+                        <div class="pt-2 border-t border-emerald-200 text-[11px] text-emerald-900 bg-emerald-100/60 -mx-1 px-2.5 py-1.5 rounded-xl">
+                            <p class="font-extrabold"><i class="fa-solid fa-circle-check mr-1"></i>Resuelto por ${al.resueltoPor || 'Admin'} (${al.fechaResolucion || ''})</p>
+                            ${al.notaResolucion ? `<p class="text-emerald-800">${al.notaResolucion}</p>` : ''}
+                        </div>`}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function resolveFleetAlert(alertId) {
+            const list = getFleetAlertsDB();
+            const idx = list.findIndex(a => a.id === alertId);
+            if (idx === -1) return;
+
+            const al = list[idx];
+            const notaInput = prompt(
+                `Marcar como RESUELTA la alerta de ${al.movil}:\n• ${al.itemLabel} (${al.estadoReportado})\n\nIngrese nota de resolución (ej: "Ampolleta cambiada en taller", "Permiso renovado", "Extintor recargado"):`,
+                al.accionRecomendada || 'Atendido / Resuelto'
+            );
+            if (notaInput === null) return;
+
+            const fechaResolucion = new Date().toLocaleString('es-CL');
+            const resueltoPor = AppState.userName || AppState.userRut || 'Administrador';
+            const notaResolucion = notaInput.trim() || 'Atendido / Resuelto';
+
+            list[idx] = Object.assign({}, al, {
+                estadoGestion: 'RESUELTO',
+                fechaResolucion,
+                resueltoPor,
+                notaResolucion
+            });
+            saveFleetAlertsDB(list);
+            renderAdminMaintenanceBanner();
+            renderAdminFleetAlertsPanel();
+
+            const res = await sendPayloadToGoogleSheets({
+                action: 'ADMIN_RESOLVE_ALERT',
+                id: alertId,
+                fechaResolucion,
+                resueltoPor,
+                notaResolucion
+            });
+            showToast(res && res.ok ? '✓ Alerta resuelta y sincronizada en Google Sheets' : '✓ Alerta marcada como resuelta localmente', 'bg-emerald-600');
+        }
+
+        function shareFleetAlertWhatsApp(alertId) {
+            const al = getFleetAlertsDB().find(a => a.id === alertId);
+            if (!al) return;
+            const cat = ALERT_CATEGORY_INFO[al.categoria] || ALERT_CATEGORY_INFO.OTROS;
+            const lines = [
+                `*🚨 ORDEN DE GESTIÓN DE FLOTA - PEÑA SEGURO 1410 🚨*`,
+                ``,
+                `*• UNIDAD:* ${al.movil || '-'}${al.cuadrante ? ` (Cuadrante ${al.cuadrante})` : ''}`,
+                `*• PRIORIDAD:* ${al.prioridad || 'MEDIA'}`,
+                `*• CATEGORÍA:* ${cat.label}`,
+                `*• NOVEDAD:* ${al.itemLabel || '-'}`,
+                `*• ESTADO REPORTADO:* ${al.estadoReportado || '-'}`,
+                `*• ACCIÓN REQUERIDA:* ${al.accionRecomendada || 'Revisar / Gestionar'}`,
+                `*• REPORTADO POR:* ${al.inspector || 'Inspector'} (${al.fecha || ''})`,
+                al.observaciones ? `*• OBSERVACIONES:* ${al.observaciones}` : '',
+                al.foto && String(al.foto).startsWith('http') ? `*• FOTO EVIDENCIA:* ${al.foto}` : ''
+            ].filter(Boolean).join('\n');
+
+            window.open(`https://wa.me/?text=${encodeURIComponent(lines)}`, '_blank', 'noopener,noreferrer');
         }
 
         function renderSetupMaintenanceSummary() {
@@ -4137,6 +4645,28 @@
                 const merged = Array.from(new Set([...localCompleted, ...data.completedTaskIds]));
                 localStorage.setItem(STORAGE_KEYS.COMPLETED_TASKS, JSON.stringify(merged));
             }
+            if (Array.isArray(data.fleetAlerts)) {
+                const localAlerts = getFleetAlertsDB();
+                const byId = new Map();
+                data.fleetAlerts.forEach(cloudAl => {
+                    if (cloudAl && cloudAl.id) byId.set(cloudAl.id, cloudAl);
+                });
+                localAlerts.forEach(localAl => {
+                    if (!localAl || !localAl.id) return;
+                    const existing = byId.get(localAl.id);
+                    if (!existing) {
+                        byId.set(localAl.id, localAl);
+                    } else if (localAl.estadoGestion === 'RESUELTO' && existing.estadoGestion !== 'RESUELTO') {
+                        byId.set(localAl.id, Object.assign({}, existing, {
+                            estadoGestion: 'RESUELTO',
+                            fechaResolucion: localAl.fechaResolucion || existing.fechaResolucion,
+                            resueltoPor: localAl.resueltoPor || existing.resueltoPor,
+                            notaResolucion: localAl.notaResolucion || existing.notaResolucion
+                        }));
+                    }
+                });
+                saveFleetAlertsDB(Array.from(byId.values()));
+            }
             if (Array.isArray(data.recentShifts)) AppState.cloudRecentShifts = data.recentShifts;
             if (Array.isArray(data.recentProcedures)) AppState.cloudRecentProcedures = data.recentProcedures;
 
@@ -4817,13 +5347,42 @@
             const radioButtons = document.querySelectorAll('#checklist-container input[type="radio"]:checked');
             const respuestasChecklist = {};
             const itemsMalosList = [];
+            const alertasChecklist = [];
+            const obsChecklist = document.getElementById('checklist-observaciones')?.value.trim() || '';
+            const fechaAlerta = AppState.fechaInicioTurno || new Date().toLocaleString('es-CL');
+            const inspectorAlerta = AppState.userName || AppState.userRut || 'Inspector';
 
-            radioButtons.forEach(radio => {
+            radioButtons.forEach((radio, idx) => {
                 respuestasChecklist[radio.name] = radio.value;
                 if (CHECKLIST_ALERT_VALUES.has(radio.value)) {
-                    itemsMalosList.push(`${radio.name}: ${radio.value}`);
+                    const defect = classifyChecklistDefect(radio.name, radio.value);
+                    itemsMalosList.push(`${defect.itemLabel}: ${radio.value}`);
+                    alertasChecklist.push({
+                        id: `ALR-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+                        fecha: fechaAlerta,
+                        movil: AppState.movil || '',
+                        cuadrante: AppState.cuadrante || '',
+                        inspector: inspectorAlerta,
+                        categoria: defect.categoria,
+                        prioridad: defect.prioridad,
+                        itemId: defect.itemId,
+                        itemLabel: defect.itemLabel,
+                        estadoReportado: defect.estadoReportado,
+                        accionRecomendada: defect.accionRecomendada,
+                        observaciones: obsChecklist,
+                        foto: '',
+                        estadoGestion: 'PENDIENTE',
+                        fechaResolucion: '',
+                        resueltoPor: '',
+                        notaResolucion: ''
+                    });
                 }
             });
+
+            if (alertasChecklist.length > 0) {
+                const currentAlerts = getFleetAlertsDB();
+                saveFleetAlertsDB([...alertasChecklist, ...currentAlerts]);
+            }
 
             const genFotoFile = getPhotoFile('chk-general');
             const defFotoFile = getPhotoFile('chk-defect');
@@ -4846,8 +5405,9 @@
                 kmInicial: AppState.kmInicial,
                 estadoChecklist: itemsMalosList.length > 0 ? 'CON OBSERVACIONES' : 'OK',
                 itemsMalos: itemsMalosList.length > 0 ? itemsMalosList.join(', ') : 'Ninguno',
-                observaciones: document.getElementById('checklist-observaciones')?.value.trim() || '',
+                observaciones: obsChecklist,
                 respuestasChecklist: respuestasChecklist,
+                alertasChecklist: alertasChecklist,
                 fotoGeneralBase64: fotoGeneralBase64,
                 fotoDesperfectoBase64: fotoDesperfectoBase64
             };
@@ -4860,7 +5420,11 @@
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = origText;
             }
-            showToast(res && res.ok ? '✓ Inicio de Turno y Checklist guardados en Drive' : 'Guardado en memoria local', 'bg-emerald-600');
+            if (alertasChecklist.length > 0) {
+                showToast(`✓ Checklist guardado • ${alertasChecklist.length} alerta(s) notificada(s) al Administrador`, 'bg-amber-600');
+            } else {
+                showToast(res && res.ok ? '✓ Inicio de Turno y Checklist guardados en Drive' : 'Guardado en memoria local', 'bg-emerald-600');
+            }
             navigateTo('view-menu');
         });
 
