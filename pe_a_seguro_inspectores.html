@@ -290,7 +290,7 @@
                         <!-- Móvil Dropdown -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1" for="movil">Móvil / Unidad <span class="text-red-500">*</span></label>
-                            <select id="movil" onchange="onSetupVehicleOrKmChange()" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-bold text-sm" required>
+                            <select id="movil" onchange="onSetupVehicleChange()" class="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none bg-white font-bold text-sm" required>
                                 <option value="" disabled selected>Seleccione unidad...</option>
                             </select>
                             <p id="setup-vehicle-km-hint" class="hidden text-[11px] text-slate-500 mt-1 font-medium"></p>
@@ -318,9 +318,11 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1" for="km-inicial">Kilometraje Inicial <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input type="number" id="km-inicial" oninput="onSetupVehicleOrKmChange()" class="w-full p-3 pl-10 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none font-mono text-sm font-bold" placeholder="Ej: 142500" required min="0">
+                                <input type="number" id="km-inicial" oninput="onSetupVehicleOrKmChange(false)" class="w-full p-3 pl-10 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1e3a8a] outline-none font-mono text-sm font-bold" placeholder="Ej: 142500" required min="0">
                                 <i class="fa-solid fa-gauge-high absolute left-3.5 top-3.5 text-slate-400"></i>
                             </div>
+                            <!-- Validación automática de último kilometraje registrado -->
+                            <div id="setup-km-validation-alert" class="hidden mt-2 rounded-xl border p-3 text-xs"></div>
                             <!-- Alerta en vivo de Mantención / Cambio de Aceite al elegir vehículo o escribir Km -->
                             <div id="setup-vehicle-maint-alert" class="hidden mt-2 rounded-xl border p-3 text-xs"></div>
                         </div>
@@ -1365,6 +1367,37 @@
             </div>
         </div>
 
+        <!-- Modal de Validación de Kilometraje Diferente al Último Registro -->
+        <div id="km-mismatch-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                <div id="km-mismatch-header" class="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 flex justify-between items-center">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-gauge-high text-amber-200 text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 id="km-mismatch-title" class="text-sm font-black uppercase tracking-wide">Kilometraje Diferente Detectado</h3>
+                            <p class="text-[11px] text-white/90">Verificación automática de odómetro</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeKmMismatchModal()" class="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+                <div class="p-4 space-y-3 text-xs">
+                    <div id="km-mismatch-body" class="space-y-2.5"></div>
+                    <div class="flex flex-col gap-2 pt-2 border-t border-slate-100">
+                        <button type="button" id="km-mismatch-restore-btn" onclick="applySuggestedLastKmFromModal()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-extrabold py-2.5 px-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left text-amber-300"></i> <span id="km-mismatch-restore-label">USAR ÚLTIMO KM REGISTRADO</span>
+                        </button>
+                        <button type="button" id="km-mismatch-confirm-btn" onclick="confirmKmMismatchAndSubmit()" class="w-full bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-extrabold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-check"></i> CONFIRMAR QUE EL ODÓMETRO MARCA ESE VALOR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Toast Notification -->
         <div id="toast"><span id="toast-message">Acción exitosa</span></div>
     </div>
@@ -1407,7 +1440,8 @@
             cloudRecentShifts: [],
             cloudRecentProcedures: [],
             maintAlertShownThisLogin: false,
-            adminMaintFilter: 'ALL'
+            adminMaintFilter: 'ALL',
+            confirmedKmOverride: ''
         };
 
         // --- Listado Oficial de Funcionarios Peña Seguro 1410 ---
@@ -3426,15 +3460,185 @@
             };
         }
 
-        function onSetupVehicleOrKmChange() {
+        function onSetupVehicleChange() {
+            AppState.confirmedKmOverride = '';
+            const movilName = document.getElementById('movil')?.value || '';
+            const kmInput = document.getElementById('km-inicial');
+            const unit = getFleetDB().find(f => f.nombre === movilName);
+
+            if (unit && kmInput) {
+                const lastKm = Number(unit.kmActual || 0);
+                if (lastKm > 0) {
+                    kmInput.value = String(lastKm);
+                    kmInput.min = String(lastKm);
+                } else {
+                    kmInput.min = '0';
+                }
+            }
+            onSetupVehicleOrKmChange(true);
+        }
+
+        function restoreSetupLastKm() {
+            const movilName = document.getElementById('movil')?.value || '';
+            const kmInput = document.getElementById('km-inicial');
+            const unit = getFleetDB().find(f => f.nombre === movilName);
+            if (!unit || !kmInput) return;
+            const lastKm = Number(unit.kmActual || 0);
+            if (lastKm > 0) {
+                kmInput.value = String(lastKm);
+                AppState.confirmedKmOverride = '';
+                onSetupVehicleOrKmChange(false);
+                showToast(`Kilometraje restaurado al último registro: ${formatKm(lastKm)} km`, 'bg-blue-700');
+            }
+        }
+
+        function renderSetupKmValidation(unit, kmVal) {
+            const valEl = document.getElementById('setup-km-validation-alert');
+            if (!valEl) return;
+
+            const lastKm = Number(unit?.kmActual || 0);
+            if (!unit || lastKm <= 0 || kmVal === null || kmVal === undefined || kmVal === '' || isNaN(kmVal)) {
+                valEl.classList.add('hidden');
+                return;
+            }
+
+            if (kmVal < lastKm) {
+                const deficit = lastKm - kmVal;
+                valEl.className = 'mt-2 rounded-xl border-2 border-red-500 bg-red-50 p-3 text-xs text-red-900 space-y-2';
+                valEl.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <p class="font-black text-red-700"><i class="fa-solid fa-ban mr-1"></i> KILOMETRAJE INCORRECTO (MENOR AL ÚLTIMO REGISTRO)</p>
+                            <p class="text-[11px] mt-0.5">El último kilometraje registrado para <strong>${unit.nombre}</strong> es <strong>${formatKm(lastKm)} km</strong>. No puedes ingresar <strong>${formatKm(kmVal)} km</strong> (-${formatKm(deficit)} km).</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="restoreSetupLastKm()" class="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] py-2 px-3 rounded-lg flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> Corregir al último Km (${formatKm(lastKm)} km)
+                    </button>
+                `;
+                valEl.classList.remove('hidden');
+                return;
+            }
+
+            if (kmVal === lastKm) {
+                valEl.className = 'mt-2 rounded-xl border border-blue-200 bg-blue-50/80 p-2.5 text-[11px] text-[#1e3a8a] font-semibold flex items-center gap-1.5';
+                valEl.innerHTML = `<i class="fa-solid fa-shield-check text-blue-600"></i> <span>Reconocimiento automático: coincide con el último kilometraje registrado (<strong>${formatKm(lastKm)} km</strong>).</span>`;
+                valEl.classList.remove('hidden');
+                return;
+            }
+
+            const diff = kmVal - lastKm;
+            const isHugeJump = diff > 500;
+            valEl.className = isHugeJump
+                ? 'mt-2 rounded-xl border-2 border-red-400 bg-red-50 p-3 text-xs text-red-900 space-y-2'
+                : 'mt-2 rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-xs text-amber-950 space-y-2';
+            valEl.innerHTML = `
+                <div>
+                    <p class="font-black ${isHugeJump ? 'text-red-700' : 'text-amber-800'}">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                        ${isHugeJump ? 'POSIBLE ERROR DE DIGITACIÓN (SALTO INUSUAL)' : 'KILOMETRAJE DIFERENTE AL ÚLTIMO REGISTRO'}
+                    </p>
+                    <p class="text-[11px] mt-0.5">
+                        Último en sistema: <strong>${formatKm(lastKm)} km</strong> • Ingresado: <strong>${formatKm(kmVal)} km</strong> (<strong>+${formatKm(diff)} km</strong>). Verifica el odómetro antes de continuar.
+                    </p>
+                </div>
+                <button type="button" onclick="restoreSetupLastKm()" class="w-full bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[11px] py-1.5 px-3 rounded-lg flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-rotate-left text-blue-700"></i> Restaurar a ${formatKm(lastKm)} km
+                </button>
+            `;
+            valEl.classList.remove('hidden');
+        }
+
+        function openKmMismatchModal(unit, enteredKm) {
+            const modal = document.getElementById('km-mismatch-modal');
+            const header = document.getElementById('km-mismatch-header');
+            const title = document.getElementById('km-mismatch-title');
+            const body = document.getElementById('km-mismatch-body');
+            const restoreLabel = document.getElementById('km-mismatch-restore-label');
+            const confirmBtn = document.getElementById('km-mismatch-confirm-btn');
+            if (!modal || !body || !unit) return;
+
+            const lastKm = Number(unit.kmActual || 0);
+            const diff = enteredKm - lastKm;
+            const isLower = enteredKm < lastKm;
+            const isHugeJump = diff > 500;
+
+            if (header) {
+                header.className = (isLower || isHugeJump)
+                    ? 'bg-gradient-to-r from-red-700 to-rose-600 text-white p-4 flex justify-between items-center'
+                    : 'bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 flex justify-between items-center';
+            }
+            if (title) {
+                title.innerText = isLower
+                    ? '🚫 Kilometraje Inválido (Menor al Último)'
+                    : (isHugeJump ? '🚨 Posible Error de Digitación en Odómetro' : '⚠️ Kilometraje Diferente al Último Registro');
+            }
+            if (restoreLabel) {
+                restoreLabel.innerText = `USAR ÚLTIMO KM REGISTRADO (${formatKm(lastKm)} KM)`;
+            }
+            if (confirmBtn) {
+                confirmBtn.classList.toggle('hidden', isLower);
+            }
+
+            body.innerHTML = `
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                    <p class="font-black text-sm text-[#1e3a8a]">${unit.nombre} <span class="text-[11px] font-mono font-normal text-slate-500">(${unit.patente || unit.tipo})</span></p>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div class="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Último Km Sistema</p>
+                            <p class="text-sm font-mono font-black text-[#1e3a8a]">${formatKm(lastKm)} km</p>
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border ${isLower || isHugeJump ? 'border-red-300' : 'border-amber-300'} text-center">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Km Ingresado</p>
+                            <p class="text-sm font-mono font-black ${isLower || isHugeJump ? 'text-red-700' : 'text-amber-700'}">${formatKm(enteredKm)} km</p>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-center font-bold ${isLower || isHugeJump ? 'text-red-700' : 'text-amber-800'}">
+                        Diferencia detectada: ${diff >= 0 ? '+' : ''}${formatKm(diff)} km
+                    </p>
+                </div>
+                <p class="text-[11px] text-slate-700 leading-relaxed">
+                    ${isLower
+                        ? 'Por control de flota, <strong>no se permite ingresar un kilometraje menor</strong> al último registrado. Corrige el valor o solicita ajuste al Administrador si hubo un error anterior.'
+                        : (isHugeJump
+                            ? 'El salto de kilometraje supera los <strong>500 km</strong> respecto al último turno registrado. Revisa que no hayas digitado un número de más antes de confirmar.'
+                            : 'El kilometraje que ingresaste difiere del último registrado en el sistema. Confirma si el tablero del vehículo realmente marca ese valor (por ejemplo, traslado a taller o carga de combustible).')}
+                </p>
+            `;
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeKmMismatchModal() {
+            document.getElementById('km-mismatch-modal')?.classList.add('hidden');
+        }
+
+        function applySuggestedLastKmFromModal() {
+            restoreSetupLastKm();
+            closeKmMismatchModal();
+        }
+
+        function confirmKmMismatchAndSubmit() {
+            const movilName = document.getElementById('movil')?.value || '';
+            const kmVal = Number(document.getElementById('km-inicial')?.value || 0);
+            if (movilName && kmVal > 0) {
+                AppState.confirmedKmOverride = `${movilName}:${kmVal}`;
+            }
+            closeKmMismatchModal();
+            document.getElementById('form-setup')?.requestSubmit();
+        }
+
+        function onSetupVehicleOrKmChange(autoTriggered = false) {
             const movilName = document.getElementById('movil')?.value || '';
             const kmInput = document.getElementById('km-inicial');
             const hintEl = document.getElementById('setup-vehicle-km-hint');
             const alertEl = document.getElementById('setup-vehicle-maint-alert');
+            const valEl = document.getElementById('setup-km-validation-alert');
 
             if (!movilName) {
                 if (hintEl) hintEl.classList.add('hidden');
                 if (alertEl) alertEl.classList.add('hidden');
+                if (valEl) valEl.classList.add('hidden');
                 return;
             }
 
@@ -3442,13 +3646,16 @@
             if (!unit) return;
 
             const isMoto = isMotorcycleUnit(unit);
+            const lastKm = Number(unit.kmActual || 0);
             if (hintEl) {
-                const lastKmTxt = Number(unit.kmActual || 0) > 0 ? `Último Km registrado: ${formatKm(unit.kmActual)} km` : 'Sin Km previo registrado';
+                const lastKmTxt = lastKm > 0 ? `Último Km reconocido: ${formatKm(lastKm)} km` : 'Sin Km previo registrado';
                 hintEl.innerText = `${lastKmTxt} • Regla: ${isMoto ? 'Cambio de aceite cada 3.000 km' : 'Mantención cada 10.000 km'} (aviso 500 km antes)`;
                 hintEl.classList.remove('hidden');
             }
 
             const kmVal = kmInput && kmInput.value !== '' ? Number(kmInput.value) : null;
+            renderSetupKmValidation(unit, kmVal);
+
             const maint = getVehicleMaintenanceStatus(unit, kmVal);
             if (alertEl) {
                 const res = buildVehicleAlertHtml(unit, maint);
@@ -4531,6 +4738,24 @@
         document.getElementById('form-setup').addEventListener('submit', (e) => {
             e.preventDefault();
             detectTimeSlot(); // Re-detect time slot
+
+            const selectedMovil = document.getElementById('movil').value;
+            const enteredKm = Number(document.getElementById('km-inicial').value || 0);
+            const selectedUnit = getFleetDB().find(f => f.nombre === selectedMovil);
+            const lastRecordedKm = Number(selectedUnit?.kmActual || 0);
+
+            if (selectedUnit && lastRecordedKm > 0) {
+                if (enteredKm < lastRecordedKm) {
+                    openKmMismatchModal(selectedUnit, enteredKm);
+                    showToast(`Error: Km inicial (${formatKm(enteredKm)}) menor al último registrado (${formatKm(lastRecordedKm)} km)`, 'bg-red-600');
+                    return;
+                }
+                if (enteredKm > lastRecordedKm && AppState.confirmedKmOverride !== `${selectedMovil}:${enteredKm}`) {
+                    openKmMismatchModal(selectedUnit, enteredKm);
+                    return;
+                }
+            }
+            AppState.confirmedKmOverride = '';
             
             AppState.turnoId = AppState.turnoId || `T-${Date.now()}`;
             AppState.fechaInicioTurno = document.getElementById('current-datetime')?.innerText || new Date().toLocaleString('es-CL');
@@ -4769,6 +4994,10 @@
             if (kmTermino < kmInicial) {
                 showToast('Error: Km Término inferior a Km Inicial', 'bg-red-600');
                 return;
+            }
+            if ((kmTermino - kmInicial) > 500) {
+                const okHuge = confirm(`⚠️ ATENCIÓN: Estás registrando ${formatKm(kmTermino - kmInicial)} km recorridos en un solo turno (de ${formatKm(kmInicial)} a ${formatKm(kmTermino)} km).\n\n¿Confirmas que el odómetro realmente marca ${formatKm(kmTermino)} km y no hay un error de digitación?`);
+                if (!okHuge) return;
             }
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
