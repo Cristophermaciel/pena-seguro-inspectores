@@ -3468,11 +3468,9 @@
 
             if (unit && kmInput) {
                 const lastKm = Number(unit.kmActual || 0);
+                kmInput.min = '0';
                 if (lastKm > 0) {
                     kmInput.value = String(lastKm);
-                    kmInput.min = String(lastKm);
-                } else {
-                    kmInput.min = '0';
                 }
             }
             onSetupVehicleOrKmChange(true);
