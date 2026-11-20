@@ -1811,14 +1811,27 @@
 
             const rawUltima = unit?.kmUltimaMantencion;
             const hasExplicitLast = rawUltima !== undefined && rawUltima !== null && rawUltima !== '' && !isNaN(Number(rawUltima));
-            const kmUltima = hasExplicitLast
-                ? Number(rawUltima)
-                : Math.floor(Math.max(0, kmActual - 1) / intervalo) * intervalo;
-            const kmProxima = kmUltima + intervalo;
-            const kmRecorridos = Math.max(0, kmActual - kmUltima);
+            const ultimaMantNum = hasExplicitLast ? Number(rawUltima) : 0;
+
+            // Hitos correlativos (Móviles/Camionetas: 10.000, 20.000, ..., 120.000; Motos: 3.000, 6.000, ..., 15.000)
+            const ultimoHito = Math.floor(kmActual / intervalo) * intervalo;
+            let kmProxima;
+            let kmCicloInicio;
+            if (ultimoHito > 0 && ultimaMantNum < (ultimoHito - avisoAntes)) {
+                kmProxima = ultimoHito;
+                kmCicloInicio = Math.max(0, ultimoHito - intervalo);
+            } else {
+                kmProxima = ultimoHito + intervalo;
+                kmCicloInicio = ultimoHito;
+            }
+
+            const kmUltima = hasExplicitLast ? ultimaMantNum : kmCicloInicio;
+            const kmRecorridos = Math.max(0, kmActual - kmCicloInicio);
             const kmRestantes = kmProxima - kmActual;
             const kmExcedidos = kmRestantes <= 0 ? Math.abs(kmRestantes) : 0;
-            const progresoPct = Math.min(100, Math.max(0, Math.round((kmRecorridos / intervalo) * 100)));
+            const progresoPct = kmRestantes <= 0
+                ? 100
+                : Math.min(100, Math.max(0, Math.round((kmRecorridos / intervalo) * 100)));
 
             let status = 'AL_DIA';
             if (kmRestantes <= 0) {
@@ -3200,7 +3213,8 @@
             renderSetupMaintenanceSummary();
             renderMenuVehicleMaintenanceBanner();
 
-            const nextKm = kmMant + (isMoto ? MAINTENANCE_RULES.MOTO_INTERVALO_KM : MAINTENANCE_RULES.VEHICULO_INTERVALO_KM);
+            const intervaloUnit = isMoto ? MAINTENANCE_RULES.MOTO_INTERVALO_KM : MAINTENANCE_RULES.VEHICULO_INTERVALO_KM;
+            const nextKm = (Math.floor((kmMant + MAINTENANCE_RULES.AVISO_PREVIO_KM) / intervaloUnit) + 1) * intervaloUnit;
             showToast(`✓ ${label} registrada para ${unit.nombre}. Próxima a los ${formatKm(nextKm)} km`, 'bg-emerald-600');
 
             if (refreshModal) {
@@ -3228,8 +3242,8 @@
                 ? `<span class="px-2 py-1 rounded-lg bg-red-600 text-white font-black text-[10px] shrink-0 uppercase">${maint.kmExcedidos > 0 ? `+${formatKm(maint.kmExcedidos)} km` : 'LISTO AHORA'}</span>`
                 : `<span class="px-2 py-1 rounded-lg bg-amber-400 text-slate-900 font-black text-[10px] shrink-0 uppercase">Faltan ${formatKm(maint.kmRestantes)} km</span>`;
             const titleText = isOver
-                ? (maint.isMoto ? 'LISTO PARA CAMBIO DE ACEITE (3.000 km)' : 'LISTO PARA MANTENCIÓN (10.000 km)')
-                : (maint.isMoto ? 'CERCA DE CAMBIO DE ACEITE (3.000 km)' : 'CERCA DE MANTENCIÓN (10.000 km)');
+                ? (maint.isMoto ? `LISTO PARA CAMBIO DE ACEITE (${formatKm(maint.kmProxima)} km)` : `LISTO PARA MANTENCIÓN (${formatKm(maint.kmProxima)} km)`)
+                : (maint.isMoto ? `CERCA DE CAMBIO DE ACEITE (${formatKm(maint.kmProxima)} km)` : `CERCA DE MANTENCIÓN (${formatKm(maint.kmProxima)} km)`);
             const adminQuickAction = role === 'ADMIN'
                 ? `<button type="button" onclick="registerVehicleMaintenance('${unit.id}', true)" class="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1 shadow-xs">
                         <i class="fa-solid fa-check-double"></i> Registrar ${maint.isMoto ? 'Cambio de Aceite' : 'Mantención'} Realizada
