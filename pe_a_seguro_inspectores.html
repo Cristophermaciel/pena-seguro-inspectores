@@ -2256,6 +2256,10 @@
                     document.getElementById('header-shift-display').innerText = AppState.userRole === 'ADMIN' ? 'ADMINISTRADOR' : 'EN TURNO';
                 }
 
+                if (AppState.turnoActivo && AppState.movil && Number(AppState.kmInicial) > 0) {
+                    updateVehicleMileageLocal(AppState.movil, Number(AppState.kmInicial));
+                }
+
                 updateBadgeAndTasks();
 
                 let targetView = saved.currentView || (AppState.turnoActivo ? 'view-menu' : (AppState.userRole === 'ADMIN' ? 'view-admin' : 'view-setup'));
@@ -2263,6 +2267,8 @@
                     targetView = AppState.turnoActivo ? 'view-menu' : 'view-setup';
                 }
                 navigateTo(targetView, true);
+                AppState.maintAlertShownThisLogin = false;
+                maybeShowLoginMaintenanceAlert(AppState.userRole);
                 showToast(`Sesión activa restaurada: ${AppState.userName}`, 'bg-emerald-600');
                 return true;
             } catch (e) {
@@ -3128,10 +3134,14 @@
             saveFleetDB(fleet);
             renderAllAdminPanels();
             showToast(`Km actualizado para ${unit.nombre}: ${formatKm(km)} km`, 'bg-blue-700');
+            const mStatus = getVehicleMaintenanceStatus(unit);
+            if (mStatus.status === 'VENCIDO' || mStatus.status === 'PROXIMO') {
+                openSingleVehicleMaintenancePopup(unit, mStatus, 'Actualización de Kilometraje (Admin)');
+            }
             await sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_VEHICLE' }, unit));
         }
 
-        async function registerVehicleMaintenance(id) {
+        async function registerVehicleMaintenance(id, refreshModal = false) {
             const fleet = getFleetDB();
             const idx = fleet.findIndex(f => f.id === id);
             if (idx < 0) return;
@@ -3153,9 +3163,15 @@
             fleet[idx] = unit;
             saveFleetDB(fleet);
             renderAllAdminPanels();
+            renderSetupMaintenanceSummary();
+            renderMenuVehicleMaintenanceBanner();
 
             const nextKm = kmMant + (isMoto ? MAINTENANCE_RULES.MOTO_INTERVALO_KM : MAINTENANCE_RULES.VEHICULO_INTERVALO_KM);
             showToast(`✓ ${label} registrada para ${unit.nombre}. Próxima a los ${formatKm(nextKm)} km`, 'bg-emerald-600');
+
+            if (refreshModal) {
+                openMaintenanceAlertModal({ role: AppState.userRole, force: true });
+            }
 
             await sendPayloadToGoogleSheets({
                 action: 'ADMIN_LOG_MAINTENANCE',
@@ -3169,6 +3185,80 @@
                 fechaMantencion: fechaHoy,
                 registradoPor: AppState.userName || AppState.userRut || 'Administrador'
             });
+        }
+
+        function renderPopupUnitCard(unit, maint, role) {
+            const isOver = maint.status === 'VENCIDO';
+            const icon = maint.isMoto ? 'fa-motorcycle' : 'fa-car-side';
+            const statusPill = isOver
+                ? `<span class="px-2 py-1 rounded-lg bg-red-600 text-white font-black text-[10px] shrink-0 uppercase">${maint.kmExcedidos > 0 ? `+${formatKm(maint.kmExcedidos)} km` : 'LISTO AHORA'}</span>`
+                : `<span class="px-2 py-1 rounded-lg bg-amber-400 text-slate-900 font-black text-[10px] shrink-0 uppercase">Faltan ${formatKm(maint.kmRestantes)} km</span>`;
+            const titleText = isOver
+                ? (maint.isMoto ? 'LISTO PARA CAMBIO DE ACEITE (3.000 km)' : 'LISTO PARA MANTENCIÓN (10.000 km)')
+                : (maint.isMoto ? 'CERCA DE CAMBIO DE ACEITE (3.000 km)' : 'CERCA DE MANTENCIÓN (10.000 km)');
+            const adminQuickAction = role === 'ADMIN'
+                ? `<button type="button" onclick="registerVehicleMaintenance('${unit.id}', true)" class="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1 shadow-xs">
+                        <i class="fa-solid fa-check-double"></i> Registrar ${maint.isMoto ? 'Cambio de Aceite' : 'Mantención'} Realizada
+                   </button>`
+                : '';
+
+            return `
+                <div class="p-3 rounded-xl ${isOver ? 'bg-red-50 border-2 border-red-300' : 'bg-amber-50 border-2 border-amber-300'} space-y-1.5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <p class="font-black text-xs ${isOver ? 'text-red-900' : 'text-amber-950'}">
+                                <i class="fa-solid ${icon} mr-1"></i> ${unit.nombre}
+                                <span class="font-mono font-normal text-[10px] ${isOver ? 'text-red-700' : 'text-amber-800'}">(${unit.patente || unit.tipo})</span>
+                            </p>
+                            <p class="text-[11px] font-bold ${isOver ? 'text-red-700' : 'text-amber-900'} mt-0.5">${titleText}</p>
+                            <p class="text-[10px] font-mono ${isOver ? 'text-red-800' : 'text-amber-800'}">Km Actual: <strong>${formatKm(maint.kmActual)} km</strong> • Meta: <strong>${formatKm(maint.kmProxima)} km</strong></p>
+                        </div>
+                        ${statusPill}
+                    </div>
+                    <div class="w-full h-2 bg-white/80 rounded-full overflow-hidden border ${isOver ? 'border-red-200' : 'border-amber-200'}">
+                        <div class="h-full ${isOver ? 'bg-red-600' : 'bg-amber-500'} rounded-full" style="width: ${maint.progresoPct}%"></div>
+                    </div>
+                    ${adminQuickAction}
+                </div>
+            `;
+        }
+
+        function openSingleVehicleMaintenancePopup(unit, maint, contextLabel = '') {
+            if (!unit || !maint || (maint.status !== 'VENCIDO' && maint.status !== 'PROXIMO')) return;
+            const modal = document.getElementById('maintenance-alert-modal');
+            const body = document.getElementById('maint-modal-body');
+            const titleEl = document.getElementById('maint-modal-title');
+            const headerEl = document.getElementById('maint-modal-header');
+            const adminBtn = document.getElementById('maint-modal-admin-btn');
+            if (!modal || !body) return;
+
+            const isOver = maint.status === 'VENCIDO';
+            const role = AppState.userRole || 'INSPECTOR';
+
+            if (headerEl) {
+                headerEl.className = isOver
+                    ? 'bg-gradient-to-r from-red-700 via-red-600 to-rose-600 text-white p-4 flex justify-between items-center'
+                    : 'bg-gradient-to-r from-amber-600 via-amber-500 to-orange-500 text-white p-4 flex justify-between items-center';
+            }
+            if (titleEl) {
+                titleEl.innerText = isOver
+                    ? `🚨 ${unit.nombre}: ${maint.isMoto ? 'LISTO PARA CAMBIO DE ACEITE' : 'LISTO PARA MANTENCIÓN'}`
+                    : `⚠️ ${unit.nombre}: ${maint.isMoto ? 'CERCA DE CAMBIO DE ACEITE' : 'CERCA DE MANTENCIÓN'}`;
+            }
+            if (adminBtn) {
+                adminBtn.classList.toggle('hidden', role !== 'ADMIN');
+            }
+
+            const noticeHtml = role === 'ADMIN'
+                ? `<div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-[#1e3a8a] font-semibold">
+                        <i class="fa-solid fa-user-gear mr-1"></i> ${contextLabel ? `<strong>${contextLabel}:</strong> ` : ''}Puedes registrar la mantención directamente aquí o abrir el Panel de Mantenciones.
+                   </div>`
+                : `<div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-[#1e3a8a] font-semibold">
+                        <i class="fa-solid fa-circle-info mr-1"></i> ${contextLabel ? `<strong>${contextLabel}:</strong> ` : ''}Informa al <strong>Administrador de Mantención / Jefe de Turno</strong> para programar el ingreso a taller.
+                   </div>`;
+
+            body.innerHTML = renderPopupUnitCard(unit, maint, role) + noticeHtml;
+            modal.classList.remove('hidden');
         }
 
         function openMaintenanceAlertModal({ role = AppState.userRole, force = false } = {}) {
@@ -3192,10 +3282,10 @@
             }
             if (titleEl) {
                 titleEl.innerText = hasOverdue
-                    ? 'ALERTA: Vehículos Pasados de Mantención'
+                    ? '🚨 ALERTA: Unidades Listas para Mantención'
                     : (alerts.proximos.length > 0
-                        ? 'AVISO: Vehículos Próximos a Mantención'
-                        : 'Estado de Mantenciones de Flota');
+                        ? '⚠️ AVISO: Unidades Cerca de Mantención (≤ 500 km)'
+                        : '✓ Control de Mantenciones de Flota');
             }
             if (adminBtn) {
                 adminBtn.classList.toggle('hidden', role !== 'ADMIN');
@@ -3212,46 +3302,28 @@
                 const sections = [];
                 if (alerts.vencidos.length > 0) {
                     sections.push(`
-                        <div class="space-y-1.5">
+                        <div class="space-y-2">
                             <p class="text-[11px] font-black text-red-700 uppercase flex items-center gap-1">
-                                <i class="fa-solid fa-circle-exclamation"></i> Pasados de Kilometraje (${alerts.vencidos.length})
+                                <i class="fa-solid fa-circle-exclamation animate-pulse"></i> Listos para Mantención / Pasados (${alerts.vencidos.length})
                             </p>
-                            ${alerts.vencidos.map(({ unit, maint }) => `
-                                <div class="p-2.5 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between gap-2">
-                                    <div>
-                                        <p class="font-black text-red-900"><i class="fa-solid ${maint.isMoto ? 'fa-motorcycle' : 'fa-car-side'} mr-1"></i> ${unit.nombre} <span class="font-mono font-normal text-[10px] text-red-700">(${unit.patente || unit.tipo})</span></p>
-                                        <p class="text-[11px] text-red-800">${maint.isMoto ? 'Cambio de aceite vencido (cada 3.000 km)' : 'Mantención vencida (cada 10.000 km)'}</p>
-                                        <p class="text-[10px] font-mono text-red-700">Actual: <strong>${formatKm(maint.kmActual)} km</strong> • Meta: ${formatKm(maint.kmProxima)} km</p>
-                                    </div>
-                                    <span class="px-2 py-1 rounded-lg bg-red-600 text-white font-black text-[10px] shrink-0">+${formatKm(maint.kmExcedidos)} km</span>
-                                </div>
-                            `).join('')}
+                            ${alerts.vencidos.map(({ unit, maint }) => renderPopupUnitCard(unit, maint, role)).join('')}
                         </div>
                     `);
                 }
                 if (alerts.proximos.length > 0) {
                     sections.push(`
-                        <div class="space-y-1.5">
+                        <div class="space-y-2">
                             <p class="text-[11px] font-black text-amber-800 uppercase flex items-center gap-1">
-                                <i class="fa-solid fa-bell"></i> Próximos a Mantención — Aviso 500 km antes (${alerts.proximos.length})
+                                <i class="fa-solid fa-bell"></i> Cerca de Mantención — Aviso 500 km antes (${alerts.proximos.length})
                             </p>
-                            ${alerts.proximos.map(({ unit, maint }) => `
-                                <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-2">
-                                    <div>
-                                        <p class="font-black text-amber-950"><i class="fa-solid ${maint.isMoto ? 'fa-motorcycle' : 'fa-car-side'} mr-1"></i> ${unit.nombre} <span class="font-mono font-normal text-[10px] text-amber-800">(${unit.patente || unit.tipo})</span></p>
-                                        <p class="text-[11px] text-amber-900">${maint.isMoto ? 'Próximo a cambio de aceite (cada 3.000 km)' : 'Próximo a mantención preventiva (cada 10.000 km)'}</p>
-                                        <p class="text-[10px] font-mono text-amber-800">Actual: <strong>${formatKm(maint.kmActual)} km</strong> • Meta: ${formatKm(maint.kmProxima)} km</p>
-                                    </div>
-                                    <span class="px-2 py-1 rounded-lg bg-amber-400 text-slate-900 font-black text-[10px] shrink-0">Faltan ${formatKm(maint.kmRestantes)} km</span>
-                                </div>
-                            `).join('')}
+                            ${alerts.proximos.map(({ unit, maint }) => renderPopupUnitCard(unit, maint, role)).join('')}
                         </div>
                     `);
                 }
                 if (role !== 'ADMIN') {
                     sections.push(`
                         <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-[#1e3a8a] font-semibold">
-                            <i class="fa-solid fa-circle-info mr-1"></i> Si se le asigna alguna de estas unidades, informe al Jefe de Turno / Administración para coordinar la mantención o cambio de aceite.
+                            <i class="fa-solid fa-circle-info mr-1"></i> Si se le asigna alguna de estas unidades, informe al <strong>Administrador de Mantención / Jefe de Turno</strong> para coordinar el taller o cambio de aceite.
                         </div>
                     `);
                 }
@@ -4092,6 +4164,10 @@
             saveFleetDB(fleet);
             renderAllAdminPanels();
             resetAdminFleetForm();
+            const savedUnitMaint = getVehicleMaintenanceStatus(newUnit);
+            if (savedUnitMaint.status === 'VENCIDO' || savedUnitMaint.status === 'PROXIMO') {
+                openSingleVehicleMaintenancePopup(newUnit, savedUnitMaint, 'Verificación Automática de Flota');
+            }
             showToast(`Guardando unidad ${newUnit.nombre} en Excel...`, 'bg-blue-700');
             const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'ADMIN_SAVE_VEHICLE' }, newUnit));
             if (res && res.ok) {
@@ -4466,10 +4542,11 @@
             AppState.turnoActivo = true;
 
             const maintOnStart = updateVehicleMileageLocal(AppState.movil, Number(AppState.kmInicial));
+            const startedUnit = getFleetDB().find(f => f.nombre === AppState.movil);
             if (maintOnStart && maintOnStart.status === 'VENCIDO') {
-                showToast(`⚠️ ${AppState.movil}: ${maintOnStart.isMoto ? 'Cambio de aceite' : 'Mantención'} VENCIDA (+${formatKm(maintOnStart.kmExcedidos)} km)`, 'bg-red-600');
+                showToast(`🚨 ${AppState.movil}: ${maintOnStart.isMoto ? 'LISTO PARA CAMBIO DE ACEITE' : 'LISTO PARA MANTENCIÓN'} (+${formatKm(maintOnStart.kmExcedidos)} km)`, 'bg-red-600');
             } else if (maintOnStart && maintOnStart.status === 'PROXIMO') {
-                showToast(`⚠️ ${AppState.movil}: Próximo a ${maintOnStart.isMoto ? 'cambio de aceite' : 'mantención'} (faltan ${formatKm(maintOnStart.kmRestantes)} km)`, 'bg-amber-600');
+                showToast(`⚠️ ${AppState.movil}: Cerca de ${maintOnStart.isMoto ? 'cambio de aceite' : 'mantención'} (faltan ${formatKm(maintOnStart.kmRestantes)} km)`, 'bg-amber-600');
             }
             
             const shiftLabels = { 'MANANA': 'Mañana', 'TARDE': 'Tarde', 'NOCHE': 'Noche' };
@@ -4485,6 +4562,9 @@
             updateBadgeAndTasks();
             generateChecklist();
             navigateTo('view-checklist');
+            if (startedUnit && maintOnStart && (maintOnStart.status === 'VENCIDO' || maintOnStart.status === 'PROXIMO')) {
+                openSingleVehicleMaintenancePopup(startedUnit, maintOnStart, 'Alerta Automática de Apertura de Turno');
+            }
         });
 
         // 2.5 Form Checklist Submit -> SE GUARDA DIRECTAMENTE EN EL EXCEL DE GOOGLE DRIVE
@@ -4711,7 +4791,9 @@
             };
 
             const res = await sendPayloadToGoogleSheets(payload);
-            const maintOnEnd = updateVehicleMileageLocal(AppState.movil, kmTermino);
+            const closedMovilName = AppState.movil;
+            const maintOnEnd = updateVehicleMileageLocal(closedMovilName, kmTermino);
+            const closedUnit = getFleetDB().find(f => f.nombre === closedMovilName);
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = origText;
@@ -4724,14 +4806,17 @@
             localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
 
             if (maintOnEnd && maintOnEnd.status === 'VENCIDO') {
-                showToast(`🚨 Turno cerrado. AVISO: ${AppState.movil} superó ${maintOnEnd.isMoto ? 'cambio de aceite (3.000 km)' : 'mantención (10.000 km)'}`, 'bg-red-600');
+                showToast(`🚨 Turno cerrado. AVISO: ${closedMovilName} listo para ${maintOnEnd.isMoto ? 'cambio de aceite (3.000 km)' : 'mantención (10.000 km)'}`, 'bg-red-600');
             } else if (maintOnEnd && maintOnEnd.status === 'PROXIMO') {
-                showToast(`⚠️ Turno cerrado. AVISO: ${AppState.movil} a ${formatKm(maintOnEnd.kmRestantes)} km de ${maintOnEnd.isMoto ? 'cambio de aceite' : 'mantención'}`, 'bg-amber-600');
+                showToast(`⚠️ Turno cerrado. AVISO: ${closedMovilName} a ${formatKm(maintOnEnd.kmRestantes)} km de ${maintOnEnd.isMoto ? 'cambio de aceite' : 'mantención'}`, 'bg-amber-600');
             } else {
                 showToast(res && res.ok ? '✓ Cierre de turno registrado en Excel Drive. Sesión finalizada.' : 'Cierre guardado localmente. Sesión finalizada.', 'bg-blue-900');
             }
             setTimeout(() => {
                 navigateTo('view-login');
+                if (closedUnit && maintOnEnd && (maintOnEnd.status === 'VENCIDO' || maintOnEnd.status === 'PROXIMO')) {
+                    openSingleVehicleMaintenancePopup(closedUnit, maintOnEnd, 'Alerta Automática al Cerrar Turno');
+                }
             }, 600);
         });
 
