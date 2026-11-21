@@ -11,7 +11,8 @@ const CONFIG = {
   FOLDER_NAME_PDF_CENCO: "Peña_Seguro_1410_Actas_CENCO_PDF",
   EMAIL_CENTRAL: "central1410@penaflor.cl",
   EMAIL_JEFATURA: "inspeccion@penaflor.cl",
-  ENVIAR_CORREOS_REALES: false
+  ENVIAR_CORREOS_REALES: false,
+  WIALON_HOST: "https://cliente.gps-vision.cl"
 };
 
 const SHEETS = {
@@ -276,6 +277,10 @@ function doGet(e) {
 
     if (action === "bootstrap" || action === "getCompletedTasks") {
       return respuestaJSON(apiGetBootstrapData());
+    }
+
+    if (action === "gpsLive") {
+      return respuestaJSON(apiGetGpsLive());
     }
 
     return respuestaJSON({ ok: true, service: "Peña Seguro 1410 API" });
@@ -700,6 +705,7 @@ function apiGetBootstrapData() {
     ok: true,
     date: todayStr,
     spreadsheetUrl: "https://docs.google.com/spreadsheets/d/" + CONFIG.SPREADSHEET_ID + "/edit",
+    gpsConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("WIALON_TOKEN")),
     users: users,
     tasksCatalog: tasksCatalog,
     fleet: fleet,
@@ -1425,6 +1431,26 @@ function apiHandleAction(payload) {
       return { ok: true, action: action, folioId: folioId, estado: newEstado, imagenes: allImgs, nuevasImagenes: newlySavedUrls };
     }
 
+    if (action === "ADMIN_SAVE_WIALON_TOKEN") {
+      const cleanToken = String(payload.token || "").trim();
+      const props = PropertiesService.getScriptProperties();
+      if (!cleanToken) {
+        props.deleteProperty("WIALON_TOKEN");
+        CacheService.getScriptCache().remove("GPS_WIALON_LIVE_V1");
+        return { ok: true, action: action, configured: false, message: "Token GPS eliminado" };
+      }
+      props.setProperty("WIALON_TOKEN", cleanToken);
+      CacheService.getScriptCache().remove("GPS_WIALON_LIVE_V1");
+      const testRes = apiGetGpsLive(true);
+      return {
+        ok: Boolean(testRes.ok),
+        action: action,
+        configured: Boolean(testRes.ok),
+        unitsCount: (testRes.units || []).length,
+        error: testRes.error || ""
+      };
+    }
+
     if (action === "CENCO_CREAR_ALERTA_CCTV") {
       const shCctv = ss.getSheetByName(SHEETS.CENCO_CCTV_ALERTAS);
       const alertaId = payload.alertaId || ("CCTV-" + String(Date.now()).slice(-6));
@@ -1678,4 +1704,106 @@ function respuestaJSON(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Consulta en tiempo real la API oficial Wialon Remote API (cliente.gps-vision.cl)
+ * usando el token de solo lectura almacenado en ScriptProperties ("WIALON_TOKEN").
+ * Incluye caché de 15 segundos para máxima velocidad sin sobrecargar Wialon.
+ */
+function apiGetGpsLive(bypassCache) {
+  try {
+    const token = String(PropertiesService.getScriptProperties().getProperty("WIALON_TOKEN") || "").trim();
+    if (!token) {
+      return { ok: false, configured: false, units: [], error: "Token Wialon GPS no configurado" };
+    }
+
+    const cache = CacheService.getScriptCache();
+    const cacheKey = "GPS_WIALON_LIVE_V1";
+    if (!bypassCache) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        try { return JSON.parse(cached); } catch (ignore) {}
+      }
+    }
+
+    const baseUrl = (CONFIG.WIALON_HOST || "https://cliente.gps-vision.cl") + "/wialon/ajax.html";
+
+    // 1. Iniciar sesión con token oficial Wialon
+    const loginUrl = baseUrl + "?svc=token/login&params=" + encodeURIComponent(JSON.stringify({ token: token }));
+    const loginResp = UrlFetchApp.fetch(loginUrl, { method: "post", muteHttpExceptions: true });
+    const loginJson = JSON.parse(loginResp.getContentText() || "{}");
+    if (loginJson.error || !loginJson.eid) {
+      return {
+        ok: false,
+        configured: true,
+        units: [],
+        error: "Wialon login error (" + (loginJson.error || "sin eid") + "): " + (loginJson.reason || "Verifique que el token sea válido")
+      };
+    }
+    const sid = loginJson.eid;
+
+    // 2. Consultar todas las unidades (flags 1025 = base 1 + last position 1024)
+    const searchParams = {
+      spec: {
+        itemsType: "avl_unit",
+        propName: "sys_name",
+        propValueMask: "*",
+        sortType: "sys_name"
+      },
+      force: 1,
+      flags: 1025,
+      from: 0,
+      to: 0
+    };
+    const searchUrl = baseUrl + "?svc=core/search_items&params=" + encodeURIComponent(JSON.stringify(searchParams)) + "&sid=" + encodeURIComponent(sid);
+    const searchResp = UrlFetchApp.fetch(searchUrl, { method: "post", muteHttpExceptions: true });
+    const searchJson = JSON.parse(searchResp.getContentText() || "{}");
+
+    // 3. Cerrar sesión Wialon limpiamente para no acumular sesiones
+    try {
+      UrlFetchApp.fetch(baseUrl + "?svc=core/logout&params={}&sid=" + encodeURIComponent(sid), { method: "post", muteHttpExceptions: true });
+    } catch (ignore) {}
+
+    if (searchJson.error) {
+      return { ok: false, configured: true, units: [], error: "Wialon search error: " + searchJson.error };
+    }
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const items = Array.isArray(searchJson.items) ? searchJson.items : [];
+    const units = items.map(u => {
+      const pos = u.pos || {};
+      const lat = typeof pos.y === "number" ? pos.y : null;
+      const lon = typeof pos.x === "number" ? pos.x : null;
+      const ts = Number(pos.t || 0);
+      const ageSec = ts > 0 ? Math.max(0, nowSec - ts) : 999999;
+      return {
+        id: u.id,
+        nombre: String(u.nm || "").trim(),
+        lat: lat,
+        lon: lon,
+        velocidad: Number(pos.s || 0),
+        rumbo: Number(pos.c || 0),
+        satelites: Number(pos.sc || 0),
+        ultimoReporteEpoch: ts,
+        ageSec: ageSec,
+        online: ts > 0 && ageSec <= 600
+      };
+    }).filter(u => u.lat !== null && u.lon !== null);
+
+    const payload = {
+      ok: true,
+      configured: true,
+      fetchedAt: new Date().toISOString(),
+      units: units
+    };
+
+    try {
+      cache.put(cacheKey, JSON.stringify(payload), 15);
+    } catch (ignore) {}
+
+    return payload;
+  } catch (err) {
+    return { ok: false, configured: true, units: [], error: err.toString() };
+  }
 }
