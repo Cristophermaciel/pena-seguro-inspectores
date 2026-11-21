@@ -1791,14 +1791,63 @@
                                 <button type="button" onclick="toggleCadMapOverlay('units')" id="cad-layer-units" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-blue-400 text-[11px] font-bold shadow flex items-center gap-1">
                                     <i class="fa-solid fa-car-side text-blue-400"></i> Móviles
                                 </button>
+                                <button type="button" onclick="toggleCadMapOverlay('allgps')" id="cad-layer-allgps" style="opacity:0.45" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-emerald-400 text-[11px] font-bold shadow flex items-center gap-1" title="Mostrar todas las unidades GPS Wialon (18) + alertas de geocerca">
+                                    <i class="fa-solid fa-satellite-dish text-emerald-400"></i> Todos GPS
+                                </button>
                                 <button type="button" onclick="toggleCadMapOverlay('cameras')" id="cad-layer-cameras" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-cyan-400 text-[11px] font-bold shadow flex items-center gap-1">
                                     <i class="fa-solid fa-video text-cyan-400"></i> Cámaras
                                 </button>
                                 <button type="button" onclick="toggleCadMapOverlay('incidents')" id="cad-layer-incidents" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-amber-400 text-[11px] font-bold shadow flex items-center gap-1">
                                     <i class="fa-solid fa-shield-halved text-amber-400"></i> Incidentes
                                 </button>
+                                <button type="button" onclick="openWialonConfigModal()" class="w-8 h-8 rounded-md bg-slate-900/90 text-emerald-400 shadow border border-emerald-500/60 flex items-center justify-center hover:bg-slate-800" title="Configurar Token GPS Wialon en Vivo">
+                                    <i class="fa-solid fa-satellite text-xs"></i>
+                                </button>
                                 <button type="button" onclick="recenterCadMap()" class="w-8 h-8 rounded-md bg-white text-slate-800 shadow border border-slate-300 flex items-center justify-center hover:bg-slate-100" title="Centrar en Peñaflor">
                                     <i class="fa-solid fa-crosshairs text-xs"></i>
+                                </button>
+                            </div>
+
+                            <!-- Panel Flotante Estado GPS En Vivo + Alertas Automáticas de Geocerca (Abajo izquierda) -->
+                            <div id="cad-gps-geofence-panel" class="absolute bottom-3 left-3 z-[400] max-w-sm space-y-1.5 pointer-events-auto">
+                                <div id="cad-gps-status-pill" class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700 text-[11px] font-bold text-slate-200 shadow-lg backdrop-blur">
+                                    <span class="w-2 h-2 rounded-full bg-slate-500" id="cad-gps-dot"></span>
+                                    <span id="cad-gps-status-text">GPS Wialon: verificando...</span>
+                                </div>
+                                <div id="cad-gps-geofence-alerts" class="space-y-1.5"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Configuración Token GPS Wialon (Solo Admin / Supervisor) -->
+                    <div id="cenco-wialon-modal" class="hidden fixed inset-0 z-[900] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+                        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 text-slate-100">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-satellite-dish text-emerald-400 text-lg"></i>
+                                    <div>
+                                        <h3 class="text-sm font-black uppercase tracking-wide">Conexión GPS en Vivo — GPSVisión (Wialon)</h3>
+                                        <p class="text-[11px] text-slate-400">Token oficial de solo lectura guardado en Apps Script (nunca expuesto en GitHub)</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="closeWialonConfigModal()" class="text-slate-400 hover:text-white text-lg px-2">&times;</button>
+                            </div>
+                            <div class="bg-slate-800/70 border border-slate-700 rounded-xl p-3 text-xs space-y-2">
+                                <p class="font-bold text-emerald-300">Paso 1: Obtener token de solo lectura ("Rastreo en línea")</p>
+                                <p class="text-slate-300 leading-relaxed">Abre tu sesión de <strong>cliente.gps-vision.cl</strong> → menú usuario (arriba derecha) → <strong>Gestión de sesiones</strong> → <strong>Aplicaciones autorizadas</strong> y copia el token de <em>Rastreo en línea</em>, o genera uno nuevo con el botón:</p>
+                                <a href="https://cliente.gps-vision.cl/login.html?client_id=PenaSeguro1410&access_type=256&activation_time=0&duration=0&flags=0x1&redirect_uri=https://cliente.gps-vision.cl/post_token.html" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px]">
+                                    <i class="fa-solid fa-key"></i> Generar Token Oficial Wialon (Solo Lectura)
+                                </a>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-300">Paso 2: Pegar Token Wialon (72 caracteres)</label>
+                                <input type="password" id="wialon-token-input" placeholder="Pegue aquí el access_token de Wialon..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-emerald-400">
+                            </div>
+                            <div id="wialon-config-feedback" class="text-xs hidden rounded-lg p-2.5"></div>
+                            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                                <button type="button" onclick="closeWialonConfigModal()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">Cerrar</button>
+                                <button type="button" onclick="saveWialonTokenConfig()" id="btn-save-wialon-token" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white flex items-center gap-1.5">
+                                    <i class="fa-solid fa-plug-circle-check"></i> Guardar y Conectar GPS en Vivo
                                 </button>
                             </div>
                         </div>
@@ -5686,6 +5735,7 @@
                 saveFleetAlertsDB(Array.from(byId.values()));
             }
             if (Array.isArray(data.recentShifts)) AppState.cloudRecentShifts = data.recentShifts;
+            if (typeof data.gpsConfigured === 'boolean') CencoState.gpsConfigured = data.gpsConfigured;
             if (Array.isArray(data.recentProcedures)) AppState.cloudRecentProcedures = data.recentProcedures;
 
             // --- Sincronización de Datos CENCO CAD desde Google Sheets ---
@@ -7052,7 +7102,13 @@
             incivTab: 'RUCOS',
             map: null,
             mapLayers: { street: null, satellite: null, boundaryGroup: null, quadrantsGroup: null, unitsGroup: null, camerasGroup: null, incidentsGroup: null },
-            mapVisibility: { boundary: true, quadrants: true, units: true, cameras: true, incidents: true },
+            mapVisibility: { boundary: true, quadrants: true, units: true, allgps: false, cameras: true, incidents: true },
+            gpsUnits: [],
+            gpsConfigured: false,
+            gpsLastFetch: '',
+            gpsError: '',
+            geofenceAlerts: [],
+            geofenceCooldowns: {},
             clockTimer: null,
             pollTimer: null
         };
@@ -7228,9 +7284,11 @@
             CencoState.clockTimer = setInterval(tick, 1000);
 
             if (CencoState.pollTimer) clearInterval(CencoState.pollTimer);
+            fetchLiveGpsFromCloud();
             CencoState.pollTimer = setInterval(() => {
                 if (document.getElementById('view-cenco')?.classList.contains('active')) {
                     syncBootstrapFromCloud(false);
+                    fetchLiveGpsFromCloud();
                 }
             }, 20000);
         }
@@ -7442,6 +7500,317 @@
             return [base[0] + Math.cos(angle) * r, base[1] + Math.sin(angle) * r];
         }
 
+        // ========================================================================
+        // GPS EN VIVO (WIALON) + GEOCERCA AUTOMÁTICA (CUADRANTE Y LÍMITE COMUNAL)
+        // + REGISTRO AUTOMÁTICO EN BITÁCORA DEL TURNO
+        // ========================================================================
+        function normalizeVehicleKey(name) {
+            return String(name || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toUpperCase()
+                .replace(/\b0+(\d+)\b/g, '$1')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function isPointInPolygon(lat, lon, polygon) {
+            if (!Array.isArray(polygon) || polygon.length < 3) return false;
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const yi = polygon[i][0], xi = polygon[i][1];
+                const yj = polygon[j][0], xj = polygon[j][1];
+                const intersect = ((yi > lat) !== (yj > lat)) &&
+                    (lon < (xj - xi) * (lat - yi) / ((yj - yi) || 1e-12) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function detectQuadrantForPoint(lat, lon) {
+            if (typeof CARABINEROS_QUADRANTS_GEO === 'undefined') return '';
+            for (const q of CARABINEROS_QUADRANTS_GEO) {
+                if (isPointInPolygon(lat, lon, q.coords)) return q.id;
+            }
+            return '';
+        }
+
+        function findLiveGpsForUnitName(unitName) {
+            const key = normalizeVehicleKey(unitName);
+            if (!key) return null;
+            return (CencoState.gpsUnits || []).find(g => normalizeVehicleKey(g.nombre) === key) || null;
+        }
+
+        function formatGpsAge(ageSec) {
+            const s = Number(ageSec || 0);
+            if (s < 60) return `hace ${s}s`;
+            if (s < 3600) return `hace ${Math.floor(s / 60)}m`;
+            if (s < 86400) return `hace ${Math.floor(s / 3600)}h`;
+            return `hace ${Math.floor(s / 86400)}d`;
+        }
+
+        async function fetchLiveGpsFromCloud() {
+            const url = getGoogleScriptUrl();
+            if (!url && !isRunningInsideGoogleAppsScript()) return;
+            try {
+                let data = null;
+                if (isRunningInsideGoogleAppsScript()) {
+                    data = await new Promise((resolve) => {
+                        google.script.run
+                            .withSuccessHandler(resolve)
+                            .withFailureHandler(() => resolve(null))
+                            .apiGetGpsLive(false);
+                    });
+                } else {
+                    const sep = url.includes('?') ? '&' : '?';
+                    const res = await fetch(`${url}${sep}action=gpsLive&t=${Date.now()}`, { cache: 'no-store' });
+                    if (res.ok) data = await res.json();
+                }
+                if (!data) return;
+                CencoState.gpsConfigured = Boolean(data.configured);
+                CencoState.gpsError = data.error || '';
+                if (data.ok && Array.isArray(data.units)) {
+                    CencoState.gpsUnits = data.units;
+                    CencoState.gpsLastFetch = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    evaluateGpsGeofences();
+                }
+                renderGpsGeofencePanel();
+                if (CencoState.map && document.getElementById('view-cenco')?.classList.contains('active')) {
+                    renderCadMapMarkers();
+                }
+            } catch (err) {
+                CencoState.gpsError = 'Sin respuesta GPS';
+                renderGpsGeofencePanel();
+            }
+        }
+
+        function evaluateGpsGeofences() {
+            const activeShifts = getActiveCheckedInShifts();
+            const alerts = [];
+            const nowMs = Date.now();
+            const COOLDOWN_MS = 15 * 60 * 1000; // Evitar duplicar registros por 15 min por móvil y tipo
+
+            activeShifts.forEach(sh => {
+                const gps = findLiveGpsForUnitName(sh.movil);
+                if (!gps || typeof gps.lat !== 'number' || typeof gps.lon !== 'number') return;
+                // Solo evaluar geocerca sobre reportes recientes (últimos 15 min) para evitar falsas alertas de GPS apagado
+                if (gps.ageSec > 900) return;
+
+                const inComuna = isPointInPolygon(gps.lat, gps.lon, PENAFLOR_COMMUNE_BOUNDARY);
+                const detectedQuad = detectQuadrantForPoint(gps.lat, gps.lon);
+                const assignedQuad = String(sh.cuadrante || '').trim().toUpperCase();
+                const isVolante = !assignedQuad || assignedQuad.includes('VOLANTE') || assignedQuad.includes('TODA');
+
+                let violationType = '';
+                let motivo = '';
+                let prioridad = 'ALTA';
+
+                if (!inComuna) {
+                    violationType = 'FUERA_COMUNA';
+                    motivo = 'FUERA DEL LÍMITE COMUNAL DE PEÑAFLOR';
+                    prioridad = 'CRITICA';
+                } else if (!isVolante && detectedQuad && detectedQuad !== assignedQuad) {
+                    violationType = 'FUERA_CUADRANTE';
+                    motivo = `FUERA DE SU CUADRANTE ASIGNADO (${assignedQuad} → detectado en ${detectedQuad})`;
+                    prioridad = 'ALTA';
+                }
+
+                if (violationType) {
+                    const alertObj = {
+                        movil: sh.movil,
+                        conductor: sh.rut || 'Inspector en Turno',
+                        cuadranteAsignado: assignedQuad || 'VOLANTE',
+                        cuadranteDetectado: inComuna ? (detectedQuad || 'Peñaflor') : 'FUERA DE PEÑAFLOR',
+                        tipo: violationType,
+                        motivo: motivo,
+                        prioridad: prioridad,
+                        lat: gps.lat,
+                        lon: gps.lon,
+                        velocidad: gps.velocidad || 0,
+                        ageSec: gps.ageSec || 0
+                    };
+                    alerts.push(alertObj);
+
+                    // Registro automático en la bitácora del turno CENCO (con cooldown anti-duplicado de 15 min)
+                    const coolKey = `${normalizeVehicleKey(sh.movil)}::${violationType}`;
+                    const lastLogged = Number(CencoState.geofenceCooldowns[coolKey] || 0);
+                    if (nowMs - lastLogged > COOLDOWN_MS) {
+                        CencoState.geofenceCooldowns[coolKey] = nowMs;
+                        autoLogGeofenceAlertToBitacora(alertObj);
+                    }
+                }
+            });
+
+            CencoState.geofenceAlerts = alerts;
+        }
+
+        async function autoLogGeofenceAlertToBitacora(al) {
+            const activeShift = getActiveCencoShift();
+            const nowStr = new Date().toLocaleString('es-CL');
+            const folioId = `CAD-GPS-${String(Date.now()).slice(-5)}`;
+            const isComuna = al.tipo === 'FUERA_COMUNA';
+            const subcat = isComuna ? 'Fuera de Límite Comunal Peñaflor' : `Fuera de Cuadrante Asignado (${al.cuadranteAsignado} → ${al.cuadranteDetectado})`;
+            const detalle = `⚠️ ALERTA AUTOMÁTICA GPS GEOCERCA: ${al.movil} (Conductor: ${al.conductor}) asignado a Cuadrante ${al.cuadranteAsignado} fue detectado ${al.motivo} a ${al.velocidad} km/h. Coordenadas GPS: ${al.lat.toFixed(5)}, ${al.lon.toFixed(5)}.`;
+
+            const incident = {
+                folioId,
+                fechaIngreso: nowStr,
+                origen: 'ALERTA GPS GEOCERCA',
+                estado: 'EN_PROCEDIMIENTO',
+                prioridad: al.prioridad,
+                categoria: 'Alerta Geocerca GPS',
+                subcategoria: subcat,
+                cuadrante: isComuna ? 'FUERA_COMUNA' : al.cuadranteAsignado,
+                direccion: `${al.lat.toFixed(5)}, ${al.lon.toFixed(5)} (GPS En Vivo)`,
+                referenciaCamara: '',
+                denunciante: 'Sistema Automático GPSVisión (Wialon)',
+                telefono: '',
+                detalle: detalle,
+                ingresadoPor: 'SISTEMA GPS GEOCERCA',
+                despachador: activeShift?.operador || AppState.userName || 'CENCO',
+                movilesAsignados: al.movil,
+                horaDespacho: nowStr,
+                horaArribo: '',
+                horaCierre: '',
+                resolucion: '',
+                imagenes: [],
+                turnoCencoId: activeShift?.turnoCencoId || '',
+                procInspectorId: '',
+                historial: [{
+                    fecha: nowStr,
+                    rol: 'GPS_GEOCERCA',
+                    usuario: 'Sistema GPS Wialon',
+                    accion: detalle
+                }]
+            };
+
+            const list = getCencoIncidentsDB();
+            list.unshift(incident);
+            saveCencoIncidentsDB(list);
+            renderAllCencoPanels();
+            showToast(`🚨 ${al.movil}: ${al.motivo} (Registrado en bitácora ${folioId})`, isComuna ? 'bg-red-700' : 'bg-amber-600');
+
+            await sendPayloadToGoogleSheets({
+                action: 'CENCO_CREAR_INCIDENTE',
+                folioId: incident.folioId,
+                fechaIngreso: incident.fechaIngreso,
+                origen: incident.origen,
+                estado: incident.estado,
+                prioridad: incident.prioridad,
+                categoria: incident.categoria,
+                subcategoria: incident.subcategoria,
+                cuadrante: incident.cuadrante,
+                direccion: incident.direccion,
+                denunciante: incident.denunciante,
+                detalle: incident.detalle,
+                ingresadoPor: incident.ingresadoPor,
+                despachador: incident.despachador,
+                movilesAsignados: incident.movilesAsignados,
+                turnoCencoId: incident.turnoCencoId,
+                rolOperador: 'GPS_GEOCERCA'
+            });
+        }
+
+        function focusGpsAlertOnMap(lat, lon) {
+            if (CencoState.map && typeof lat === 'number' && typeof lon === 'number') {
+                CencoState.map.setView([lat, lon], 15, { animate: true });
+            }
+        }
+
+        function renderGpsGeofencePanel() {
+            const dot = document.getElementById('cad-gps-dot');
+            const txt = document.getElementById('cad-gps-status-text');
+            const alertsWrap = document.getElementById('cad-gps-geofence-alerts');
+            if (!dot || !txt || !alertsWrap) return;
+
+            if (!CencoState.gpsConfigured) {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                txt.innerHTML = 'GPS Wialon sin token — <button type="button" onclick="openWialonConfigModal()" class="underline text-emerald-400 hover:text-emerald-300">Conectar aquí</button>';
+            } else if (CencoState.gpsUnits.length > 0) {
+                const onlineCount = CencoState.gpsUnits.filter(u => u.online).length;
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+                txt.innerText = `GPS En Vivo: ${onlineCount}/${CencoState.gpsUnits.length} online (${CencoState.gpsLastFetch || 'ahora'})`;
+            } else if (CencoState.gpsError) {
+                dot.className = 'w-2 h-2 rounded-full bg-red-500';
+                txt.innerText = `GPS: ${CencoState.gpsError}`;
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+                txt.innerText = 'GPS Wialon: conectando...';
+            }
+
+            const alerts = CencoState.geofenceAlerts || [];
+            if (alerts.length === 0) {
+                alertsWrap.innerHTML = '';
+                return;
+            }
+            alertsWrap.innerHTML = alerts.map(al => {
+                const isComuna = al.tipo === 'FUERA_COMUNA';
+                return `
+                    <div class="rounded-lg p-2.5 shadow-xl border ${isComuna ? 'bg-red-950/95 border-red-500 text-red-100' : 'bg-amber-950/95 border-amber-400 text-amber-100'} text-[11px] backdrop-blur">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-black uppercase tracking-wide flex items-center gap-1">
+                                <i class="fa-solid fa-triangle-exclamation ${isComuna ? 'text-red-400 animate-pulse' : 'text-amber-300'}"></i>
+                                ${al.movil} • ${isComuna ? 'FUERA DE PEÑAFLOR' : 'FUERA DE CUADRANTE'}
+                            </span>
+                            <button type="button" onclick="focusGpsAlertOnMap(${al.lat}, ${al.lon})" class="px-2 py-0.5 rounded bg-white/15 hover:bg-white/25 text-white font-bold text-[10px]">Ver</button>
+                        </div>
+                        <div class="text-[10px] opacity-90 mt-0.5">
+                            Conductor: <strong>${al.conductor}</strong> • Asignado: <strong>${al.cuadranteAsignado}</strong> → Actual: <strong>${al.cuadranteDetectado}</strong> (${al.velocidad} km/h)
+                        </div>
+                        <div class="text-[9px] text-emerald-300 font-bold mt-0.5"><i class="fa-solid fa-book mr-1"></i>Registrado automáticamente en Bitácora del Turno</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openWialonConfigModal() {
+            const modal = document.getElementById('cenco-wialon-modal');
+            const fb = document.getElementById('wialon-config-feedback');
+            if (fb) { fb.classList.add('hidden'); fb.innerText = ''; }
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeWialonConfigModal() {
+            document.getElementById('cenco-wialon-modal')?.classList.add('hidden');
+        }
+
+        async function saveWialonTokenConfig() {
+            const inp = document.getElementById('wialon-token-input');
+            const fb = document.getElementById('wialon-config-feedback');
+            const btn = document.getElementById('btn-save-wialon-token');
+            const token = (inp?.value || '').trim();
+            if (!token) {
+                if (fb) {
+                    fb.className = 'text-xs rounded-lg p-2.5 bg-red-950 border border-red-500 text-red-200';
+                    fb.innerText = 'Ingrese un token válido de Wialon (Rastreo en línea).';
+                    fb.classList.remove('hidden');
+                }
+                return;
+            }
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...'; }
+            try {
+                const res = await sendPayloadToGoogleSheets({ action: 'ADMIN_SAVE_WIALON_TOKEN', token });
+                if (res && res.ok) {
+                    CencoState.gpsConfigured = true;
+                    if (inp) inp.value = '';
+                    if (fb) {
+                        fb.className = 'text-xs rounded-lg p-2.5 bg-emerald-950 border border-emerald-500 text-emerald-200 font-bold';
+                        fb.innerText = `✓ ¡Conectado! Se detectaron ${res.unitsCount || 0} unidades GPS en vivo desde cliente.gps-vision.cl.`;
+                        fb.classList.remove('hidden');
+                    }
+                    await fetchLiveGpsFromCloud();
+                    setTimeout(() => closeWialonConfigModal(), 1600);
+                } else {
+                    if (fb) {
+                        fb.className = 'text-xs rounded-lg p-2.5 bg-red-950 border border-red-500 text-red-200';
+                        fb.innerText = `Error al validar token: ${(res && res.error) || 'Verifique que el backend Apps Script esté actualizado a v20.'}`;
+                        fb.classList.remove('hidden');
+                    }
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plug-circle-check"></i> Guardar y Conectar GPS en Vivo'; }
+            }
+        }
+
         function renderCadMapMarkers() {
             if (!CencoState.map) return;
             const { boundaryGroup, quadrantsGroup, unitsGroup, camerasGroup, incidentsGroup } = CencoState.mapLayers;
@@ -7452,6 +7821,8 @@
             incidentsGroup.clearLayers();
 
             const activeShifts = getActiveCheckedInShifts();
+            const alertByMovil = new Map();
+            (CencoState.geofenceAlerts || []).forEach(al => alertByMovil.set(normalizeVehicleKey(al.movil), al));
 
             // 0A. Límite Comunal Oficial de Peñaflor (KMZ)
             if (boundaryGroup && CencoState.mapVisibility.boundary && typeof PENAFLOR_COMMUNE_BOUNDARY !== 'undefined') {
@@ -7466,11 +7837,11 @@
                 }).bindPopup('<div class="text-xs font-sans"><div class="font-black text-red-700">Límite Comunal de Peñaflor</div><div class="text-slate-600">Jurisdicción Peña Seguro 1410</div></div>').addTo(boundaryGroup);
             }
 
-            // 0B. Cuadrantes Oficiales de Carabineros (KMZ: 252A, 252B, 252C, 253A, 253B)
+            // 0B. Cuadrantes Oficiales de Carabineros + Rurales (KMZ: 252A..253B + SRA, SRB, SRA1)
             if (quadrantsGroup && CencoState.mapVisibility.quadrants && typeof CARABINEROS_QUADRANTS_GEO !== 'undefined') {
                 CARABINEROS_QUADRANTS_GEO.forEach(q => {
                     const unitsInQuad = activeShifts.filter(s => String(s.cuadrante || '').trim().toUpperCase() === q.id);
-                    const poly = L.polygon(q.coords, {
+                    L.polygon(q.coords, {
                         color: q.color,
                         weight: 2.2,
                         opacity: 0.9,
@@ -7485,7 +7856,6 @@
                         </div>
                     `).addTo(quadrantsGroup);
 
-                    // Etiqueta permanente centrada del cuadrante
                     const labelIcon = L.divIcon({
                         className: '',
                         html: `<div style="background:${q.color}dd;color:#fff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:900;letter-spacing:0.4px;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;">${q.id}</div>`,
@@ -7496,30 +7866,63 @@
                 });
             }
 
-            // 1. Unidades Activas (SOLO móviles que iniciaron turno con checklist y NO han cerrado turno)
+            // 1A. Unidades en Turno Activo (con posición GPS REAL en vivo si Wialon está conectado + alerta de geocerca)
+            const plottedKeys = new Set();
             if (CencoState.mapVisibility.units) {
-                const unitsToPlot = activeShifts.map(s => ({
-                    nombre: s.movil,
-                    cuadrante: s.cuadrante,
-                    inspector: s.rut,
-                    checklist: s.estadoChecklist || 'Verificado',
-                    activo: true
-                }));
+                activeShifts.forEach((s, idx) => {
+                    const key = normalizeVehicleKey(s.movil);
+                    plottedKeys.add(key);
+                    const gps = findLiveGpsForUnitName(s.movil);
+                    const hasLiveGps = gps && typeof gps.lat === 'number' && typeof gps.lon === 'number';
+                    const coords = hasLiveGps ? [gps.lat, gps.lon] : parseGpsOrQuadrantCoords('', s.cuadrante, idx + 1);
+                    const geoAl = alertByMovil.get(key);
+                    const isMoto = /moto/i.test(s.movil);
+                    const borderStyle = geoAl
+                        ? (geoAl.tipo === 'FUERA_COMUNA' ? 'border:2px solid #ef4444;background:#fef2f2;color:#991b1b;' : 'border:2px solid #f59e0b;background:#fffbeb;color:#92400e;')
+                        : (hasLiveGps && gps.velocidad > 2 ? 'border:2px solid #10b981;' : '');
+                    const speedTag = hasLiveGps ? ` <span style="font-size:9px;opacity:0.85;">${gps.velocidad}km/h</span>` : '';
+                    const alertBadge = geoAl ? `<i class="fa-solid fa-triangle-exclamation" style="color:${geoAl.tipo === 'FUERA_COMUNA' ? '#dc2626' : '#d97706'};margin-left:3px;"></i>` : '';
 
-                unitsToPlot.forEach((u, idx) => {
-                    const coords = parseGpsOrQuadrantCoords('', u.cuadrante, idx + 1);
                     const icon = L.divIcon({
                         className: '',
-                        html: `<div class="cad-map-unit-pill"><i class="fa-solid fa-car-side"></i>${u.nombre}</div>`,
-                        iconSize: [90, 24],
-                        iconAnchor: [45, 12]
+                        html: `<div class="cad-map-unit-pill" style="${borderStyle}"><i class="fa-solid ${isMoto ? 'fa-motorcycle' : 'fa-car-side'}"></i>${s.movil}${speedTag}${alertBadge}</div>`,
+                        iconSize: [115, 24],
+                        iconAnchor: [57, 12]
                     });
                     L.marker(coords, { icon }).bindPopup(`
-                        <div class="text-xs font-sans">
-                            <div class="font-black text-blue-900">${u.nombre}</div>
-                            <div>Cuadrante: <strong>${u.cuadrante || '-'}</strong></div>
-                            <div>Inspector en turno: <strong>${u.inspector || '-'}</strong></div>
-                            <div class="text-emerald-700 font-semibold">Checklist: ${u.checklist}</div>
+                        <div class="text-xs font-sans space-y-1">
+                            <div class="font-black text-blue-900">${s.movil} ${hasLiveGps ? '<span style="color:#059669;">● GPS EN VIVO</span>' : ''}</div>
+                            <div>Cuadrante asignado: <strong>${s.cuadrante || '-'}</strong></div>
+                            <div>Inspector en turno: <strong>${s.rut || '-'}</strong></div>
+                            <div class="text-emerald-700 font-semibold">Checklist: ${s.estadoChecklist || 'Verificado'}</div>
+                            ${hasLiveGps ? `<div class="text-slate-600">Velocidad: <strong>${gps.velocidad} km/h</strong> • Reporte: ${formatGpsAge(gps.ageSec)}</div>` : ''}
+                            ${geoAl ? `<div class="p-1.5 rounded bg-red-100 border border-red-400 text-red-800 font-bold">⚠️ ${geoAl.motivo}</div>` : ''}
+                        </div>
+                    `).addTo(unitsGroup);
+                });
+            }
+
+            // 1B. Capa flotante opcional: "Todos GPS" (muestra las unidades GPS Wialon fuera de turno en estilo gris/referencial)
+            if (CencoState.mapVisibility.allgps && Array.isArray(CencoState.gpsUnits)) {
+                CencoState.gpsUnits.forEach(g => {
+                    const key = normalizeVehicleKey(g.nombre);
+                    if (plottedKeys.has(key)) return;
+                    const inComuna = isPointInPolygon(g.lat, g.lon, PENAFLOR_COMMUNE_BOUNDARY);
+                    const quadDet = detectQuadrantForPoint(g.lat, g.lon);
+                    const isMoto = /moto/i.test(g.nombre);
+                    const dotColor = g.online ? (g.velocidad > 2 ? '#10b981' : '#38bdf8') : '#94a3b8';
+                    const icon = L.divIcon({
+                        className: '',
+                        html: `<div style="display:inline-flex;align-items:center;gap:4px;background:rgba(15,23,42,0.86);color:#e2e8f0;border:1px solid ${inComuna ? '#64748b' : '#ef4444'};border-radius:999px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,0.4);"><span style="width:6px;height:6px;border-radius:999px;background:${dotColor};"></span><i class="fa-solid ${isMoto ? 'fa-motorcycle' : 'fa-car-side'}"></i>${g.nombre}${g.velocidad > 2 ? ` ${g.velocidad}k/h` : ''}</div>`,
+                        iconSize: [105, 22],
+                        iconAnchor: [52, 11]
+                    });
+                    L.marker([g.lat, g.lon], { icon }).bindPopup(`
+                        <div class="text-xs font-sans space-y-1">
+                            <div class="font-black text-slate-900">${g.nombre} <span class="text-slate-500 font-normal">(Sin turno activo)</span></div>
+                            <div>Estado GPS: <strong>${g.online ? (g.velocidad > 2 ? 'En movimiento' : 'Online detenido') : 'Offline'}</strong> (${g.velocidad} km/h)</div>
+                            <div>Ubicación: <strong>${inComuna ? (quadDet ? 'Cuadrante ' + quadDet : 'Peñaflor') : '⚠️ Fuera de Peñaflor'}</strong></div>
+                            <div class="text-slate-500">Último reporte: ${formatGpsAge(g.ageSec)}</div>
                         </div>
                     `).addTo(unitsGroup);
                 });
