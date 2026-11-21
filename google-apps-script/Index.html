@@ -837,11 +837,11 @@
                         <!-- Botones de Registro en Planilla + Envío WhatsApp / Correo -->
                         <div class="space-y-2 pt-1">
                             <button type="submit" id="btn-proc-wa-submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs sm:text-sm">
-                                <i class="fa-brands fa-whatsapp text-lg"></i> GUARDAR EN PLANILLA + ENVIAR WHATSAPP
+                                <i class="fa-brands fa-whatsapp text-lg"></i> GUARDAR EN BITÁCORA CENCO + ENVIAR WHATSAPP
                             </button>
                             <div class="grid grid-cols-2 gap-2">
                                 <button type="button" onclick="submitProcedureOnlyToSheet()" id="btn-proc-only-sheet" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] text-xs">
-                                    <i class="fa-solid fa-file-excel"></i> SOLO GUARDAR EN PLANILLA
+                                    <i class="fa-solid fa-file-excel"></i> SOLO BITÁCORA Y PLANILLA
                                 </button>
                                 <button type="button" onclick="sendProcedureByEmail()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] text-xs">
                                     <i class="fa-solid fa-envelope"></i> PLANILLA + CORREO
@@ -958,10 +958,10 @@
 
                         <div class="space-y-2 pt-1">
                             <button type="submit" id="btn-task-wa-submit" class="w-full bg-[#25D366] hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs sm:text-sm">
-                                <i class="fa-brands fa-whatsapp text-lg"></i> GUARDAR EN PLANILLA + ENVIAR WHATSAPP
+                                <i class="fa-brands fa-whatsapp text-lg"></i> GUARDAR EN BITÁCORA CENCO + ENVIAR WHATSAPP
                             </button>
                             <button type="button" onclick="submitTaskOnlyToSheet()" id="btn-task-only-sheet" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-xs">
-                                <i class="fa-solid fa-file-excel text-emerald-400"></i> SOLO GUARDAR VISTO BUENO EN PLANILLA
+                                <i class="fa-solid fa-file-excel text-emerald-400"></i> SOLO GUARDAR EN BITÁCORA CENCO Y PLANILLA
                             </button>
                         </div>
                     </form>
@@ -1869,6 +1869,8 @@
                                     <option value="LLAMADO 1410">Llamado 1410</option>
                                     <option value="CCTV">CCTV</option>
                                     <option value="INSPECTOR TERRENO">Inspector Terreno</option>
+                                    <option value="TAREA DIARIA">Tarea Diaria</option>
+                                    <option value="ALERTA GPS GEOCERCA">Alerta GPS Geocerca</option>
                                     <option value="EMERGENCIA">Emergencia</option>
                                 </select>
                                 <select id="bit-filter-estado" onchange="renderCencoBitacora()" class="cad-input">

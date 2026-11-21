@@ -1099,7 +1099,7 @@ function apiHandleAction(payload) {
           payload.fechaRegistro || nowFormatted,
           "Registrado y cerrado en terreno por Inspector",
           urlFoto,
-          payload.turnoId || "",
+          obtenerTurnoCencoActivoId(ss) || payload.turnoId || "",
           procId,
           JSON.stringify(historialInit)
         ]);
@@ -1136,7 +1136,49 @@ function apiHandleAction(payload) {
         urlFoto
       ]);
 
-      return { ok: true, action: action, regId: regId, urlFoto: urlFoto };
+      // --- INTEGRACIÓN AUTOMÁTICA TAREAS DIARIAS -> BITÁCORA CENCO CAD ---
+      const shCencoBitTar = ss.getSheetByName(SHEETS.CENCO_BITACORA);
+      let cencoFolioId = "";
+      if (shCencoBitTar) {
+        cencoFolioId = "CAD-TAR-" + String(Date.now()).slice(-6);
+        const descTarea = String(payload.taskDesc || "Tarea Diaria de Cuadrante").trim();
+        const obsTarea = String(payload.detalle || "Visto bueno otorgado en terreno.").trim();
+        const detalleCompleto = "TAREA CUMPLIDA: " + descTarea + (obsTarea ? " | Obs: " + obsTarea : "");
+        const historialInit = [{
+          fecha: payload.fechaRegistro || nowFormatted,
+          rol: "INSPECTOR TERRENO",
+          usuario: payload.rut || "Inspector",
+          accion: "Tarea diaria cumplida y reportada desde terreno (" + (payload.movil || "Unidad") + ")"
+        }];
+        shCencoBitTar.appendRow([
+          cencoFolioId,
+          payload.fechaRegistro || nowFormatted,
+          "TAREA DIARIA",
+          "FINALIZADO",
+          "MEDIA",
+          "TAREA DIARIA CUMPLIDA",
+          descTarea.slice(0, 120),
+          payload.cuadrante || "",
+          payload.direccion || "",
+          "Móvil en terreno: " + (payload.movil || "-"),
+          "Inspector Municipal",
+          "",
+          detalleCompleto,
+          "INSPECTOR: " + (payload.rut || ""),
+          "INGRESO DIRECTO",
+          payload.movil || "",
+          payload.fechaRegistro || nowFormatted,
+          payload.fechaRegistro || nowFormatted,
+          payload.fechaRegistro || nowFormatted,
+          "Visto bueno de tarea diaria registrado en terreno",
+          urlFoto,
+          obtenerTurnoCencoActivoId(ss) || payload.turnoId || "",
+          regId,
+          JSON.stringify(historialInit)
+        ]);
+      }
+
+      return { ok: true, action: action, regId: regId, cencoFolioId: cencoFolioId, urlFoto: urlFoto };
     }
 
     if (action === "CERRAR_TURNO") {
@@ -1698,6 +1740,22 @@ function enviarNotificacionCorreo(payload, urlFoto, fechaHora) {
   ].join("\n");
 
   MailApp.sendEmail(destinatarios.join(","), subject, body);
+}
+
+function obtenerTurnoCencoActivoId(ss) {
+  try {
+    const sh = ss.getSheetByName(SHEETS.CENCO_TURNOS);
+    if (!sh || sh.getLastRow() <= 1) return "";
+    const count = Math.min(20, sh.getLastRow() - 1);
+    const startRow = sh.getLastRow() - count + 1;
+    const rows = sh.getRange(startRow, 1, count, 9).getValues();
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (String(rows[i][8] || "").trim().toUpperCase() === "ACTIVO") {
+        return String(rows[i][0] || "").trim();
+      }
+    }
+  } catch (ignore) {}
+  return "";
 }
 
 function respuestaJSON(obj) {
