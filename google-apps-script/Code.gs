@@ -439,6 +439,20 @@ function apiGetBootstrapData() {
 
   const shTurnos = ss.getSheetByName(SHEETS.TURNOS);
   const recentShifts = [];
+  const nowMs = Date.now();
+  const MAX_SHIFT_AGE_MS = 14 * 60 * 60 * 1000; // 14 horas máximo de vigencia de turno activo
+  function parseFechaTurnoMs(val) {
+    if (!val) return NaN;
+    if (val instanceof Date && !isNaN(val.getTime())) return val.getTime();
+    const str = String(val).trim();
+    const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (m) {
+      const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0));
+      if (!isNaN(d.getTime())) return d.getTime();
+    }
+    const parsed = Date.parse(str);
+    return isNaN(parsed) ? NaN : parsed;
+  }
   if (shTurnos && shTurnos.getLastRow() > 1) {
     const count = Math.min(60, shTurnos.getLastRow() - 1);
     const startRow = shTurnos.getLastRow() - count + 1;
@@ -448,12 +462,15 @@ function apiGetBootstrapData() {
       const rawEstado = String(r[13] || "").trim().toUpperCase();
       const fechaFin = String(r[14] || "").trim();
       const kmFinVal = Number(r[15] || 0);
-      const isClosed = rawEstado === "FINALIZADO" || rawEstado === "CERRADO" || Boolean(fechaFin) || kmFinVal > 0 || Boolean(tid && closedTurnoIds[tid]);
+      const startMs = parseFechaTurnoMs(r[1]);
+      const isExpired = !isNaN(startMs) && (nowMs - startMs > MAX_SHIFT_AGE_MS);
+      const isClosed = rawEstado === "FINALIZADO" || rawEstado === "CERRADO" || Boolean(fechaFin) || kmFinVal > 0 || Boolean(tid && closedTurnoIds[tid]) || isExpired;
       const estadoChecklistStr = String(r[7] || "").trim();
       const detailChecklistStr = String(r[12] || "").trim();
       recentShifts.push({
         turnoId: tid,
         fechaInicio: String(r[1]),
+        fechaInicioIso: !isNaN(startMs) ? new Date(startMs).toISOString() : "",
         rut: String(r[2]),
         rangoHorario: String(r[3]),
         movil: String(r[4]),

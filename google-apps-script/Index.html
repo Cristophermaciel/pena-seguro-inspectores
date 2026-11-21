@@ -4512,6 +4512,8 @@
 
         function openSingleVehicleMaintenancePopup(unit, maint, contextLabel = '') {
             if (!unit || !maint || (maint.status !== 'VENCIDO' && maint.status !== 'PROXIMO')) return;
+            // Nunca mostrar pop-up de mantención dentro de la estación Central CENCO
+            if (isCencoRole(AppState.userRole) || document.getElementById('view-cenco')?.classList.contains('active')) return;
             const modal = document.getElementById('maintenance-alert-modal');
             const body = document.getElementById('maint-modal-body');
             const titleEl = document.getElementById('maint-modal-title');
@@ -4549,6 +4551,7 @@
         }
 
         function openMaintenanceAlertModal({ role = AppState.userRole, force = false } = {}) {
+            if (!force && (isCencoRole(role) || document.getElementById('view-cenco')?.classList.contains('active'))) return;
             const modal = document.getElementById('maintenance-alert-modal');
             const body = document.getElementById('maint-modal-body');
             const titleEl = document.getElementById('maint-modal-title');
@@ -4702,8 +4705,11 @@
         function maybeShowLoginMaintenanceAlert(role) {
             if (AppState.maintAlertShownThisLogin) return;
             const effectiveRole = role || AppState.userRole;
+            // Los triggers automáticos de mantención SOLO se muestran en el perfil de Administración / Mantención, NUNCA en CENCO
+            if (effectiveRole !== 'ADMIN' || isCencoRole(effectiveRole) || document.getElementById('view-cenco')?.classList.contains('active')) return;
+            if (!document.getElementById('view-admin')?.classList.contains('active')) return;
             const alerts = getFleetMaintenanceAlerts();
-            const pendingChecklist = effectiveRole === 'ADMIN' ? getPendingFleetAlerts() : [];
+            const pendingChecklist = getPendingFleetAlerts();
             if (alerts.totalAlertas > 0 || pendingChecklist.length > 0) {
                 AppState.maintAlertShownThisLogin = true;
                 openMaintenanceAlertModal({ role: effectiveRole, force: false });
@@ -6991,13 +6997,16 @@
         // Límite Comunal Oficial de Peñaflor (importado desde limite_comunal.kmz)
         const PENAFLOR_COMMUNE_BOUNDARY = [[-33.572908,-70.866102],[-33.569689,-70.873485],[-33.581867,-70.892695],[-33.594616,-70.909525],[-33.589513,-70.920365],[-33.594881,-70.924861],[-33.602577,-70.928291],[-33.60599,-70.933236],[-33.608074,-70.938857],[-33.612667,-70.947975],[-33.612544,-70.941457],[-33.615552,-70.937427],[-33.618514,-70.934421],[-33.631857,-70.926095],[-33.631967,-70.919353],[-33.6265,-70.862744],[-33.62395,-70.86093],[-33.625361,-70.854019],[-33.621751,-70.852528],[-33.620808,-70.858126],[-33.61392,-70.85167],[-33.615109,-70.84284],[-33.610542,-70.838204],[-33.609914,-70.823999],[-33.608672,-70.839714],[-33.603739,-70.839017],[-33.596058,-70.836844],[-33.583039,-70.831182],[-33.578057,-70.848923],[-33.572908,-70.866102]];
 
-        // Cuadrantes Oficiales de Carabineros de Peñaflor (importados desde CUADRANTES.kmz)
+        // Cuadrantes Oficiales de Carabineros (CUADRANTES.kmz) + Cuadrantes Rurales Exteriores (SRA, SRB, SRA1 ajustados al límite comunal)
         const CARABINEROS_QUADRANTS_GEO = [
             { id: '253B', desc: 'CUADRANTE MALLOCO', color: '#097138', center: [-33.617459, -70.868915], coords: [[-33.627077,-70.883088],[-33.631079,-70.866866],[-33.620604,-70.859105],[-33.615401,-70.85544],[-33.610056,-70.852119],[-33.610418,-70.874949],[-33.610678,-70.87512],[-33.610626,-70.874972],[-33.621196,-70.878576],[-33.627077,-70.883088]] },
             { id: '252C', desc: 'SECTOR PEÑAFLOR', color: '#0288D1', center: [-33.618123, -70.902217], coords: [[-33.627077,-70.883088],[-33.621196,-70.878576],[-33.610556,-70.875165],[-33.611718,-70.898918],[-33.610288,-70.906986],[-33.607858,-70.908617],[-33.606643,-70.908617],[-33.604927,-70.910248],[-33.634231,-70.929045],[-33.63466,-70.91454],[-33.630194,-70.910591],[-33.627077,-70.883088]] },
             { id: '253A', desc: 'CUADRANTE MALLOCO', color: '#0097A7', center: [-33.602291, -70.860437], coords: [[-33.610378,-70.875143],[-33.61002,-70.857247],[-33.610056,-70.852119],[-33.605427,-70.849394],[-33.596938,-70.845875],[-33.594665,-70.850101],[-33.592094,-70.861153],[-33.5912,-70.86111],[-33.600084,-70.867268],[-33.606893,-70.871925],[-33.607447,-70.873469],[-33.610378,-70.875143]] },
             { id: '252B', desc: 'CUADRANTE 252B', color: '#9C27B0', center: [-33.601990, -70.883797], coords: [[-33.611671,-70.898984],[-33.610476,-70.875036],[-33.607526,-70.873535],[-33.606972,-70.871947],[-33.591369,-70.861154],[-33.595801,-70.87184],[-33.594926,-70.884972],[-33.597035,-70.884779],[-33.597282,-70.886169],[-33.597384,-70.886584],[-33.59746,-70.886998],[-33.598102,-70.887323],[-33.598995,-70.885585],[-33.604916,-70.888963],[-33.605935,-70.892611],[-33.608706,-70.893309],[-33.609277,-70.894757],[-33.611671,-70.898984]] },
-            { id: '252A', desc: 'CUADRANTE 252A', color: '#334155', center: [-33.601079, -70.896743], coords: [[-33.594899,-70.885058],[-33.597526,-70.893085],[-33.591699,-70.895403],[-33.592986,-70.896776],[-33.594702,-70.897034],[-33.598884,-70.90287],[-33.59892,-70.905187],[-33.599849,-70.906089],[-33.604927,-70.910248],[-33.606643,-70.908617],[-33.607858,-70.908617],[-33.610288,-70.906986],[-33.611718,-70.898918],[-33.608607,-70.893416],[-33.605854,-70.892699],[-33.604675,-70.888923],[-33.599013,-70.885617],[-33.598075,-70.887409],[-33.597455,-70.887034],[-33.597008,-70.884865],[-33.594899,-70.885058]] }
+            { id: '252A', desc: 'CUADRANTE 252A', color: '#334155', center: [-33.601079, -70.896743], coords: [[-33.594899,-70.885058],[-33.597526,-70.893085],[-33.591699,-70.895403],[-33.592986,-70.896776],[-33.594702,-70.897034],[-33.598884,-70.90287],[-33.59892,-70.905187],[-33.599849,-70.906089],[-33.604927,-70.910248],[-33.606643,-70.908617],[-33.607858,-70.908617],[-33.610288,-70.906986],[-33.611718,-70.898918],[-33.608607,-70.893416],[-33.605854,-70.892699],[-33.604675,-70.888923],[-33.599013,-70.885617],[-33.598075,-70.887409],[-33.597455,-70.887034],[-33.597008,-70.884865],[-33.594899,-70.885058]] },
+            { id: 'SRA', desc: 'SECTOR RURAL PELVÍN (EXTERIOR NORTE-PONIENTE)', color: '#ca8a04', center: [-33.5865, -70.8895], coords: [[-33.569689,-70.873485],[-33.581867,-70.892695],[-33.594616,-70.909525],[-33.598884,-70.90287],[-33.594702,-70.897034],[-33.592986,-70.896776],[-33.591699,-70.895403],[-33.597526,-70.893085],[-33.594899,-70.885058],[-33.595801,-70.87184],[-33.569689,-70.873485]] },
+            { id: 'SRB', desc: 'SECTOR RURAL PEÑAFLOR ALTO (EXTERIOR NORTE-ORIENTE)', color: '#db2777', center: [-33.5890, -70.8540], coords: [[-33.61392,-70.85167],[-33.615109,-70.84284],[-33.610542,-70.838204],[-33.609914,-70.823999],[-33.608672,-70.839714],[-33.603739,-70.839017],[-33.596058,-70.836844],[-33.583039,-70.831182],[-33.578057,-70.848923],[-33.572908,-70.866102],[-33.569689,-70.873485],[-33.595801,-70.87184],[-33.591369,-70.861154],[-33.592094,-70.861153],[-33.594665,-70.850101],[-33.596938,-70.845875],[-33.605427,-70.849394],[-33.610056,-70.852119],[-33.61392,-70.85167]] },
+            { id: 'SRA1', desc: 'SECTOR RURAL MALLARAUCO (EXTERIOR PONIENTE)', color: '#ea580c', center: [-33.6095, -70.9230], coords: [[-33.594616,-70.909525],[-33.589513,-70.920365],[-33.594881,-70.924861],[-33.602577,-70.928291],[-33.60599,-70.933236],[-33.608074,-70.938857],[-33.612667,-70.947975],[-33.612544,-70.941457],[-33.615552,-70.937427],[-33.618514,-70.934421],[-33.631857,-70.926095],[-33.631967,-70.919353],[-33.604927,-70.910248],[-33.599849,-70.906089],[-33.59892,-70.905187],[-33.598884,-70.90287],[-33.594616,-70.909525]] }
         ];
 
         const CENCO_ADJACENT_QUADRANTS = {
@@ -7617,9 +7626,27 @@
             renderCencoTempImagesPreview(slot);
         }
 
-        // --- Fuente Única de Verdad: SOLO móviles con turno ACTIVO iniciado CON checklist (excluye cerrados) ---
+        // --- Fuente Única de Verdad: SOLO móviles con turno ACTIVO del turno vigente (últimas 14h), CON checklist y SIN cierre ---
+        function parseShiftStartMs(s) {
+            if (!s) return NaN;
+            if (s.fechaInicioIso) {
+                const t = Date.parse(s.fechaInicioIso);
+                if (!isNaN(t)) return t;
+            }
+            const str = String(s.fechaInicio || '').trim();
+            if (!str) return NaN;
+            const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+            if (m) {
+                const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0));
+                if (!isNaN(d.getTime())) return d.getTime();
+            }
+            return Date.parse(str);
+        }
+
         function getActiveCheckedInShifts() {
             const raw = AppState.cloudRecentShifts || [];
+            const nowMs = Date.now();
+            const MAX_SHIFT_AGE_MS = 14 * 60 * 60 * 1000;
             // raw viene ordenado del más reciente al más antiguo: solo el último registro de cada móvil define su estado actual
             const latestByMovil = new Map();
             raw.forEach(s => {
@@ -7634,7 +7661,9 @@
                 const hasChecklist = s.hasChecklist !== undefined
                     ? Boolean(s.hasChecklist)
                     : Boolean(String(s.estadoChecklist || '').trim());
-                if (est === 'ACTIVO' && !hasTermino && hasChecklist) {
+                const startMs = parseShiftStartMs(s);
+                const isRecent = !isNaN(startMs) && (nowMs - startMs <= MAX_SHIFT_AGE_MS) && (startMs - nowMs <= 60 * 60 * 1000);
+                if (est === 'ACTIVO' && !hasTermino && hasChecklist && isRecent) {
                     active.push(s);
                 }
             });
