@@ -1782,6 +1782,12 @@
 
                             <!-- Filtros de Capas Flotantes (Arriba derecha) -->
                             <div class="absolute top-3 right-3 z-[400] flex flex-wrap items-center gap-1.5">
+                                <button type="button" onclick="toggleCadMapOverlay('quadrants')" id="cad-layer-quadrants" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-emerald-400 text-[11px] font-bold shadow flex items-center gap-1" title="Cuadrantes de Carabineros">
+                                    <i class="fa-solid fa-draw-polygon text-emerald-400"></i> Cuadrantes
+                                </button>
+                                <button type="button" onclick="toggleCadMapOverlay('boundary')" id="cad-layer-boundary" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-red-400 text-[11px] font-bold shadow flex items-center gap-1" title="Límite Comunal de Peñaflor">
+                                    <i class="fa-solid fa-border-all text-red-400"></i> Límite Comunal
+                                </button>
                                 <button type="button" onclick="toggleCadMapOverlay('units')" id="cad-layer-units" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-blue-400 text-[11px] font-bold shadow flex items-center gap-1">
                                     <i class="fa-solid fa-car-side text-blue-400"></i> Móviles
                                 </button>
@@ -6970,17 +6976,29 @@
         };
 
         const CENCO_QUADRANT_COORDS = {
-            '252A': [-33.6063, -70.8768],
-            '252B': [-33.6168, -70.8712],
-            '252C': [-33.6112, -70.8902],
-            '253A': [-33.6122, -70.8530],
-            '253B': [-33.6228, -70.8582],
+            '252A': [-33.601079, -70.896743],
+            '252B': [-33.601990, -70.883797],
+            '252C': [-33.618123, -70.902217],
+            '253A': [-33.602291, -70.860437],
+            '253B': [-33.617459, -70.868915],
             'SRA':  [-33.5910, -70.8950],
             'SRB':  [-33.5880, -70.8710],
             'SRC':  [-33.6045, -70.8615],
             'SRA1': [-33.6010, -70.9180],
             'VOLANTE / TODA LA COMUNA': [-33.6063, -70.8768]
         };
+
+        // Límite Comunal Oficial de Peñaflor (importado desde limite_comunal.kmz)
+        const PENAFLOR_COMMUNE_BOUNDARY = [[-33.572908,-70.866102],[-33.569689,-70.873485],[-33.581867,-70.892695],[-33.594616,-70.909525],[-33.589513,-70.920365],[-33.594881,-70.924861],[-33.602577,-70.928291],[-33.60599,-70.933236],[-33.608074,-70.938857],[-33.612667,-70.947975],[-33.612544,-70.941457],[-33.615552,-70.937427],[-33.618514,-70.934421],[-33.631857,-70.926095],[-33.631967,-70.919353],[-33.6265,-70.862744],[-33.62395,-70.86093],[-33.625361,-70.854019],[-33.621751,-70.852528],[-33.620808,-70.858126],[-33.61392,-70.85167],[-33.615109,-70.84284],[-33.610542,-70.838204],[-33.609914,-70.823999],[-33.608672,-70.839714],[-33.603739,-70.839017],[-33.596058,-70.836844],[-33.583039,-70.831182],[-33.578057,-70.848923],[-33.572908,-70.866102]];
+
+        // Cuadrantes Oficiales de Carabineros de Peñaflor (importados desde CUADRANTES.kmz)
+        const CARABINEROS_QUADRANTS_GEO = [
+            { id: '253B', desc: 'CUADRANTE MALLOCO', color: '#097138', center: [-33.617459, -70.868915], coords: [[-33.627077,-70.883088],[-33.631079,-70.866866],[-33.620604,-70.859105],[-33.615401,-70.85544],[-33.610056,-70.852119],[-33.610418,-70.874949],[-33.610678,-70.87512],[-33.610626,-70.874972],[-33.621196,-70.878576],[-33.627077,-70.883088]] },
+            { id: '252C', desc: 'SECTOR PEÑAFLOR', color: '#0288D1', center: [-33.618123, -70.902217], coords: [[-33.627077,-70.883088],[-33.621196,-70.878576],[-33.610556,-70.875165],[-33.611718,-70.898918],[-33.610288,-70.906986],[-33.607858,-70.908617],[-33.606643,-70.908617],[-33.604927,-70.910248],[-33.634231,-70.929045],[-33.63466,-70.91454],[-33.630194,-70.910591],[-33.627077,-70.883088]] },
+            { id: '253A', desc: 'CUADRANTE MALLOCO', color: '#0097A7', center: [-33.602291, -70.860437], coords: [[-33.610378,-70.875143],[-33.61002,-70.857247],[-33.610056,-70.852119],[-33.605427,-70.849394],[-33.596938,-70.845875],[-33.594665,-70.850101],[-33.592094,-70.861153],[-33.5912,-70.86111],[-33.600084,-70.867268],[-33.606893,-70.871925],[-33.607447,-70.873469],[-33.610378,-70.875143]] },
+            { id: '252B', desc: 'CUADRANTE 252B', color: '#9C27B0', center: [-33.601990, -70.883797], coords: [[-33.611671,-70.898984],[-33.610476,-70.875036],[-33.607526,-70.873535],[-33.606972,-70.871947],[-33.591369,-70.861154],[-33.595801,-70.87184],[-33.594926,-70.884972],[-33.597035,-70.884779],[-33.597282,-70.886169],[-33.597384,-70.886584],[-33.59746,-70.886998],[-33.598102,-70.887323],[-33.598995,-70.885585],[-33.604916,-70.888963],[-33.605935,-70.892611],[-33.608706,-70.893309],[-33.609277,-70.894757],[-33.611671,-70.898984]] },
+            { id: '252A', desc: 'CUADRANTE 252A', color: '#334155', center: [-33.601079, -70.896743], coords: [[-33.594899,-70.885058],[-33.597526,-70.893085],[-33.591699,-70.895403],[-33.592986,-70.896776],[-33.594702,-70.897034],[-33.598884,-70.90287],[-33.59892,-70.905187],[-33.599849,-70.906089],[-33.604927,-70.910248],[-33.606643,-70.908617],[-33.607858,-70.908617],[-33.610288,-70.906986],[-33.611718,-70.898918],[-33.608607,-70.893416],[-33.605854,-70.892699],[-33.604675,-70.888923],[-33.599013,-70.885617],[-33.598075,-70.887409],[-33.597455,-70.887034],[-33.597008,-70.884865],[-33.594899,-70.885058]] }
+        ];
 
         const CENCO_ADJACENT_QUADRANTS = {
             '252A': ['252B', '252C', '253A', 'SRB'],
@@ -7024,8 +7042,8 @@
             fleetView: 'grid',
             incivTab: 'RUCOS',
             map: null,
-            mapLayers: { street: null, satellite: null, unitsGroup: null, camerasGroup: null, incidentsGroup: null },
-            mapVisibility: { units: true, cameras: true, incidents: true },
+            mapLayers: { street: null, satellite: null, boundaryGroup: null, quadrantsGroup: null, unitsGroup: null, camerasGroup: null, incidentsGroup: null },
+            mapVisibility: { boundary: true, quadrants: true, units: true, cameras: true, incidents: true },
             clockTimer: null,
             pollTimer: null
         };
@@ -7367,6 +7385,8 @@
                     maxZoom: 19,
                     attribution: '&copy; Esri Satélite'
                 });
+                CencoState.mapLayers.boundaryGroup = L.layerGroup().addTo(CencoState.map);
+                CencoState.mapLayers.quadrantsGroup = L.layerGroup().addTo(CencoState.map);
                 CencoState.mapLayers.unitsGroup = L.layerGroup().addTo(CencoState.map);
                 CencoState.mapLayers.camerasGroup = L.layerGroup().addTo(CencoState.map);
                 CencoState.mapLayers.incidentsGroup = L.layerGroup().addTo(CencoState.map);
@@ -7415,18 +7435,67 @@
 
         function renderCadMapMarkers() {
             if (!CencoState.map) return;
-            const { unitsGroup, camerasGroup, incidentsGroup } = CencoState.mapLayers;
+            const { boundaryGroup, quadrantsGroup, unitsGroup, camerasGroup, incidentsGroup } = CencoState.mapLayers;
+            if (boundaryGroup) boundaryGroup.clearLayers();
+            if (quadrantsGroup) quadrantsGroup.clearLayers();
             unitsGroup.clearLayers();
             camerasGroup.clearLayers();
             incidentsGroup.clearLayers();
 
-            // 1. Unidades Activas (Píldoras blancas/azules estilo Governa)
+            const activeShifts = getActiveCheckedInShifts();
+
+            // 0A. Límite Comunal Oficial de Peñaflor (KMZ)
+            if (boundaryGroup && CencoState.mapVisibility.boundary && typeof PENAFLOR_COMMUNE_BOUNDARY !== 'undefined') {
+                L.polygon(PENAFLOR_COMMUNE_BOUNDARY, {
+                    color: '#d32f2f',
+                    weight: 3.5,
+                    opacity: 0.95,
+                    dashArray: '8, 5',
+                    fillColor: '#ffffff',
+                    fillOpacity: 0.04,
+                    interactive: true
+                }).bindPopup('<div class="text-xs font-sans"><div class="font-black text-red-700">Límite Comunal de Peñaflor</div><div class="text-slate-600">Jurisdicción Peña Seguro 1410</div></div>').addTo(boundaryGroup);
+            }
+
+            // 0B. Cuadrantes Oficiales de Carabineros (KMZ: 252A, 252B, 252C, 253A, 253B)
+            if (quadrantsGroup && CencoState.mapVisibility.quadrants && typeof CARABINEROS_QUADRANTS_GEO !== 'undefined') {
+                CARABINEROS_QUADRANTS_GEO.forEach(q => {
+                    const unitsInQuad = activeShifts.filter(s => String(s.cuadrante || '').trim().toUpperCase() === q.id);
+                    const poly = L.polygon(q.coords, {
+                        color: q.color,
+                        weight: 2.2,
+                        opacity: 0.9,
+                        fillColor: q.color,
+                        fillOpacity: 0.18
+                    }).bindPopup(`
+                        <div class="text-xs font-sans space-y-1">
+                            <div class="font-black" style="color:${q.color}">Cuadrante ${q.id}</div>
+                            <div class="font-semibold text-slate-700">${q.desc}</div>
+                            <div>Móviles en turno activo: <strong>${unitsInQuad.length}</strong></div>
+                            ${unitsInQuad.length > 0 ? `<div class="text-[11px] text-emerald-700 font-semibold">${unitsInQuad.map(u => u.movil).join(', ')}</div>` : '<div class="text-[11px] text-slate-500">Sin móviles activos en este cuadrante</div>'}
+                        </div>
+                    `).addTo(quadrantsGroup);
+
+                    // Etiqueta permanente centrada del cuadrante
+                    const labelIcon = L.divIcon({
+                        className: '',
+                        html: `<div style="background:${q.color}dd;color:#fff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:900;letter-spacing:0.4px;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;">${q.id}</div>`,
+                        iconSize: [46, 20],
+                        iconAnchor: [23, 10]
+                    });
+                    L.marker(q.center, { icon: labelIcon, interactive: false }).addTo(quadrantsGroup);
+                });
+            }
+
+            // 1. Unidades Activas (SOLO móviles que iniciaron turno con checklist y NO han cerrado turno)
             if (CencoState.mapVisibility.units) {
-                const activeShifts = (AppState.cloudRecentShifts || []).filter(s => String(s.estadoTurno || '').toUpperCase() === 'ACTIVO');
-                const fleet = getFleetDB().filter(f => f.estado === 'OPERATIVO');
-                const unitsToPlot = activeShifts.length > 0
-                    ? activeShifts.map(s => ({ nombre: s.movil, cuadrante: s.cuadrante, inspector: s.rut, activo: true }))
-                    : fleet.slice(0, 10).map(f => ({ nombre: f.nombre, cuadrante: f.cuadranteBase, inspector: f.tipo, activo: false }));
+                const unitsToPlot = activeShifts.map(s => ({
+                    nombre: s.movil,
+                    cuadrante: s.cuadrante,
+                    inspector: s.rut,
+                    checklist: s.estadoChecklist || 'Verificado',
+                    activo: true
+                }));
 
                 unitsToPlot.forEach((u, idx) => {
                     const coords = parseGpsOrQuadrantCoords('', u.cuadrante, idx + 1);
@@ -7440,7 +7509,8 @@
                         <div class="text-xs font-sans">
                             <div class="font-black text-blue-900">${u.nombre}</div>
                             <div>Cuadrante: <strong>${u.cuadrante || '-'}</strong></div>
-                            <div>${u.activo ? 'Inspector en turno: ' + u.inspector : 'Unidad base operativa'}</div>
+                            <div>Inspector en turno: <strong>${u.inspector || '-'}</strong></div>
+                            <div class="text-emerald-700 font-semibold">Checklist: ${u.checklist}</div>
                         </div>
                     `).addTo(unitsGroup);
                 });
@@ -7547,59 +7617,81 @@
             renderCencoTempImagesPreview(slot);
         }
 
-        // --- Radar de Móviles Activos y Cercanos ---
+        // --- Fuente Única de Verdad: SOLO móviles con turno ACTIVO iniciado CON checklist (excluye cerrados) ---
+        function getActiveCheckedInShifts() {
+            const raw = AppState.cloudRecentShifts || [];
+            // raw viene ordenado del más reciente al más antiguo: solo el último registro de cada móvil define su estado actual
+            const latestByMovil = new Map();
+            raw.forEach(s => {
+                const movKey = String(s.movil || '').trim().toUpperCase();
+                if (!movKey || latestByMovil.has(movKey)) return;
+                latestByMovil.set(movKey, s);
+            });
+            const active = [];
+            latestByMovil.forEach(s => {
+                const est = String(s.estadoTurno || '').trim().toUpperCase();
+                const hasTermino = Boolean(String(s.fechaTermino || '').trim()) || Number(s.kmTermino || 0) > 0;
+                const hasChecklist = s.hasChecklist !== undefined
+                    ? Boolean(s.hasChecklist)
+                    : Boolean(String(s.estadoChecklist || '').trim());
+                if (est === 'ACTIVO' && !hasTermino && hasChecklist) {
+                    active.push(s);
+                }
+            });
+            return active;
+        }
+
+        // --- Radar de Móviles Activos y Cercanos (SOLO con turno iniciado y checklist) ---
         function getActiveAndNearbyUnitsForQuadrant(targetQuad) {
             const q = String(targetQuad || '252A').toUpperCase();
             const adj = CENCO_ADJACENT_QUADRANTS[q] || [];
-            const fleet = getFleetDB().filter(u => u.estado === 'OPERATIVO');
-            const activeShifts = (AppState.cloudRecentShifts || []).filter(s => String(s.estadoTurno || '').toUpperCase() === 'ACTIVO');
+            const activeShifts = getActiveCheckedInShifts();
             const incidents = getCencoIncidentsDB();
             const busyMoviles = new Set();
             incidents.filter(i => ['DESPACHADO', 'EN_LUGAR', 'EN_PROCEDIMIENTO'].includes(i.estado)).forEach(i => {
                 String(i.movilesAsignados || '').split(',').map(m => m.trim().toUpperCase()).filter(Boolean).forEach(m => busyMoviles.add(m));
             });
 
-            const sameQuadActive = [], adjQuadActive = [], sameQuadFleet = [];
+            const sameQuadActive = [], adjQuadActive = [], otherQuadActive = [], sameQuadFleet = [];
             const seen = new Set();
             activeShifts.forEach(s => {
                 const mov = String(s.movil || '').trim();
                 const sq = String(s.cuadrante || '').toUpperCase();
                 if (!mov || seen.has(mov.toUpperCase())) return;
                 seen.add(mov.toUpperCase());
-                const info = { movil: mov, cuadrante: sq, inspector: s.rut || 'Inspector en Turno', ocupado: busyMoviles.has(mov.toUpperCase()), enTurno: true };
+                const info = {
+                    movil: mov,
+                    cuadrante: sq,
+                    inspector: s.rut || 'Inspector en Turno',
+                    checklist: s.estadoChecklist || 'OK',
+                    ocupado: busyMoviles.has(mov.toUpperCase()),
+                    enTurno: true
+                };
                 if (sq === q || sq.includes('VOLANTE')) sameQuadActive.push(info);
                 else if (adj.includes(sq)) adjQuadActive.push(info);
+                else otherQuadActive.push(info);
             });
-            fleet.forEach(u => {
-                const mov = String(u.nombre || '').trim();
-                if (!mov || seen.has(mov.toUpperCase())) return;
-                const uq = String(u.cuadranteBase || '').toUpperCase();
-                if (uq === q) sameQuadFleet.push({ movil: mov, cuadrante: uq, inspector: `${u.tipo} (${u.patente || 'Operativo'})`, ocupado: busyMoviles.has(mov.toUpperCase()), enTurno: false });
-            });
-            return { sameQuadActive, adjQuadActive, sameQuadFleet };
+            return { sameQuadActive, adjQuadActive, otherQuadActive, sameQuadFleet };
         }
 
         function populateCentralActiveVehiclesSelect() {
             const sel = document.getElementById('tel-vehiculo-asignar');
             if (!sel) return;
             const prev = sel.value;
-            const activeShifts = (AppState.cloudRecentShifts || []).filter(s => String(s.estadoTurno || '').toUpperCase() === 'ACTIVO');
-            const fleet = getFleetDB().filter(f => f.estado === 'OPERATIVO');
+            const activeShifts = getActiveCheckedInShifts();
             let html = '<option value="">Sin vehículo (Enviar a cola Despachador)</option>';
             if (activeShifts.length > 0) {
-                html += '<optgroup label="🟢 En Turno Activo (Con Conductor)">';
+                html += '<optgroup label="🟢 En Turno Activo (Con Checklist)">';
                 activeShifts.forEach(s => {
                     html += `<option value="${s.movil}">${s.movil} — ${s.rut} [${s.cuadrante}]</option>`;
                 });
                 html += '</optgroup>';
+            } else {
+                html += '<option value="" disabled>⚠️ Sin móviles en turno activo con checklist</option>';
             }
-            html += '<optgroup label="Flota Operativa Base">';
-            fleet.forEach(f => {
-                html += `<option value="${f.nombre}">${f.nombre} (${f.cuadranteBase})</option>`;
-            });
-            html += '</optgroup>';
             sel.innerHTML = html;
-            if (prev) sel.value = prev;
+            if (prev && activeShifts.some(s => s.movil === prev)) sel.value = prev;
+            else sel.value = '';
         }
 
         // --- Badges Semánticos estilo Governa ---
@@ -7754,9 +7846,9 @@
 
             const vehWrap = document.getElementById('cad-roster-vehiculos');
             if (vehWrap) {
-                const activeShifts = (AppState.cloudRecentShifts || []).filter(sh => String(sh.estadoTurno || '').toUpperCase() === 'ACTIVO');
+                const activeShifts = getActiveCheckedInShifts();
                 vehWrap.innerHTML = activeShifts.length === 0
-                    ? '<div class="col-span-2 cad-elevated border cad-border rounded-lg p-2.5 text-[11px] cad-muted">Sin móviles en turno activo detectados desde Inspectores.</div>'
+                    ? '<div class="col-span-2 cad-elevated border cad-border rounded-lg p-2.5 text-[11px] cad-muted">Sin móviles en turno activo con checklist.</div>'
                     : activeShifts.slice(0, 12).map(sh => `
                         <div class="cad-elevated border border-emerald-500/30 rounded-lg p-2">
                             <div class="flex items-center justify-between">
@@ -7868,11 +7960,11 @@
             const radarEl = document.getElementById('cenco-cctv-nearby-units');
             if (!cam || !radarEl) return;
             if (quadEl) quadEl.value = cam.cuadrante;
-            const { sameQuadActive, adjQuadActive, sameQuadFleet } = getActiveAndNearbyUnitsForQuadrant(cam.cuadrante);
+            const { sameQuadActive, adjQuadActive, otherQuadActive } = getActiveAndNearbyUnitsForQuadrant(cam.cuadrante);
             const allRec = [
                 ...sameQuadActive.map(u => ({ ...u, tag: 'MISMO CUADRANTE', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' })),
                 ...adjQuadActive.map(u => ({ ...u, tag: `COLINDANTE ${u.cuadrante}`, cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' })),
-                ...sameQuadFleet.slice(0, 4).map(u => ({ ...u, tag: 'FLOTA BASE', cls: 'bg-slate-600/30 text-slate-300 border-slate-500/40' }))
+                ...(otherQuadActive || []).map(u => ({ ...u, tag: `ACTIVO ${u.cuadrante}`, cls: 'bg-blue-500/20 text-blue-300 border-blue-500/40' }))
             ];
             radarEl.innerHTML = `
                 <div class="cad-elevated border cad-border rounded-lg p-2.5 mb-2">
@@ -7964,7 +8056,7 @@
             const wrap = document.getElementById('cad-fleet-container');
             if (!wrap) return;
             const fleet = getFleetDB();
-            const activeShifts = (AppState.cloudRecentShifts || []).filter(s => String(s.estadoTurno || '').toUpperCase() === 'ACTIVO');
+            const activeShifts = getActiveCheckedInShifts();
             const activeMap = new Map();
             activeShifts.forEach(s => activeMap.set(String(s.movil || '').toUpperCase(), s));
 
@@ -8171,17 +8263,17 @@
             document.getElementById('dispatch-nota-input').value = '';
             document.getElementById('cenco-dispatch-subtitle').innerText = `Cuadrante ${cuadrante || '-'} • ${folioId || cctvAlertaId}`;
 
-            const { sameQuadActive, adjQuadActive, sameQuadFleet } = getActiveAndNearbyUnitsForQuadrant(cuadrante);
+            const { sameQuadActive, adjQuadActive, otherQuadActive } = getActiveAndNearbyUnitsForQuadrant(cuadrante);
             const recWrap = document.getElementById('dispatch-recommended-units');
             const chips = [
                 ...sameQuadActive.map(u => ({ m: u.movil, lbl: `${u.movil} (En Turno ${u.cuadrante})`, cls: 'bg-emerald-600 text-white' })),
                 ...adjQuadActive.map(u => ({ m: u.movil, lbl: `${u.movil} (Colindante ${u.cuadrante})`, cls: 'bg-amber-500 text-slate-950' })),
-                ...sameQuadFleet.slice(0, 6).map(u => ({ m: u.movil, lbl: `${u.movil} (Base ${u.cuadrante})`, cls: 'bg-slate-200 text-slate-800' }))
+                ...(otherQuadActive || []).map(u => ({ m: u.movil, lbl: `${u.movil} (En Turno ${u.cuadrante})`, cls: 'bg-blue-600 text-white' }))
             ];
             recWrap.innerHTML = `
-                <p class="font-black text-[#0a2463] uppercase text-[11px]">Unidades Sugeridas para Cuadrante ${cuadrante} (Toque para asignar):</p>
+                <p class="font-black text-[#0a2463] uppercase text-[11px]">Móviles Activos con Checklist para Cuadrante ${cuadrante} (Toque para asignar):</p>
                 <div class="flex flex-wrap gap-1.5">
-                    ${chips.length === 0 ? '<span class="text-slate-400">Escriba el nombre del móvil abajo</span>' : chips.map(c => `
+                    ${chips.length === 0 ? '<span class="text-amber-700 font-semibold">⚠️ Sin móviles en turno activo con checklist en este momento.</span>' : chips.map(c => `
                         <button type="button" onclick="appendUnitToDispatchInput('${c.m}')" class="px-2.5 py-1 rounded-lg text-[11px] font-black ${c.cls} hover:opacity-90">${c.lbl}</button>
                     `).join('')}
                 </div>

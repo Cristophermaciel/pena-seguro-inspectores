@@ -423,29 +423,50 @@ function apiGetBootstrapData() {
     });
   }
 
-  // 5. Últimos turnos y procedimientos para el Monitor Admin
+  // 5. Últimos turnos y procedimientos para el Monitor Admin y CENCO CAD
+  // Cruzar con Cierres_Turno para garantizar que ningún turno cerrado aparezca como ACTIVO
+  const closedTurnoIds = {};
+  const shCierresCheck = ss.getSheetByName(SHEETS.CIERRES);
+  if (shCierresCheck && shCierresCheck.getLastRow() > 1) {
+    const cCount = Math.min(200, shCierresCheck.getLastRow() - 1);
+    const cStart = shCierresCheck.getLastRow() - cCount + 1;
+    const cIds = shCierresCheck.getRange(cStart, 3, cCount, 1).getValues();
+    cIds.forEach(cr => {
+      const tid = String(cr[0] || "").trim();
+      if (tid) closedTurnoIds[tid] = true;
+    });
+  }
+
   const shTurnos = ss.getSheetByName(SHEETS.TURNOS);
   const recentShifts = [];
   if (shTurnos && shTurnos.getLastRow() > 1) {
-    const count = Math.min(25, shTurnos.getLastRow() - 1);
+    const count = Math.min(60, shTurnos.getLastRow() - 1);
     const startRow = shTurnos.getLastRow() - count + 1;
     const rows = shTurnos.getRange(startRow, 1, count, 17).getValues();
     rows.reverse().forEach(r => {
+      const tid = String(r[0] || "").trim();
+      const rawEstado = String(r[13] || "").trim().toUpperCase();
+      const fechaFin = String(r[14] || "").trim();
+      const kmFinVal = Number(r[15] || 0);
+      const isClosed = rawEstado === "FINALIZADO" || rawEstado === "CERRADO" || Boolean(fechaFin) || kmFinVal > 0 || Boolean(tid && closedTurnoIds[tid]);
+      const estadoChecklistStr = String(r[7] || "").trim();
+      const detailChecklistStr = String(r[12] || "").trim();
       recentShifts.push({
-        turnoId: String(r[0]),
+        turnoId: tid,
         fechaInicio: String(r[1]),
         rut: String(r[2]),
         rangoHorario: String(r[3]),
         movil: String(r[4]),
         cuadrante: String(r[5]),
         kmInicial: r[6],
-        estadoChecklist: String(r[7]),
+        estadoChecklist: estadoChecklistStr,
+        hasChecklist: Boolean(estadoChecklistStr || detailChecklistStr),
         itemsMalos: String(r[8]),
         observaciones: String(r[9]),
         fotoGeneral: String(r[10]),
         fotoDesperfecto: String(r[11]),
-        estadoTurno: String(r[13]),
-        fechaTermino: String(r[14]),
+        estadoTurno: isClosed ? "FINALIZADO" : (rawEstado || "ACTIVO"),
+        fechaTermino: fechaFin,
         kmTermino: r[15],
         kmRecorridos: r[16]
       });
@@ -1115,10 +1136,18 @@ function apiHandleAction(payload) {
         kmRecorridos
       ]);
 
-      if (payload.turnoId && sheetTurnos.getLastRow() > 1) {
-        const ids = sheetTurnos.getRange(2, 1, sheetTurnos.getLastRow() - 1, 1).getValues();
-        for (let i = ids.length - 1; i >= 0; i--) {
-          if (String(ids[i][0]) === String(payload.turnoId)) {
+      if (sheetTurnos.getLastRow() > 1) {
+        const lastRowT = sheetTurnos.getLastRow();
+        const tData = sheetTurnos.getRange(2, 1, lastRowT - 1, 14).getValues();
+        const targetTid = String(payload.turnoId || "").trim();
+        const targetMovil = String(payload.movil || "").trim().toUpperCase();
+        for (let i = tData.length - 1; i >= 0; i--) {
+          const rowTid = String(tData[i][0] || "").trim();
+          const rowMovil = String(tData[i][4] || "").trim().toUpperCase();
+          const rowEstado = String(tData[i][13] || "").trim().toUpperCase();
+          const matchById = targetTid && rowTid === targetTid;
+          const matchOpenMovil = targetMovil && rowMovil === targetMovil && rowEstado === "ACTIVO";
+          if (matchById || matchOpenMovil) {
             const rowIndex = i + 2;
             sheetTurnos.getRange(rowIndex, 14, 1, 4).setValues([[
               "FINALIZADO",
@@ -1126,7 +1155,6 @@ function apiHandleAction(payload) {
               kmFin,
               kmRecorridos
             ]]);
-            break;
           }
         }
       }
