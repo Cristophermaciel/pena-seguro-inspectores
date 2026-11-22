@@ -7290,9 +7290,14 @@
             CencoState.pollTimer = setInterval(() => {
                 if (document.getElementById('view-cenco')?.classList.contains('active')) {
                     syncBootstrapFromCloud(false);
-                    fetchLiveGpsFromCloud();
                 }
             }, 20000);
+            if (CencoState.gpsPollTimer) clearInterval(CencoState.gpsPollTimer);
+            CencoState.gpsPollTimer = setInterval(() => {
+                if (document.getElementById('view-cenco')?.classList.contains('active')) {
+                    fetchLiveGpsFromCloud();
+                }
+            }, 10000);
         }
 
         function toggleCencoTheme() {
@@ -7791,20 +7796,22 @@
             if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...'; }
             try {
                 const res = await sendPayloadToGoogleSheets({ action: 'ADMIN_SAVE_WIALON_TOKEN', token });
-                if (res && res.ok) {
+                // Esperar breve instante y verificar vía GET gpsLive (funciona también sobre CORS desde GitHub Pages)
+                await new Promise(r => setTimeout(r, 1200));
+                await fetchLiveGpsFromCloud();
+                if (CencoState.gpsUnits.length > 0) {
                     CencoState.gpsConfigured = true;
                     if (inp) inp.value = '';
                     if (fb) {
                         fb.className = 'text-xs rounded-lg p-2.5 bg-emerald-950 border border-emerald-500 text-emerald-200 font-bold';
-                        fb.innerText = `✓ ¡Conectado! Se detectaron ${res.unitsCount || 0} unidades GPS en vivo desde cliente.gps-vision.cl.`;
+                        fb.innerText = `✓ ¡Conectado! Se detectaron ${CencoState.gpsUnits.length} unidades GPS en vivo (${CencoState.gpsUnits.filter(u => u.online).length} online).`;
                         fb.classList.remove('hidden');
                     }
-                    await fetchLiveGpsFromCloud();
                     setTimeout(() => closeWialonConfigModal(), 1600);
                 } else {
                     if (fb) {
                         fb.className = 'text-xs rounded-lg p-2.5 bg-red-950 border border-red-500 text-red-200';
-                        fb.innerText = `Error al validar token: ${(res && res.error) || 'Verifique que el backend Apps Script esté actualizado a v20.'}`;
+                        fb.innerText = `Error al validar token: ${CencoState.gpsError || (res && res.error) || 'Verifique que el token sea de 72 caracteres (Rastreo en línea).'}`;
                         fb.classList.remove('hidden');
                     }
                 }
@@ -7915,7 +7922,7 @@
                     const dotColor = g.online ? (g.velocidad > 2 ? '#10b981' : '#38bdf8') : '#94a3b8';
                     const icon = L.divIcon({
                         className: '',
-                        html: `<div style="display:inline-flex;align-items:center;gap:4px;background:rgba(15,23,42,0.86);color:#e2e8f0;border:1px solid ${inComuna ? '#64748b' : '#ef4444'};border-radius:999px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,0.4);"><span style="width:6px;height:6px;border-radius:999px;background:${dotColor};"></span><i class="fa-solid ${isMoto ? 'fa-motorcycle' : 'fa-car-side'}"></i>${g.nombre}${g.velocidad > 2 ? ` ${g.velocidad}k/h` : ''}</div>`,
+                        html: `<div style="display:inline-flex;align-items:center;gap:4px;background:rgba(15,23,42,0.88);color:#e2e8f0;border:1px solid ${inComuna ? (g.velocidad > 2 ? '#10b981' : '#64748b') : '#ef4444'};border-radius:999px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,0.4);"><span style="width:6px;height:6px;border-radius:999px;background:${dotColor};"></span><i class="fa-solid ${isMoto ? 'fa-motorcycle' : 'fa-car-side'}"></i>${g.nombre} <span style="font-size:9px;color:${g.velocidad > 2 ? '#6ee7b7' : '#94a3b8'};">${g.velocidad} km/h</span></div>`,
                         iconSize: [105, 22],
                         iconAnchor: [52, 11]
                     });
