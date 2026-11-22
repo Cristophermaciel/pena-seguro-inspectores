@@ -12,7 +12,7 @@ const CONFIG = {
   EMAIL_CENTRAL: "central1410@penaflor.cl",
   EMAIL_JEFATURA: "inspeccion@penaflor.cl",
   ENVIAR_CORREOS_REALES: false,
-  WIALON_HOST: "https://cliente.gps-vision.cl"
+  WIALON_HOSTS: ["https://hst-api.wialon.us", "https://hst-api.wialon.com", "https://cliente.gps-vision.cl"]
 };
 
 const SHEETS = {
@@ -1785,21 +1785,46 @@ function apiGetGpsLive(bypassCache) {
       }
     }
 
-    const baseUrl = (CONFIG.WIALON_HOST || "https://cliente.gps-vision.cl") + "/wialon/ajax.html";
+    const props = PropertiesService.getScriptProperties();
+    const savedHost = String(props.getProperty("WIALON_API_HOST") || "").trim();
+    const candidateHosts = [];
+    if (savedHost) candidateHosts.push(savedHost);
+    (CONFIG.WIALON_HOSTS || ["https://hst-api.wialon.us", "https://hst-api.wialon.com"]).forEach(h => {
+      if (candidateHosts.indexOf(h) === -1) candidateHosts.push(h);
+    });
 
-    // 1. Iniciar sesión con token oficial Wialon
-    const loginUrl = baseUrl + "?svc=token/login&params=" + encodeURIComponent(JSON.stringify({ token: token }));
-    const loginResp = UrlFetchApp.fetch(loginUrl, { method: "post", muteHttpExceptions: true });
-    const loginJson = JSON.parse(loginResp.getContentText() || "{}");
-    if (loginJson.error || !loginJson.eid) {
-      return {
-        ok: false,
-        configured: true,
-        units: [],
-        error: "Wialon login error (" + (loginJson.error || "sin eid") + "): " + (loginJson.reason || "Verifique que el token sea válido")
-      };
+    // 1. Iniciar sesión con token oficial Wialon (probando automáticamente el host Wialon Hosting correcto)
+    let sid = "";
+    let baseUrl = "";
+    let lastLoginErr = "No se pudo conectar con Wialon";
+    for (let i = 0; i < candidateHosts.length; i++) {
+      const h = candidateHosts[i];
+      const tryBase = h + "/wialon/ajax.html";
+      try {
+        const loginUrl = tryBase + "?svc=token/login&params=" + encodeURIComponent(JSON.stringify({ token: token }));
+        const loginResp = UrlFetchApp.fetch(loginUrl, { method: "post", muteHttpExceptions: true });
+        const rawText = loginResp.getContentText() || "";
+        if (rawText.trim().charAt(0) !== "{") {
+          lastLoginErr = h + " no respondió JSON";
+          continue;
+        }
+        const loginJson = JSON.parse(rawText);
+        if (loginJson && loginJson.eid) {
+          sid = loginJson.eid;
+          baseUrl = tryBase;
+          if (savedHost !== h) props.setProperty("WIALON_API_HOST", h);
+          break;
+        } else {
+          lastLoginErr = "Wialon (" + h + ") error " + (loginJson.error || "?") + ": " + (loginJson.reason || "Token inválido");
+        }
+      } catch (eHost) {
+        lastLoginErr = h + ": " + eHost.toString();
+      }
     }
-    const sid = loginJson.eid;
+
+    if (!sid || !baseUrl) {
+      return { ok: false, configured: true, units: [], error: lastLoginErr };
+    }
 
     // 2. Consultar todas las unidades (flags 1025 = base 1 + last position 1024)
     const searchParams = {
@@ -1857,7 +1882,7 @@ function apiGetGpsLive(bypassCache) {
     };
 
     try {
-      cache.put(cacheKey, JSON.stringify(payload), 15);
+      cache.put(cacheKey, JSON.stringify(payload), 8);
     } catch (ignore) {}
 
     return payload;
