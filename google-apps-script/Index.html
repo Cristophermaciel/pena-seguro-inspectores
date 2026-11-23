@@ -9705,8 +9705,12 @@
             const wrap = document.getElementById(ctx === 'cenco' ? 'cenco-intel-content' : 'mobile-intel-content');
             if (!wrap) return;
             const isDark = ctx === 'cenco';
-            const cardCls = isDark ? 'cad-surface border cad-border rounded-xl p-4' : 'bg-white border border-slate-200 rounded-2xl p-4 shadow-xs';
-            const inpCls = isDark ? 'cad-input w-full' : 'w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-900';
+            const cardCls = isDark ? 'cad-surface border cad-border rounded-xl p-4' : 'bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs';
+            const inpCls = isDark ? 'cad-input w-full min-w-0' : 'w-full min-w-0 px-3 py-2.5 rounded-xl border border-slate-300 text-xs bg-white text-slate-900';
+            const gridCardsCls = isDark ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'grid grid-cols-1 gap-3';
+            const gridFormCls = isDark ? 'grid grid-cols-1 md:grid-cols-3 gap-2' : 'grid grid-cols-1 gap-2';
+            const span2Cls = isDark ? 'md:col-span-2' : '';
+            const span3Cls = isDark ? 'md:col-span-3' : '';
             const quadOpts = ['252A','252B','252C','253A','253B','SRA','SRB','SRA1'].map(q => `<option value="${q}" ${(AppState.cuadrante === q) ? 'selected' : ''}>${q}</option>`).join('');
             const tab = IntelState.tab;
 
@@ -9715,23 +9719,21 @@
                 const activos = getIntelRobadosDB().filter(v => String(v.estado || '').toUpperCase() !== 'RECUPERADO');
                 wrap.innerHTML = `
                     <div class="${cardCls} space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-sm font-black ${isDark ? 'text-cyan-400' : 'text-[#0a2463]'}"><i class="fa-solid fa-camera mr-1.5"></i>Escáner LPR — Lista Negra de Vehículos Robados</h3>
-                                <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'}">Enfoque la patente con la cámara o ingrésela manualmente para verificar encargo vigente (${activos.length} patentes en lista negra).</p>
-                            </div>
+                        <div>
+                            <h3 class="text-sm font-black ${isDark ? 'text-cyan-400' : 'text-[#0a2463]'} leading-snug"><i class="fa-solid fa-camera mr-1.5"></i>Escáner LPR — Lista Negra de Vehículos Robados</h3>
+                            <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} mt-0.5 leading-relaxed">Enfoque la patente con la cámara o ingrésela manualmente para verificar encargo vigente (${activos.length} patentes en lista negra).</p>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                            <label class="cursor-pointer bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow">
-                                <i class="fa-solid fa-camera text-base"></i> ESCANEAR PATENTE CON CÁMARA
+                        <div class="${isDark ? 'grid grid-cols-1 md:grid-cols-2 gap-2.5' : 'space-y-2.5'}">
+                            <label class="cursor-pointer bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow text-center">
+                                <i class="fa-solid fa-camera text-base shrink-0"></i> <span>ESCANEAR PATENTE CON CÁMARA</span>
                                 <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleLprCameraScan(event, '${ctx}')">
                             </label>
-                            <div class="flex gap-1.5">
-                                <input type="text" id="lpr-manual-input-${ctx}" placeholder="Patente (Ej: ABCD12)" class="${inpCls} font-mono uppercase text-sm font-black tracking-widest" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();checkPlateAgainstBlacklist(this.value,'${ctx}');}">
-                                <button type="button" onclick="checkPlateAgainstBlacklist(document.getElementById('lpr-manual-input-${ctx}').value, '${ctx}')" class="px-4 py-2 rounded-xl bg-[#0a2463] hover:bg-blue-900 text-white font-black text-xs shrink-0">VERIFICAR</button>
+                            <div class="flex gap-1.5 min-w-0">
+                                <input type="text" id="lpr-manual-input-${ctx}" placeholder="Patente (Ej: ABCD12)" class="${inpCls} flex-1 font-mono uppercase text-sm font-black tracking-widest" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();checkPlateAgainstBlacklist(this.value,'${ctx}');}">
+                                <button type="button" onclick="checkPlateAgainstBlacklist(document.getElementById('lpr-manual-input-${ctx}').value, '${ctx}')" class="px-3.5 py-2 rounded-xl bg-[#0a2463] hover:bg-blue-900 text-white font-black text-xs shrink-0">VERIFICAR</button>
                             </div>
                         </div>
-                        <div id="lpr-scan-status-${ctx}" class="hidden text-xs font-bold p-3 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400"></div>
+                        <div id="lpr-scan-status-${ctx}" class="hidden text-xs font-bold p-3 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400 break-words"></div>
                         <div id="lpr-scan-result-${ctx}"></div>
                     </div>
                 `;
@@ -9743,42 +9745,42 @@
                 const list = getIntelRobadosDB();
                 wrap.innerHTML = `
                     <div class="${cardCls} space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-black ${isDark ? 'text-red-400' : 'text-red-700'}"><i class="fa-solid fa-car-burst mr-1.5"></i>Lista Negra — Vehículos Robados (${list.length})</h3>
-                            <button type="button" onclick="document.getElementById('intel-form-robado-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-black">+ Registrar Robado</button>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="text-sm font-black ${isDark ? 'text-red-400' : 'text-red-700'} leading-snug"><i class="fa-solid fa-car-burst mr-1.5"></i>Lista Negra — Vehículos Robados (${list.length})</h3>
+                            <button type="button" onclick="document.getElementById('intel-form-robado-${ctx}').classList.toggle('hidden')" class="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shrink-0">+ Registrar Robado</button>
                         </div>
-                        <form id="intel-form-robado-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelRobado(event, '${ctx}')">
+                        <form id="intel-form-robado-${ctx}" class="hidden ${gridFormCls} pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelRobado(event, '${ctx}')">
                             <input type="text" id="rob-patente-${ctx}" required placeholder="Patente * (Ej: ABCD12)" class="${inpCls} font-mono uppercase font-black">
                             <input type="text" id="rob-marca-${ctx}" required placeholder="Marca / Modelo *" class="${inpCls}">
                             <input type="text" id="rob-color-${ctx}" placeholder="Color" class="${inpCls}">
                             <select id="rob-tipo-${ctx}" class="${inpCls}"><option>ROBO VEHÍCULO</option><option>PORTONAZO / ENCERRONA</option><option>LISTA NEGRA / SOSPECHOSO</option><option>ENCARGO CARABINEROS</option></select>
                             <select id="rob-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
                             <select id="rob-estado-${ctx}" class="${inpCls}"><option value="ENCARGO VIGENTE">🔴 ENCARGO VIGENTE</option><option value="RECUPERADO">🟢 RECUPERADO</option></select>
-                            <input type="text" id="rob-obs-${ctx}" placeholder="Observaciones / Lugar robo / Denuncia" class="${inpCls} md:col-span-2">
-                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-cyan-500 text-cyan-500 text-xs font-bold flex items-center justify-center gap-1.5">
+                            <input type="text" id="rob-obs-${ctx}" placeholder="Observaciones / Lugar robo / Denuncia" class="${inpCls} ${span2Cls}">
+                            <label class="cursor-pointer px-3 py-2.5 rounded-xl border border-dashed border-cyan-500 text-cyan-600 text-xs font-bold flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
                                 <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
                             </label>
-                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs">Guardar en Lista Negra (Drive + Sheets)</button>
+                            <button type="submit" class="${span3Cls} py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs">Guardar en Lista Negra (Drive + Sheets)</button>
                         </form>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="${gridCardsCls}">
                             ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin vehículos registrados en Lista Negra aún.</p>` : list.map(v => {
                                 const img = intelDriveImgSrc(v.foto);
                                 const vigente = String(v.estado || '').toUpperCase() !== 'RECUPERADO';
                                 return `
-                                <div class="rounded-xl border ${vigente ? 'border-red-500/50' : 'border-emerald-500/40'} ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
-                                    ${img ? `<img src="${img}" class="w-full h-36 object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-car-burst"></i></div>`}
-                                    <div class="p-3 space-y-1 text-xs flex-1">
-                                        <div class="flex items-center justify-between gap-1">
-                                            <span class="font-mono font-black text-sm px-2 py-0.5 rounded bg-slate-950 text-amber-300 tracking-widest">${v.patente}</span>
-                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black ${vigente ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}">${v.estado}</span>
+                                <div class="rounded-xl border ${vigente ? 'border-red-500/50' : 'border-emerald-500/40'} ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col min-w-0">
+                                    ${img ? `<img src="${img}" class="w-full ${isDark ? 'h-36' : 'h-48'} object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-car-burst"></i></div>`}
+                                    <div class="p-3 space-y-1.5 text-xs flex-1 min-w-0">
+                                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                                            <span class="font-mono font-black text-sm px-2.5 py-0.5 rounded-lg bg-slate-950 text-amber-300 tracking-widest shrink-0">${v.patente}</span>
+                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap ${vigente ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}">${v.estado}</span>
                                         </div>
-                                        <div class="font-bold ${isDark ? 'cad-text' : 'text-slate-900'}">${v.marcaModelo} ${v.color ? `• ${v.color}` : ''}</div>
-                                        <div class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-500'}">${v.tipoEncargo} • Cuadrante ${v.cuadrante}</div>
-                                        ${v.observaciones ? `<p class="text-[11px] ${isDark ? 'cad-text' : 'text-slate-700'}">${v.observaciones}</p>` : ''}
-                                        <div class="flex gap-1.5 pt-2">
-                                            <button type="button" onclick="alertIntelSightingToCenco('ROBADO','${v.id}')" class="flex-1 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-black">🚨 Avistado</button>
-                                            <button type="button" onclick="deleteIntelItem('robado','${v.id}','${ctx}')" class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button>
+                                        <div class="font-bold text-sm ${isDark ? 'cad-text' : 'text-slate-900'} break-words">${v.marcaModelo} ${v.color ? `• ${v.color}` : ''}</div>
+                                        <div class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} break-words">${v.tipoEncargo} • Cuadrante ${v.cuadrante}</div>
+                                        ${v.observaciones ? `<p class="text-xs ${isDark ? 'cad-text' : 'text-slate-700'} break-words leading-relaxed">${v.observaciones}</p>` : ''}
+                                        <div class="flex gap-2 pt-2">
+                                            <button type="button" onclick="alertIntelSightingToCenco('ROBADO','${v.id}')" class="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black">🚨 Avistado</button>
+                                            <button type="button" onclick="deleteIntelItem('robado','${v.id}','${ctx}')" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold shrink-0"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     </div>
                                 </div>`;
@@ -9794,40 +9796,40 @@
                 const list = getIntelMecherosDB();
                 wrap.innerHTML = `
                     <div class="${cardCls} space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}"><i class="fa-solid fa-user-secret mr-1.5"></i>Lista de Mecheros con Foto (${list.length})</h3>
-                            <button type="button" onclick="document.getElementById('intel-form-mechero-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black">+ Registrar Mechero</button>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="text-sm font-black ${isDark ? 'text-amber-400' : 'text-amber-700'} leading-snug"><i class="fa-solid fa-user-secret mr-1.5"></i>Lista de Mecheros con Foto (${list.length})</h3>
+                            <button type="button" onclick="document.getElementById('intel-form-mechero-${ctx}').classList.toggle('hidden')" class="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shrink-0">+ Registrar Mechero</button>
                         </div>
-                        <form id="intel-form-mechero-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelMechero(event, '${ctx}')">
+                        <form id="intel-form-mechero-${ctx}" class="hidden ${gridFormCls} pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelMechero(event, '${ctx}')">
                             <input type="text" id="mech-alias-${ctx}" required placeholder="Nombre / Apodo / Alias *" class="${inpCls}">
                             <select id="mech-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
                             <input type="text" id="mech-sector-${ctx}" placeholder="Comercio / Sector habitual" class="${inpCls}">
-                            <input type="text" id="mech-senas-${ctx}" placeholder="Vestimenta / Señas particulares" class="${inpCls} md:col-span-2">
+                            <input type="text" id="mech-senas-${ctx}" placeholder="Vestimenta / Señas particulares" class="${inpCls} ${span2Cls}">
                             <select id="mech-riesgo-${ctx}" class="${inpCls}"><option value="ALTO">🔴 Riesgo ALTO</option><option value="MEDIO">🟡 Riesgo MEDIO</option><option value="BAJO">🟢 Riesgo BAJO</option></select>
-                            <input type="text" id="mech-obs-${ctx}" placeholder="Modus operandi / Observaciones" class="${inpCls} md:col-span-2">
-                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-amber-500 text-amber-500 text-xs font-bold flex items-center justify-center gap-1.5">
+                            <input type="text" id="mech-obs-${ctx}" placeholder="Modus operandi / Observaciones" class="${inpCls} ${span2Cls}">
+                            <label class="cursor-pointer px-3 py-2.5 rounded-xl border border-dashed border-amber-500 text-amber-600 text-xs font-bold flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
                                 <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
                             </label>
-                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs">Guardar Ficha Mechero (Drive + Sheets)</button>
+                            <button type="submit" class="${span3Cls} py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs">Guardar Ficha Mechero (Drive + Sheets)</button>
                         </form>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="${gridCardsCls}">
                             ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin mecheros registrados aún.</p>` : list.map(m => {
                                 const img = intelDriveImgSrc(m.foto);
                                 return `
-                                <div class="rounded-xl border border-amber-500/40 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
-                                    ${img ? `<img src="${img}" class="w-full h-36 object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-user-secret"></i></div>`}
-                                    <div class="p-3 space-y-1 text-xs flex-1">
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-black ${isDark ? 'cad-text' : 'text-slate-900'}">${m.alias}</span>
-                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40">${m.cuadrante} • ${m.riesgo}</span>
+                                <div class="rounded-xl border border-amber-500/40 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col min-w-0">
+                                    ${img ? `<img src="${img}" class="w-full ${isDark ? 'h-36' : 'h-48'} object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-user-secret"></i></div>`}
+                                    <div class="p-3 space-y-1.5 text-xs flex-1 min-w-0">
+                                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                                            <span class="font-black text-sm ${isDark ? 'cad-text' : 'text-slate-900'} break-words">${m.alias}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap bg-amber-500/20 text-amber-600 border border-amber-500/40">${m.cuadrante} • ${m.riesgo}</span>
                                         </div>
-                                        <div class="text-[11px] font-semibold ${isDark ? 'text-cyan-300' : 'text-blue-700'}">${m.sector || 'Sector sin especificar'}</div>
-                                        ${m.senas ? `<div class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-600'}">Señas: ${m.senas}</div>` : ''}
-                                        ${m.observaciones ? `<p class="text-[11px] ${isDark ? 'cad-text' : 'text-slate-700'}">${m.observaciones}</p>` : ''}
-                                        <div class="flex gap-1.5 pt-2">
-                                            <button type="button" onclick="alertIntelSightingToCenco('MECHERO','${m.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-black">🚨 Reportar Avistamiento</button>
-                                            <button type="button" onclick="deleteIntelItem('mechero','${m.id}','${ctx}')" class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button>
+                                        <div class="text-xs font-semibold ${isDark ? 'text-cyan-300' : 'text-blue-700'} break-words">${m.sector || 'Sector sin especificar'}</div>
+                                        ${m.senas ? `<div class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-600'} break-words">Señas: ${m.senas}</div>` : ''}
+                                        ${m.observaciones ? `<p class="text-xs ${isDark ? 'cad-text' : 'text-slate-700'} break-words leading-relaxed">${m.observaciones}</p>` : ''}
+                                        <div class="flex gap-2 pt-2">
+                                            <button type="button" onclick="alertIntelSightingToCenco('MECHERO','${m.id}')" class="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black">🚨 Reportar Avistamiento</button>
+                                            <button type="button" onclick="deleteIntelItem('mechero','${m.id}','${ctx}')" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold shrink-0"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     </div>
                                 </div>`;
@@ -9843,45 +9845,45 @@
                 const list = getIntelCalleDB();
                 wrap.innerHTML = `
                     <div class="${cardCls} space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-black ${isDark ? 'text-blue-400' : 'text-[#0a2463]'}"><i class="fa-solid fa-person-shelter mr-1.5"></i>Catastro Situación de Calle (${list.length})</h3>
-                            <button type="button" onclick="document.getElementById('intel-form-calle-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-black">+ Registrar Persona</button>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="text-sm font-black ${isDark ? 'text-blue-400' : 'text-[#0a2463]'} leading-snug"><i class="fa-solid fa-person-shelter mr-1.5"></i>Catastro Situación de Calle (${list.length})</h3>
+                            <button type="button" onclick="document.getElementById('intel-form-calle-${ctx}').classList.toggle('hidden')" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shrink-0">+ Registrar Persona</button>
                         </div>
-                        <form id="intel-form-calle-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelCalle(event, '${ctx}')">
+                        <form id="intel-form-calle-${ctx}" class="hidden ${gridFormCls} pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelCalle(event, '${ctx}')">
                             <input type="text" id="calle-nombre-${ctx}" required placeholder="Nombre / Apodo *" class="${inpCls}">
                             <input type="text" id="calle-rutedad-${ctx}" placeholder="RUT / Edad aprox." class="${inpCls}">
                             <select id="calle-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
                             <input type="text" id="calle-ubic-${ctx}" required placeholder="Ubicación / Punto habitual *" class="${inpCls}">
-                            <div class="flex gap-1">
-                                <input type="text" id="calle-gps-${ctx}" placeholder="GPS (lat, lon)" class="${inpCls} font-mono">
-                                <button type="button" onclick="captureIntelGpsInto('calle-gps-${ctx}')" class="px-2.5 rounded-xl bg-blue-600 text-white text-xs shrink-0" title="Capturar GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
+                            <div class="flex gap-1.5 min-w-0">
+                                <input type="text" id="calle-gps-${ctx}" placeholder="GPS (lat, lon)" class="${inpCls} flex-1 font-mono">
+                                <button type="button" onclick="captureIntelGpsInto('calle-gps-${ctx}')" class="px-3 rounded-xl bg-blue-600 text-white text-xs shrink-0" title="Capturar GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
                             </div>
                             <select id="calle-estado-${ctx}" class="${inpCls}"><option>EN SEGUIMIENTO</option><option>DERIVADO DIDECO / SALUD</option><option>ALBERGADO</option><option>RECHAZA APOYO</option></select>
-                            <input type="text" id="calle-perfil-${ctx}" placeholder="Perfil social / salud (consumo, salud mental, adulto mayor, red apoyo...)" class="${inpCls} md:col-span-2">
-                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-blue-500 text-blue-400 text-xs font-bold flex items-center justify-center gap-1.5">
+                            <input type="text" id="calle-perfil-${ctx}" placeholder="Perfil social / salud (consumo, salud mental, adulto mayor, red apoyo...)" class="${inpCls} ${span2Cls}">
+                            <label class="cursor-pointer px-3 py-2.5 rounded-xl border border-dashed border-blue-500 text-blue-600 text-xs font-bold flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
                                 <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
                             </label>
-                            <input type="text" id="calle-obs-${ctx}" placeholder="Observaciones adicionales" class="${inpCls} md:col-span-3">
-                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs">Guardar Perfil Situación Calle (Drive + Sheets)</button>
+                            <input type="text" id="calle-obs-${ctx}" placeholder="Observaciones adicionales" class="${inpCls} ${span3Cls}">
+                            <button type="submit" class="${span3Cls} py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs">Guardar Perfil Situación Calle (Drive + Sheets)</button>
                         </form>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="${gridCardsCls}">
                             ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin personas en situación de calle catastradas aún.</p>` : list.map(p => {
                                 const img = intelDriveImgSrc(p.foto);
                                 return `
-                                <div class="rounded-xl border border-blue-500/35 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
-                                    ${img ? `<img src="${img}" class="w-full h-36 object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-person-shelter"></i></div>`}
-                                    <div class="p-3 space-y-1 text-xs flex-1">
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-black ${isDark ? 'cad-text' : 'text-slate-900'}">${p.nombre}</span>
-                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/20 text-blue-400">${p.cuadrante}</span>
+                                <div class="rounded-xl border border-blue-500/35 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col min-w-0">
+                                    ${img ? `<img src="${img}" class="w-full ${isDark ? 'h-36' : 'h-48'} object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-person-shelter"></i></div>`}
+                                    <div class="p-3 space-y-1.5 text-xs flex-1 min-w-0">
+                                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                                            <span class="font-black text-sm ${isDark ? 'cad-text' : 'text-slate-900'} break-words">${p.nombre}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap bg-blue-500/20 text-blue-600">${p.cuadrante}</span>
                                         </div>
-                                        <div class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-500'}">${p.rutEdad || 'Sin RUT/Edad'} • <strong>${p.estado}</strong></div>
-                                        <div class="text-[11px] font-semibold ${isDark ? 'text-cyan-300' : 'text-blue-700'}"><i class="fa-solid fa-location-dot mr-1"></i>${p.ubicacion}</div>
-                                        ${p.perfil ? `<div class="text-[11px] ${isDark ? 'cad-text' : 'text-slate-700'}"><strong>Perfil:</strong> ${p.perfil}</div>` : ''}
-                                        ${p.observaciones ? `<p class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-600'}">${p.observaciones}</p>` : ''}
+                                        <div class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} break-words">${p.rutEdad || 'Sin RUT/Edad'} • <strong>${p.estado}</strong></div>
+                                        <div class="text-xs font-semibold ${isDark ? 'text-cyan-300' : 'text-blue-700'} break-words"><i class="fa-solid fa-location-dot mr-1"></i>${p.ubicacion}</div>
+                                        ${p.perfil ? `<div class="text-xs ${isDark ? 'cad-text' : 'text-slate-700'} break-words"><strong>Perfil:</strong> ${p.perfil}</div>` : ''}
+                                        ${p.observaciones ? `<p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-600'} break-words">${p.observaciones}</p>` : ''}
                                         <div class="flex justify-end pt-1">
-                                            <button type="button" onclick="deleteIntelItem('calle','${p.id}','${ctx}')" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="button" onclick="deleteIntelItem('calle','${p.id}','${ctx}')" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     </div>
                                 </div>`;
@@ -9898,13 +9900,13 @@
                 wrap.innerHTML = `
                     <div class="${cardCls} space-y-3">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <h3 class="text-sm font-black ${isDark ? 'text-orange-400' : 'text-orange-700'}"><i class="fa-solid fa-fire mr-1.5"></i>Puntos de Calor: Vehículos Abandonados, Rucos e Incivilidades (${list.length})</h3>
-                                <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'}">Todos los puntos alimentan automáticamente el <strong>Mapa de Calor</strong> y el <strong>Mapa de Sensación de Seguridad</strong>.</p>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-black ${isDark ? 'text-orange-400' : 'text-orange-700'} leading-snug"><i class="fa-solid fa-fire mr-1.5"></i>Puntos de Calor: Abandonados, Rucos e Incivilidades (${list.length})</h3>
+                                <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} mt-0.5">Alimenta automáticamente el <strong>Mapa de Calor</strong> y la <strong>Sensación de Seguridad</strong>.</p>
                             </div>
-                            <button type="button" onclick="document.getElementById('intel-form-calor-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-black">+ Registrar Punto</button>
+                            <button type="button" onclick="document.getElementById('intel-form-calor-${ctx}').classList.toggle('hidden')" class="px-3 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-black shrink-0">+ Registrar Punto</button>
                         </div>
-                        <form id="intel-form-calor-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelCalor(event, '${ctx}')">
+                        <form id="intel-form-calor-${ctx}" class="hidden ${gridFormCls} pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelCalor(event, '${ctx}')">
                             <select id="calor-tipo-${ctx}" class="${inpCls}">
                                 <option value="VEHICULO_ABANDONADO">🚗 Vehículo Abandonado</option>
                                 <option value="RUCO">⛺ Ruco / Ocupación Irregular</option>
@@ -9914,34 +9916,34 @@
                             </select>
                             <select id="calor-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
                             <select id="calor-estado-${ctx}" class="${inpCls}"><option value="ACTIVO">🔴 ACTIVO</option><option value="RETIRADO">🟢 RETIRADO / RESUELTO</option></select>
-                            <input type="text" id="calor-dir-${ctx}" required placeholder="Dirección exacta / Referencia *" class="${inpCls} md:col-span-2">
-                            <div class="flex gap-1">
-                                <input type="text" id="calor-gps-${ctx}" placeholder="GPS (lat, lon)" class="${inpCls} font-mono">
-                                <button type="button" onclick="captureIntelGpsInto('calor-gps-${ctx}')" class="px-2.5 rounded-xl bg-orange-600 text-white text-xs shrink-0" title="Capturar GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
+                            <input type="text" id="calor-dir-${ctx}" required placeholder="Dirección exacta / Referencia *" class="${inpCls} ${span2Cls}">
+                            <div class="flex gap-1.5 min-w-0">
+                                <input type="text" id="calor-gps-${ctx}" placeholder="GPS (lat, lon)" class="${inpCls} flex-1 font-mono">
+                                <button type="button" onclick="captureIntelGpsInto('calor-gps-${ctx}')" class="px-3 rounded-xl bg-orange-600 text-white text-xs shrink-0" title="Capturar GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
                             </div>
-                            <input type="text" id="calor-desc-${ctx}" placeholder="Descripción (patente si aplica, cantidad personas, reincidencia...)" class="${inpCls} md:col-span-2">
-                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-orange-500 text-orange-400 text-xs font-bold flex items-center justify-center gap-1.5">
+                            <input type="text" id="calor-desc-${ctx}" placeholder="Descripción (patente si aplica, cantidad personas, reincidencia...)" class="${inpCls} ${span2Cls}">
+                            <label class="cursor-pointer px-3 py-2.5 rounded-xl border border-dashed border-orange-500 text-orange-600 text-xs font-bold flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
                                 <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
                             </label>
-                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs">Registrar en Mapa de Calor (Drive + Sheets)</button>
+                            <button type="submit" class="${span3Cls} py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs">Registrar en Mapa de Calor (Drive + Sheets)</button>
                         </form>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="${gridCardsCls}">
                             ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin puntos de calor registrados aún.</p>` : list.map(pt => {
                                 const img = intelDriveImgSrc(pt.foto);
                                 return `
-                                <div class="rounded-xl border border-orange-500/40 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
-                                    ${img ? `<img src="${img}" class="w-full h-32 object-cover bg-slate-900" onerror="this.style.display='none'">` : ''}
-                                    <div class="p-3 space-y-1 text-xs flex-1">
-                                        <div class="flex items-center justify-between gap-1">
-                                            <span class="px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 font-black text-[10px]">${pt.tipo.replace(/_/g, ' ')}</span>
-                                            <span class="text-[10px] font-bold ${pt.estado === 'ACTIVO' ? 'text-red-400' : 'text-emerald-400'}">${pt.cuadrante} • ${pt.estado}</span>
+                                <div class="rounded-xl border border-orange-500/40 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col min-w-0">
+                                    ${img ? `<img src="${img}" class="w-full ${isDark ? 'h-32' : 'h-44'} object-cover bg-slate-900" onerror="this.style.display='none'">` : ''}
+                                    <div class="p-3 space-y-1.5 text-xs flex-1 min-w-0">
+                                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                                            <span class="px-2 py-0.5 rounded-lg bg-orange-500/20 text-orange-600 font-black text-[10px]">${pt.tipo.replace(/_/g, ' ')}</span>
+                                            <span class="text-[11px] font-bold whitespace-nowrap ${pt.estado === 'ACTIVO' ? 'text-red-500' : 'text-emerald-600'}">${pt.cuadrante} • ${pt.estado}</span>
                                         </div>
-                                        <div class="font-bold ${isDark ? 'cad-text' : 'text-slate-900'}">${pt.direccion}</div>
-                                        ${pt.descripcion ? `<p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-600'}">${pt.descripcion}</p>` : ''}
+                                        <div class="font-bold text-sm ${isDark ? 'cad-text' : 'text-slate-900'} break-words">${pt.direccion}</div>
+                                        ${pt.descripcion ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-600'} break-words">${pt.descripcion}</p>` : ''}
                                         <div class="flex items-center justify-between pt-1 text-[10px] ${isDark ? 'cad-muted' : 'text-slate-500'}">
                                             <span>${pt.fecha}</span>
-                                            <button type="button" onclick="deleteIntelItem('calor','${pt.id}','${ctx}')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="button" onclick="deleteIntelItem('calor','${pt.id}','${ctx}')" class="px-2.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white"><i class="fa-solid fa-trash"></i></button>
                                         </div>
                                     </div>
                                 </div>`;
