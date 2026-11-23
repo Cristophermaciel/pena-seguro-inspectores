@@ -10477,52 +10477,85 @@
             await runTightPlateOcrOnCanvas(c, ctx);
         }
 
-        function binarizePlateCanvasOtsu(srcCanvas, bias = 0) {
-            // Escalar a ancho óptimo 640px + borde blanco de 22px (clave para Tesseract PSM 7)
-            const targetW = 640;
-            const targetH = Math.max(140, Math.round((srcCanvas.height / srcCanvas.width) * targetW));
-            const pad = 22;
-            const out = document.createElement('canvas');
-            out.width = targetW + pad * 2;
-            out.height = targetH + pad * 2;
-            const g = out.getContext('2d');
-            g.fillStyle = '#ffffff';
-            g.fillRect(0, 0, out.width, out.height);
-            g.drawImage(srcCanvas, pad, pad, targetW, targetH);
+        function preparePlateOcrVariants(srcCanvas) {
+            // Crea 3 variantes optimizadas para Tesseract 5 LSTM:
+            // 1) Escala de grises suave (blur 1.2px elimina rayas moiré de pantallas/fotos) + recorte interno que quita el marco negro y "CHILE"
+            // 2) Escala de grises completa sin recorte interno (por si el usuario encuadró ultra justo)
+            // 3) Binarización Otsu sobre imagen suavizada (ideal para fotos nocturnas reales en calle)
+            const makeSmoothGray = (trimX, trimTop, trimBot, contrastPct, blurPx) => {
+                const sx = Math.round(srcCanvas.width * trimX);
+                const sy = Math.round(srcCanvas.height * trimTop);
+                const sw = Math.max(40, Math.round(srcCanvas.width * (1 - trimX * 2)));
+                const sh = Math.max(24, Math.round(srcCanvas.height * (1 - trimTop - trimBot)));
+                const targetW = 640;
+                const targetH = Math.max(120, Math.round((sh / sw) * targetW));
+                const pad = 28;
+                const out = document.createElement('canvas');
+                out.width = targetW + pad * 2;
+                out.height = targetH + pad * 2;
+                const g = out.getContext('2d');
+                g.fillStyle = '#ffffff';
+                g.fillRect(0, 0, out.width, out.height);
+                g.filter = `grayscale(100%) blur(${blurPx}px) contrast(${contrastPct}%) brightness(108%)`;
+                g.drawImage(srcCanvas, sx, sy, sw, sh, pad, pad, targetW, targetH);
+                g.filter = 'none';
+                return out;
+            };
 
-            const imgData = g.getImageData(pad, pad, targetW, targetH);
-            const d = imgData.data;
-            const hist = new Uint32Array(256);
-            const grays = new Uint8Array(targetW * targetH);
-            for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-                const gr = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
-                grays[p] = gr;
-                hist[gr]++;
-            }
-            // Umbral de Otsu
-            const total = grays.length;
-            let sum = 0;
-            for (let t = 0; t < 256; t++) sum += t * hist[t];
-            let sumB = 0, wB = 0, varMax = 0, threshold = 128;
-            for (let t = 0; t < 256; t++) {
-                wB += hist[t];
-                if (wB === 0) continue;
-                const wF = total - wB;
-                if (wF === 0) break;
-                sumB += t * hist[t];
-                const mB = sumB / wB;
-                const mF = (sum - sumB) / wF;
-                const varBetween = wB * wF * (mB - mF) * (mB - mF);
-                if (varBetween > varMax) { varMax = varBetween; threshold = t; }
-            }
-            const thr = Math.max(30, Math.min(225, threshold + bias));
-            for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-                const v = grays[p] < thr ? 0 : 255;
-                d[i] = d[i + 1] = d[i + 2] = v;
-                d[i + 3] = 255;
-            }
-            g.putImageData(imgData, pad, pad);
-            return out.toDataURL('image/png');
+            const applyOtsu = (grayCanvas) => {
+                const out = document.createElement('canvas');
+                out.width = grayCanvas.width;
+                out.height = grayCanvas.height;
+                const g = out.getContext('2d');
+                g.drawImage(grayCanvas, 0, 0);
+                const imgData = g.getImageData(0, 0, out.width, out.height);
+                const d = imgData.data;
+                const hist = new Uint32Array(256);
+                const grays = new Uint8Array(out.width * out.height);
+                for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                    const gr = d[i];
+                    grays[p] = gr;
+                    hist[gr]++;
+                }
+                const total = grays.length;
+                let sum = 0;
+                for (let t = 0; t < 256; t++) sum += t * hist[t];
+                let sumB = 0, wB = 0, varMax = 0, thr = 128;
+                for (let t = 0; t < 256; t++) {
+                    wB += hist[t];
+                    if (wB === 0) continue;
+                    const wF = total - wB;
+                    if (wF === 0) break;
+                    sumB += t * hist[t];
+                    const mB = sumB / wB;
+                    const mF = (sum - sumB) / wF;
+                    const vb = wB * wF * (mB - mF) * (mB - mF);
+                    if (vb > varMax) { varMax = vb; thr = t; }
+                }
+                for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                    const v = grays[p] < thr ? 0 : 255;
+                    d[i] = d[i + 1] = d[i + 2] = v;
+                    d[i + 3] = 255;
+                }
+                g.putImageData(imgData, 0, 0);
+                return out;
+            };
+
+            // Variante 1 (Principal): recorta marco negro y palabra "CHILE" abajo + blur anti-moiré
+            const vTrimmedGray = makeSmoothGray(0.08, 0.12, 0.22, 165, 1.3);
+            // Variante 2: escala de grises completa con blur suave
+            const vFullGray = makeSmoothGray(0.02, 0.04, 0.08, 150, 1.1);
+            // Variante 3: Otsu sobre imagen suavizada (sin rayas moiré)
+            const vSmoothOtsu = applyOtsu(vTrimmedGray);
+
+            return {
+                previewUrl: vTrimmedGray.toDataURL('image/png'),
+                urls: [
+                    vTrimmedGray.toDataURL('image/png'),
+                    vFullGray.toDataURL('image/png'),
+                    vSmoothOtsu.toDataURL('image/png')
+                ]
+            };
         }
 
         async function runTightPlateOcrOnCanvas(srcCanvas, ctx) {
@@ -10533,12 +10566,12 @@
 
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Binarizando patente (Otsu) y leyendo línea única (PSM 7)...';
+                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Limpiando reflejos/marco y leyendo patente (LSTM OCR)...';
             }
             try {
                 if (typeof Tesseract === 'undefined') throw new Error('OCR no disponible offline');
-                const binNormal = binarizePlateCanvasOtsu(srcCanvas, 0);
-                if (prevImg) prevImg.src = binNormal;
+                const { previewUrl, urls } = preparePlateOcrVariants(srcCanvas);
+                if (prevImg) prevImg.src = previewUrl;
                 if (prevWrap) prevWrap.classList.remove('hidden');
 
                 const robados = getIntelRobadosDB();
@@ -10547,20 +10580,21 @@
 
                 const worker = await Tesseract.createWorker('eng');
                 try {
-                    await worker.setParameters({
-                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-                        tessedit_pageseg_mode: '7' // Single text line — ideal para placas patentes
-                    });
-
-                    // Probar 3 umbrales (normal, más claro, más oscuro) hasta hallar patente válida / match
-                    const variants = [binNormal, binarizePlateCanvasOtsu(srcCanvas, -22), binarizePlateCanvasOtsu(srcCanvas, 22)];
-                    for (const vUrl of variants) {
-                        const r = await worker.recognize(vUrl);
-                        const txt = String(r?.data?.text || '').trim();
-                        if (txt) rawTexts.push(txt);
-                        extractChileanPlateCandidates(txt).forEach(p => { if (!allCands.includes(p)) allCands.push(p); });
-                        // Si ya encontró match exacto en Lista Negra, detener inmediatamente
+                    // Probar primero PSM 7 (línea única) y luego PSM 6 (bloque) en las 3 variantes limpias
+                    for (const psm of ['7', '6']) {
+                        await worker.setParameters({
+                            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                            tessedit_pageseg_mode: psm
+                        });
+                        for (const vUrl of urls) {
+                            const r = await worker.recognize(vUrl);
+                            const txt = String(r?.data?.text || '').trim();
+                            if (txt) rawTexts.push(txt);
+                            extractChileanPlateCandidates(txt).forEach(p => { if (!allCands.includes(p)) allCands.push(p); });
+                            if (allCands.some(p => robados.some(v => normalizePlate(v.patente) === p))) break;
+                        }
                         if (allCands.some(p => robados.some(v => normalizePlate(v.patente) === p))) break;
+                        if (allCands.length > 0 && psm === '7') break;
                     }
                 } finally {
                     await worker.terminate();
@@ -10582,7 +10616,7 @@
                     }
                     checkPlateAgainstBlacklist(bestPlate, ctx, allCands);
                 } else {
-                    if (statusEl) statusEl.innerHTML = `⚠️ No se leyó una patente chilena clara (lectura bruta: "${rawTexts.join(' / ').slice(0, 50)}"). Ajuste la caja amarilla sobre las letras de la patente y presione <strong>LEER PATENTE</strong>.`;
+                    if (statusEl) statusEl.innerHTML = `⚠️ No se leyó una patente chilena clara (lectura bruta: "${rawTexts.join(' / ').slice(0, 60)}"). Ajuste la caja amarilla sobre las letras de la patente y presione <strong>LEER PATENTE</strong>.`;
                 }
             } catch (err) {
                 if (statusEl) statusEl.innerHTML = `⚠️ Error OCR: ${err.message}. Ingrese la patente manualmente arriba.`;
