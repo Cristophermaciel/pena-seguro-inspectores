@@ -30,7 +30,12 @@ const SHEETS = {
   CENCO_TURNOS: "CENCO_Turnos",
   CENCO_CCTV_ALERTAS: "CENCO_Alertas_CCTV",
   CENCO_CAMARAS: "CENCO_Catalogo_Camaras",
-  CENCO_DESPACHOS: "CENCO_Despachos"
+  CENCO_DESPACHOS: "CENCO_Despachos",
+  // --- Hojas de Inteligencia Operativa y Mapa de Calor (v24) ---
+  INTEL_MECHEROS: "Intel_Mecheros",
+  INTEL_ROBADOS: "Intel_Vehiculos_Robados",
+  INTEL_CALLE: "Intel_Situacion_Calle",
+  INTEL_CALOR: "Intel_Puntos_Calor"
 };
 
 /**
@@ -157,6 +162,34 @@ function inicializarHojas() {
         "ID Despacho", "Fecha/Hora Despacho", "ID Folio CAD", "Móvil / Unidad",
         "Cuadrante", "Despachador", "Estado Unidad", "Hora Arribo",
         "Hora Liberación", "Observación Despacho"
+      ]
+    },
+    {
+      name: SHEETS.INTEL_MECHEROS,
+      headers: [
+        "ID", "Fecha Registro", "Nombre / Alias", "Cuadrante", "Sector / Comercio Habitual",
+        "Vestimenta / Señas", "Nivel Riesgo", "Estado", "Observaciones", "Foto (Drive)", "Registrado Por"
+      ]
+    },
+    {
+      name: SHEETS.INTEL_ROBADOS,
+      headers: [
+        "ID", "Fecha Registro", "Patente", "Marca / Modelo", "Color",
+        "Tipo Encargo", "Cuadrante / Lugar", "Estado", "Observaciones", "Foto (Drive)", "Registrado Por"
+      ]
+    },
+    {
+      name: SHEETS.INTEL_CALLE,
+      headers: [
+        "ID", "Fecha Catastro", "Nombre / Apodo", "RUT / Edad", "Cuadrante",
+        "Ubicación Habitual", "GPS", "Perfil Social / Salud", "Estado / Derivación", "Observaciones", "Foto (Drive)", "Registrado Por"
+      ]
+    },
+    {
+      name: SHEETS.INTEL_CALOR,
+      headers: [
+        "ID", "Fecha Registro", "Tipo Punto", "Cuadrante", "Dirección",
+        "GPS", "Estado", "Descripción", "Foto (Drive)", "Registrado Por"
       ]
     }
   ];
@@ -720,6 +753,99 @@ function apiGetBootstrapData() {
     });
   }
 
+  // 8. Datos de Inteligencia Operativa y Mapa de Calor (v24)
+  const shMech = ss.getSheetByName(SHEETS.INTEL_MECHEROS);
+  const intelMecheros = [];
+  if (shMech && shMech.getLastRow() > 1) {
+    const rows = shMech.getRange(2, 1, shMech.getLastRow() - 1, 11).getValues();
+    rows.reverse().forEach(r => {
+      if (String(r[0]).trim()) {
+        intelMecheros.push({
+          id: String(r[0]).trim(),
+          fecha: String(r[1]).trim(),
+          alias: String(r[2]).trim(),
+          cuadrante: String(r[3]).trim(),
+          sector: String(r[4]).trim(),
+          senas: String(r[5]).trim(),
+          riesgo: String(r[6]).trim().toUpperCase() || "ALTO",
+          estado: String(r[7]).trim().toUpperCase() || "ACTIVO",
+          observaciones: String(r[8]).trim(),
+          foto: String(r[9]).trim(),
+          registradoPor: String(r[10]).trim()
+        });
+      }
+    });
+  }
+
+  const shRob = ss.getSheetByName(SHEETS.INTEL_ROBADOS);
+  const intelRobados = [];
+  if (shRob && shRob.getLastRow() > 1) {
+    const rows = shRob.getRange(2, 1, shRob.getLastRow() - 1, 11).getValues();
+    rows.reverse().forEach(r => {
+      if (String(r[0]).trim()) {
+        intelRobados.push({
+          id: String(r[0]).trim(),
+          fecha: String(r[1]).trim(),
+          patente: String(r[2]).trim().toUpperCase().replace(/[^A-Z0-9]/g, ""),
+          marcaModelo: String(r[3]).trim(),
+          color: String(r[4]).trim(),
+          tipoEncargo: String(r[5]).trim() || "ROBO VEHÍCULO",
+          cuadrante: String(r[6]).trim(),
+          estado: String(r[7]).trim().toUpperCase() || "ENCARGO VIGENTE",
+          observaciones: String(r[8]).trim(),
+          foto: String(r[9]).trim(),
+          registradoPor: String(r[10]).trim()
+        });
+      }
+    });
+  }
+
+  const shCalle = ss.getSheetByName(SHEETS.INTEL_CALLE);
+  const intelCalle = [];
+  if (shCalle && shCalle.getLastRow() > 1) {
+    const rows = shCalle.getRange(2, 1, shCalle.getLastRow() - 1, 12).getValues();
+    rows.reverse().forEach(r => {
+      if (String(r[0]).trim()) {
+        intelCalle.push({
+          id: String(r[0]).trim(),
+          fecha: String(r[1]).trim(),
+          nombre: String(r[2]).trim(),
+          rutEdad: String(r[3]).trim(),
+          cuadrante: String(r[4]).trim(),
+          ubicacion: String(r[5]).trim(),
+          gps: String(r[6]).trim(),
+          perfil: String(r[7]).trim(),
+          estado: String(r[8]).trim() || "EN SEGUIMIENTO",
+          observaciones: String(r[9]).trim(),
+          foto: String(r[10]).trim(),
+          registradoPor: String(r[11]).trim()
+        });
+      }
+    });
+  }
+
+  const shCalor = ss.getSheetByName(SHEETS.INTEL_CALOR);
+  const intelPuntosCalor = [];
+  if (shCalor && shCalor.getLastRow() > 1) {
+    const rows = shCalor.getRange(2, 1, shCalor.getLastRow() - 1, 10).getValues();
+    rows.reverse().forEach(r => {
+      if (String(r[0]).trim()) {
+        intelPuntosCalor.push({
+          id: String(r[0]).trim(),
+          fecha: String(r[1]).trim(),
+          tipo: String(r[2]).trim().toUpperCase() || "INCIVILIDAD",
+          cuadrante: String(r[3]).trim(),
+          direccion: String(r[4]).trim(),
+          gps: String(r[5]).trim(),
+          estado: String(r[6]).trim().toUpperCase() || "ACTIVO",
+          descripcion: String(r[7]).trim(),
+          foto: String(r[8]).trim(),
+          registradoPor: String(r[9]).trim()
+        });
+      }
+    });
+  }
+
   return {
     ok: true,
     date: todayStr,
@@ -736,7 +862,11 @@ function apiGetBootstrapData() {
     cencoShifts: cencoShifts,
     cencoCctvAlerts: cencoCctvAlerts,
     cencoCameras: cencoCameras,
-    cencoDispatches: cencoDispatches
+    cencoDispatches: cencoDispatches,
+    intelMecheros: intelMecheros,
+    intelRobados: intelRobados,
+    intelCalle: intelCalle,
+    intelPuntosCalor: intelPuntosCalor
   };
 }
 
@@ -1652,6 +1782,90 @@ function apiHandleAction(payload) {
       return { ok: true, action: action, id: id };
     }
 
+    // ========================================================================
+    // INTELIGENCIA OPERATIVA (MECHEROS, VEHÍCULOS ROBADOS, SITUACIÓN CALLE, MAPA CALOR)
+    // ========================================================================
+    if (action === "INTEL_SAVE_MECHERO") {
+      const sh = ss.getSheetByName(SHEETS.INTEL_MECHEROS);
+      const id = String(payload.id || ("MECH-" + String(Date.now()).slice(-6))).trim();
+      const fotoUrl = (payload.fotoBase64 && String(payload.fotoBase64).indexOf("data:") === 0)
+        ? guardarFotoEnDrive(payload.fotoBase64, id + "_Mechero.jpg")
+        : (payload.foto || "Sin foto");
+      const rowVals = [
+        id, payload.fecha || nowFormatted, payload.alias || "", (payload.cuadrante || "252A").toUpperCase(),
+        payload.sector || "", payload.senas || "", (payload.riesgo || "ALTO").toUpperCase(),
+        (payload.estado || "ACTIVO").toUpperCase(), payload.observaciones || "", fotoUrl, payload.registradoPor || ""
+      ];
+      upsertRowById(sh, id, rowVals);
+      return { ok: true, action: action, id: id, foto: fotoUrl };
+    }
+
+    if (action === "INTEL_DELETE_MECHERO") {
+      deleteRowById(ss.getSheetByName(SHEETS.INTEL_MECHEROS), payload.id);
+      return { ok: true, action: action, id: payload.id };
+    }
+
+    if (action === "INTEL_SAVE_ROBADO") {
+      const sh = ss.getSheetByName(SHEETS.INTEL_ROBADOS);
+      const id = String(payload.id || ("ROB-" + String(Date.now()).slice(-6))).trim();
+      const patenteClean = String(payload.patente || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const fotoUrl = (payload.fotoBase64 && String(payload.fotoBase64).indexOf("data:") === 0)
+        ? guardarFotoEnDrive(payload.fotoBase64, id + "_" + (patenteClean || "Veh") + ".jpg")
+        : (payload.foto || "Sin foto");
+      const rowVals = [
+        id, payload.fecha || nowFormatted, patenteClean, payload.marcaModelo || "", payload.color || "",
+        payload.tipoEncargo || "ROBO VEHÍCULO", (payload.cuadrante || "252A").toUpperCase(),
+        (payload.estado || "ENCARGO VIGENTE").toUpperCase(), payload.observaciones || "", fotoUrl, payload.registradoPor || ""
+      ];
+      upsertRowById(sh, id, rowVals);
+      return { ok: true, action: action, id: id, patente: patenteClean, foto: fotoUrl };
+    }
+
+    if (action === "INTEL_DELETE_ROBADO") {
+      deleteRowById(ss.getSheetByName(SHEETS.INTEL_ROBADOS), payload.id);
+      return { ok: true, action: action, id: payload.id };
+    }
+
+    if (action === "INTEL_SAVE_CALLE") {
+      const sh = ss.getSheetByName(SHEETS.INTEL_CALLE);
+      const id = String(payload.id || ("CALLE-" + String(Date.now()).slice(-6))).trim();
+      const fotoUrl = (payload.fotoBase64 && String(payload.fotoBase64).indexOf("data:") === 0)
+        ? guardarFotoEnDrive(payload.fotoBase64, id + "_Calle.jpg")
+        : (payload.foto || "Sin foto");
+      const rowVals = [
+        id, payload.fecha || nowFormatted, payload.nombre || "", payload.rutEdad || "",
+        (payload.cuadrante || "252A").toUpperCase(), payload.ubicacion || "", payload.gps || "",
+        payload.perfil || "", payload.estado || "EN SEGUIMIENTO", payload.observaciones || "", fotoUrl, payload.registradoPor || ""
+      ];
+      upsertRowById(sh, id, rowVals);
+      return { ok: true, action: action, id: id, foto: fotoUrl };
+    }
+
+    if (action === "INTEL_DELETE_CALLE") {
+      deleteRowById(ss.getSheetByName(SHEETS.INTEL_CALLE), payload.id);
+      return { ok: true, action: action, id: payload.id };
+    }
+
+    if (action === "INTEL_SAVE_PUNTO_CALOR") {
+      const sh = ss.getSheetByName(SHEETS.INTEL_CALOR);
+      const id = String(payload.id || ("HEAT-" + String(Date.now()).slice(-6))).trim();
+      const fotoUrl = (payload.fotoBase64 && String(payload.fotoBase64).indexOf("data:") === 0)
+        ? guardarFotoEnDrive(payload.fotoBase64, id + "_PuntoCalor.jpg")
+        : (payload.foto || "Sin foto");
+      const rowVals = [
+        id, payload.fecha || nowFormatted, (payload.tipo || "INCIVILIDAD").toUpperCase(),
+        (payload.cuadrante || "252A").toUpperCase(), payload.direccion || "", payload.gps || "",
+        (payload.estado || "ACTIVO").toUpperCase(), payload.descripcion || "", fotoUrl, payload.registradoPor || ""
+      ];
+      upsertRowById(sh, id, rowVals);
+      return { ok: true, action: action, id: id, foto: fotoUrl };
+    }
+
+    if (action === "INTEL_DELETE_PUNTO_CALOR") {
+      deleteRowById(ss.getSheetByName(SHEETS.INTEL_CALOR), payload.id);
+      return { ok: true, action: action, id: payload.id };
+    }
+
     return { ok: false, error: "Acción no reconocida: " + action };
   } catch (err) {
     return { ok: false, error: err.toString() };
@@ -1774,6 +1988,34 @@ function enviarNotificacionCorreo(payload, urlFoto, fechaHora) {
   ].join("\n");
 
   MailApp.sendEmail(destinatarios.join(","), subject, body);
+}
+
+function upsertRowById(sh, id, rowVals) {
+  if (!sh) return;
+  const target = String(id || "").trim().toUpperCase();
+  if (target && sh.getLastRow() > 1) {
+    const ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0] || "").trim().toUpperCase() === target) {
+        sh.getRange(i + 2, 1, 1, rowVals.length).setValues([rowVals]);
+        return;
+      }
+    }
+  }
+  sh.appendRow(rowVals);
+}
+
+function deleteRowById(sh, id) {
+  if (!sh || sh.getLastRow() <= 1) return;
+  const target = String(id || "").trim().toUpperCase();
+  if (!target) return;
+  const ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  for (let i = ids.length - 1; i >= 0; i--) {
+    if (String(ids[i][0] || "").trim().toUpperCase() === target) {
+      sh.deleteRow(i + 2);
+      return;
+    }
+  }
 }
 
 function obtenerTurnoCencoActivoId(ss) {

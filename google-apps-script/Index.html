@@ -19,6 +19,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -643,6 +645,23 @@
                         </div>
                     </button>
 
+                    <!-- 2.4 INTELIGENCIA OPERATIVA Y ESCÁNER LPR DE PATENTES -->
+                    <button type="button" onclick="openInspectorIntel('scanner')" class="w-full bg-gradient-to-r from-slate-900 via-slate-800 to-cyan-950 text-white font-bold py-4 rounded-2xl shadow-md hover:shadow-lg flex items-center justify-between px-5 relative transition-all active:scale-[0.98] border border-cyan-500/40">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-cyan-400/20 flex items-center justify-center text-cyan-300 text-xl border border-cyan-400/35 shadow-inner">
+                                <i class="fa-solid fa-camera-viewfinder fa-magnifying-glass"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-base font-extrabold leading-tight">Inteligencia y Escáner LPR</p>
+                                <p class="text-xs text-cyan-100/90 font-normal mt-0.5">Patentes robadas, mecheros, calle y puntos de calor</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="menu-intel-robados-badge" class="bg-red-600 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow border border-white/30">0</span>
+                            <i class="fa-solid fa-chevron-right text-cyan-200 text-sm"></i>
+                        </div>
+                    </button>
+
                     <!-- 2.5 VERIFICACIÓN DE MANTENCIONES Y ACEITE -->
                     <button type="button" onclick="openMaintenanceFromMenu()" class="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white font-bold py-4 rounded-2xl shadow-md hover:shadow-lg flex items-center justify-between px-5 relative transition-all active:scale-[0.98] border border-amber-700/30">
                         <div class="flex items-center gap-3.5">
@@ -1016,6 +1035,36 @@
                         </button>
                     </form>
                 </div>
+            </section>
+
+            <!-- 7.5 INTELIGENCIA EN TERRENO (ESCÁNER LPR, ROBADOS, MECHEROS, SITUACIÓN CALLE, PUNTOS CALOR) -->
+            <section id="view-intel" class="view-section" hidden>
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2.5">
+                        <button type="button" onclick="navigateTo('view-menu')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center shadow-xs hover:bg-slate-50">
+                            <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </button>
+                        <div>
+                            <h2 class="text-base font-black text-[#0a2463] leading-tight">Inteligencia y Escáner LPR</h2>
+                            <p class="text-[11px] text-slate-500">Conectado en vivo con CENCO CAD y Google Sheets</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="syncBootstrapFromCloud(true)" class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 text-[#0d47a1] flex items-center justify-center" title="Actualizar BD">
+                        <i class="fa-solid fa-rotate text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Tabs Móviles -->
+                <div class="grid grid-cols-5 gap-1 bg-slate-200/80 p-1 rounded-xl mb-3 text-[10px] font-extrabold">
+                    <button type="button" onclick="switchIntelTab('scanner','mobile')" id="mob-intel-tab-scanner" class="py-2 px-1 rounded-lg bg-[#0d47a1] text-white flex flex-col items-center gap-0.5"><i class="fa-solid fa-barcode text-xs"></i><span>Escáner</span></button>
+                    <button type="button" onclick="switchIntelTab('robados','mobile')" id="mob-intel-tab-robados" class="py-2 px-1 rounded-lg text-slate-600 flex flex-col items-center gap-0.5"><i class="fa-solid fa-car-burst text-xs"></i><span>Robados</span></button>
+                    <button type="button" onclick="switchIntelTab('mecheros','mobile')" id="mob-intel-tab-mecheros" class="py-2 px-1 rounded-lg text-slate-600 flex flex-col items-center gap-0.5"><i class="fa-solid fa-user-secret text-xs"></i><span>Mecheros</span></button>
+                    <button type="button" onclick="switchIntelTab('calle','mobile')" id="mob-intel-tab-calle" class="py-2 px-1 rounded-lg text-slate-600 flex flex-col items-center gap-0.5"><i class="fa-solid fa-person-shelter text-xs"></i><span>Sit. Calle</span></button>
+                    <button type="button" onclick="switchIntelTab('calor','mobile')" id="mob-intel-tab-calor" class="py-2 px-1 rounded-lg text-slate-600 flex flex-col items-center gap-0.5"><i class="fa-solid fa-fire text-xs"></i><span>Calor</span></button>
+                </div>
+
+                <!-- Contenedor Dinámico Móvil -->
+                <div id="mobile-intel-content" class="space-y-3 pb-24"></div>
             </section>
 
             <!-- 8. ADMINISTRATOR PANEL VIEW (Gestión de Usuarios, Contraseñas, Tareas, Flota y Monitor) -->
@@ -1446,6 +1495,11 @@
                                 <button type="button" onclick="switchCencoModule('turnos')" id="cad-nav-turnos" class="cad-nav-link">Turnos</button>
                                 <button type="button" onclick="switchCencoModule('vehiculos')" id="cad-nav-vehiculos" class="cad-nav-link">Vehículos</button>
                                 <button type="button" onclick="switchCencoModule('incivilidades')" id="cad-nav-incivilidades" class="cad-nav-link">Incivilidades</button>
+                                <button type="button" onclick="switchCencoModule('inteligencia')" id="cad-nav-inteligencia" class="cad-nav-link flex items-center gap-1">
+                                    <span>Inteligencia / LPR</span>
+                                    <span id="cad-badge-robados" class="hidden px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[10px] font-black">0</span>
+                                </button>
+                                <button type="button" onclick="switchCencoModule('seguridad')" id="cad-nav-seguridad" class="cad-nav-link">Sensación Seguridad</button>
                                 <button type="button" onclick="switchCencoModule('reportes')" id="cad-nav-reportes" class="cad-nav-link">Reportes</button>
                             </nav>
                         </div>
@@ -1799,6 +1853,12 @@
                                 </button>
                                 <button type="button" onclick="toggleCadMapOverlay('incidents')" id="cad-layer-incidents" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-amber-400 text-[11px] font-bold shadow flex items-center gap-1">
                                     <i class="fa-solid fa-shield-halved text-amber-400"></i> Incidentes
+                                </button>
+                                <button type="button" onclick="toggleCadMapOverlay('heatmap')" id="cad-layer-heatmap" style="opacity:0.45" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-orange-500 text-[11px] font-bold shadow flex items-center gap-1" title="Mapa de Calor: Vehículos Abandonados, Rucos e Incivilidades">
+                                    <i class="fa-solid fa-fire text-orange-400"></i> Calor
+                                </button>
+                                <button type="button" onclick="toggleCadMapOverlay('security')" id="cad-layer-security" style="opacity:0.45" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-purple-400 text-[11px] font-bold shadow flex items-center gap-1" title="Mapa Macro de Sensación de Seguridad por Cuadrante">
+                                    <i class="fa-solid fa-gauge-high text-purple-400"></i> Seguridad
                                 </button>
                                 <button type="button" onclick="openWialonConfigModal()" class="w-8 h-8 rounded-md bg-slate-900/90 text-emerald-400 shadow border border-emerald-500/60 flex items-center justify-center hover:bg-slate-800" title="Configurar Token GPS Wialon en Vivo">
                                     <i class="fa-solid fa-satellite text-xs"></i>
@@ -2193,6 +2253,55 @@
                     </div>
 
                     <!-- ================================================================ -->
+                    <!-- MÓDULO 8: INTELIGENCIA OPERATIVA (LPR ROBADOS, MECHEROS, CALLE, CALOR) -->
+                    <!-- ================================================================ -->
+                    <div id="cad-mod-inteligencia" class="cad-module hidden flex-1 p-5 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-bold cad-text flex items-center gap-2"><i class="fa-solid fa-shield-virus text-cyan-400"></i> Inteligencia Operativa y Escáner LPR</h2>
+                                <p class="text-xs cad-muted">Base unificada con Inspectores en terreno: Lista Negra de Vehículos Robados, Mecheros, Situación de Calle y Puntos de Calor.</p>
+                            </div>
+                            <div class="flex flex-wrap p-1 rounded-lg cad-elevated border cad-border text-xs font-bold gap-1">
+                                <button type="button" onclick="switchIntelTab('scanner','cenco')" id="cad-intel-tab-scanner" class="px-3 py-1.5 rounded-md bg-white text-slate-900"><i class="fa-solid fa-barcode mr-1"></i>Escáner LPR</button>
+                                <button type="button" onclick="switchIntelTab('robados','cenco')" id="cad-intel-tab-robados" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-car-burst mr-1"></i>Robados (<span id="intel-cnt-robados">0</span>)</button>
+                                <button type="button" onclick="switchIntelTab('mecheros','cenco')" id="cad-intel-tab-mecheros" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-user-secret mr-1"></i>Mecheros (<span id="intel-cnt-mecheros">0</span>)</button>
+                                <button type="button" onclick="switchIntelTab('calle','cenco')" id="cad-intel-tab-calle" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-person-shelter mr-1"></i>Sit. Calle (<span id="intel-cnt-calle">0</span>)</button>
+                                <button type="button" onclick="switchIntelTab('calor','cenco')" id="cad-intel-tab-calor" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-fire mr-1"></i>Mapa Calor (<span id="intel-cnt-calor">0</span>)</button>
+                            </div>
+                        </div>
+                        <div id="cenco-intel-content" class="space-y-4"></div>
+                    </div>
+
+                    <!-- ================================================================ -->
+                    <!-- MÓDULO 9: MAPA MACRO DE SENSACIÓN DE SEGURIDAD HACIA EL VECINO   -->
+                    <!-- ================================================================ -->
+                    <div id="cad-mod-seguridad" class="cad-module hidden flex-1 p-5 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-bold cad-text flex items-center gap-2"><i class="fa-solid fa-gauge-high text-emerald-400"></i> Mapa Macro de Sensación de Seguridad — Peñaflor</h2>
+                                <p class="text-xs cad-muted">Índice comunal y por cuadrante (0–100) calculado en tiempo real según robos, asaltos, portonazos, incivilidades, rucos, vehículos abandonados y consumo de drogas/alcohol.</p>
+                            </div>
+                            <button type="button" onclick="renderMacroSecurityModule()" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate"></i> Recalcular Índice
+                            </button>
+                        </div>
+                        <div id="macro-security-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                            <div class="lg:col-span-7 cad-surface border cad-border rounded-xl overflow-hidden relative min-h-[440px]">
+                                <div id="macro-security-map" class="w-full h-[460px] z-10"></div>
+                                <div class="absolute bottom-3 left-3 z-[400] bg-slate-950/90 border border-slate-700 rounded-lg p-2.5 text-[10px] text-slate-200 space-y-1 shadow-lg">
+                                    <div class="font-black uppercase text-slate-400 mb-1">Semáforo Sensación Vecino</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-emerald-500 inline-block"></span> 75–100: Alta Seguridad</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-yellow-400 inline-block"></span> 50–74: Seguridad Moderada</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-orange-500 inline-block"></span> 25–49: Alerta Preventiva</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-red-600 inline-block"></span> 0–24: Foco Crítico</div>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-5 space-y-2.5 max-h-[460px] overflow-y-auto pr-1" id="macro-security-quadrants-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- ================================================================ -->
                     <!-- DRAWER LATERAL DESLIZABLE: BITÁCORA TIPO CHAT + IMÁGENES         -->
                     <!-- ================================================================ -->
                     <div id="cad-bitacora-drawer-backdrop" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end" onclick="if(event.target===this) closeCencoFolioModal()">
@@ -2512,6 +2621,10 @@
             CENCO_SHIFTS: 'pena_seguro_cenco_shifts_v1',
             CENCO_CCTV_ALERTS: 'pena_seguro_cenco_cctv_alerts_v1',
             CENCO_CAMERAS: 'pena_seguro_cenco_cameras_v1',
+            INTEL_MECHEROS: 'pena_seguro_intel_mecheros_v1',
+            INTEL_ROBADOS: 'pena_seguro_intel_robados_v1',
+            INTEL_CALLE: 'pena_seguro_intel_calle_v1',
+            INTEL_CALOR: 'pena_seguro_intel_calor_v1',
             CENCO_DISPATCHES: 'pena_seguro_cenco_dispatches_v1',
             CENCO_ACTIVE_SHIFT: 'pena_seguro_cenco_active_shift_v1'
         };
@@ -5772,6 +5885,11 @@
             if (Array.isArray(data.cencoCameras) && data.cencoCameras.length > 0) {
                 saveCencoCamerasDB(data.cencoCameras);
             }
+            if (Array.isArray(data.intelMecheros)) saveIntelMecherosDB(data.intelMecheros);
+            if (Array.isArray(data.intelRobados)) saveIntelRobadosDB(data.intelRobados);
+            if (Array.isArray(data.intelCalle)) saveIntelCalleDB(data.intelCalle);
+            if (Array.isArray(data.intelPuntosCalor)) saveIntelCalorDB(data.intelPuntosCalor);
+            if (typeof updateIntelBadges === 'function') updateIntelBadges();
             if (Array.isArray(data.cencoDispatches)) {
                 localStorage.setItem(STORAGE_KEYS.CENCO_DISPATCHES, JSON.stringify(data.cencoDispatches));
             }
@@ -7130,8 +7248,8 @@
             fleetView: 'grid',
             incivTab: 'RUCOS',
             map: null,
-            mapLayers: { street: null, satellite: null, boundaryGroup: null, quadrantsGroup: null, unitsGroup: null, camerasGroup: null, incidentsGroup: null },
-            mapVisibility: { boundary: true, quadrants: true, units: true, allgps: false, cameras: true, incidents: true },
+            mapLayers: { street: null, satellite: null, boundaryGroup: null, quadrantsGroup: null, unitsGroup: null, camerasGroup: null, incidentsGroup: null, heatmapLayer: null, securityGroup: null },
+            mapVisibility: { boundary: true, quadrants: true, units: true, allgps: false, cameras: true, incidents: true, heatmap: false, security: false },
             gpsUnits: [],
             gpsConfigured: false,
             gpsLastFetch: '',
@@ -7364,6 +7482,10 @@
             renderAllCencoPanels();
             if (modName === 'central') {
                 setTimeout(() => initOrRefreshCadMap(), 120);
+            } else if (modName === 'inteligencia') {
+                renderIntelWorkspace('cenco');
+            } else if (modName === 'seguridad') {
+                setTimeout(() => renderMacroSecurityModule(), 100);
             }
         }
 
@@ -7496,6 +7618,7 @@
                 });
                 CencoState.mapLayers.boundaryGroup = L.layerGroup().addTo(CencoState.map);
                 CencoState.mapLayers.quadrantsGroup = L.layerGroup().addTo(CencoState.map);
+                CencoState.mapLayers.securityGroup = L.layerGroup().addTo(CencoState.map);
                 CencoState.mapLayers.unitsGroup = L.layerGroup().addTo(CencoState.map);
                 CencoState.mapLayers.camerasGroup = L.layerGroup().addTo(CencoState.map);
                 CencoState.mapLayers.incidentsGroup = L.layerGroup().addTo(CencoState.map);
@@ -8023,6 +8146,11 @@
                         </div>
                     `).addTo(incidentsGroup);
                 });
+            }
+
+            // 4. Mapa de Calor (Rucos, Vehículos Abandonados, Incivilidades y Procedimientos)
+            if (typeof renderCadMapHeatmapAndSecurity === 'function') {
+                renderCadMapHeatmapAndSecurity();
             }
         }
 
@@ -9457,7 +9585,758 @@
             if (overrideSelect) {
                 overrideSelect.addEventListener('change', detectTimeSlot);
             }
+            if (typeof updateIntelBadges === 'function') updateIntelBadges();
         });
+
+        // ========================================================================
+        // MÓDULO v24: INTELIGENCIA OPERATIVA (MECHEROS, VEHÍCULOS ROBADOS + ESCÁNER
+        // LPR CON CÁMARA, SITUACIÓN CALLE, MAPA DE CALOR Y SENSACIÓN DE SEGURIDAD)
+        // ========================================================================
+        const IntelState = {
+            tab: 'scanner',
+            ctx: 'mobile',
+            search: '',
+            tempPhotoB64: '',
+            macroMap: null,
+            macroLayers: null
+        };
+
+        function getIntelMecherosDB() { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.INTEL_MECHEROS)) || []; } catch (e) { return []; } }
+        function saveIntelMecherosDB(list) { localStorage.setItem(STORAGE_KEYS.INTEL_MECHEROS, JSON.stringify(list || [])); }
+        function getIntelRobadosDB() { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.INTEL_ROBADOS)) || []; } catch (e) { return []; } }
+        function saveIntelRobadosDB(list) { localStorage.setItem(STORAGE_KEYS.INTEL_ROBADOS, JSON.stringify(list || [])); }
+        function getIntelCalleDB() { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.INTEL_CALLE)) || []; } catch (e) { return []; } }
+        function saveIntelCalleDB(list) { localStorage.setItem(STORAGE_KEYS.INTEL_CALLE, JSON.stringify(list || [])); }
+        function getIntelCalorDB() { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.INTEL_CALOR)) || []; } catch (e) { return []; } }
+        function saveIntelCalorDB(list) { localStorage.setItem(STORAGE_KEYS.INTEL_CALOR, JSON.stringify(list || [])); }
+
+        function normalizePlate(str) {
+            return String(str || '').toUpperCase().replace(/[^A-Z0-9]/g, '').trim();
+        }
+
+        function intelDriveImgSrc(url) {
+            if (!url || url === 'Sin foto') return '';
+            if (url.startsWith('data:')) return url;
+            const m = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url).match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
+            return url;
+        }
+
+        function updateIntelBadges() {
+            const robActivos = getIntelRobadosDB().filter(v => String(v.estado || '').toUpperCase() !== 'RECUPERADO').length;
+            const mobBadge = document.getElementById('menu-intel-robados-badge');
+            if (mobBadge) mobBadge.innerText = robActivos;
+            const cadBadge = document.getElementById('cad-badge-robados');
+            if (cadBadge) {
+                cadBadge.innerText = robActivos;
+                cadBadge.classList.toggle('hidden', robActivos === 0);
+            }
+            const cR = document.getElementById('intel-cnt-robados'); if (cR) cR.innerText = getIntelRobadosDB().length;
+            const cM = document.getElementById('intel-cnt-mecheros'); if (cM) cM.innerText = getIntelMecherosDB().length;
+            const cC = document.getElementById('intel-cnt-calle'); if (cC) cC.innerText = getIntelCalleDB().length;
+            const cH = document.getElementById('intel-cnt-calor'); if (cH) cH.innerText = getIntelCalorDB().length;
+        }
+
+        function openInspectorIntel(tab = 'scanner') {
+            navigateTo('view-intel');
+            switchIntelTab(tab, 'mobile');
+        }
+
+        function switchIntelTab(tab, ctx) {
+            IntelState.tab = tab;
+            IntelState.ctx = ctx;
+            IntelState.tempPhotoB64 = '';
+            const tabs = ['scanner', 'robados', 'mecheros', 'calle', 'calor'];
+            tabs.forEach(t => {
+                const mobBtn = document.getElementById(`mob-intel-tab-${t}`);
+                if (mobBtn) mobBtn.className = t === tab
+                    ? 'py-2 px-1 rounded-lg bg-[#0d47a1] text-white flex flex-col items-center gap-0.5 shadow'
+                    : 'py-2 px-1 rounded-lg text-slate-600 flex flex-col items-center gap-0.5';
+                const cadBtn = document.getElementById(`cad-intel-tab-${t}`);
+                if (cadBtn) cadBtn.className = t === tab
+                    ? 'px-3 py-1.5 rounded-md bg-white text-slate-900 font-bold'
+                    : 'px-3 py-1.5 rounded-md cad-muted';
+            });
+            renderIntelWorkspace(ctx);
+        }
+
+        function renderIntelWorkspace(ctx) {
+            updateIntelBadges();
+            const wrap = document.getElementById(ctx === 'cenco' ? 'cenco-intel-content' : 'mobile-intel-content');
+            if (!wrap) return;
+            const isDark = ctx === 'cenco';
+            const cardCls = isDark ? 'cad-surface border cad-border rounded-xl p-4' : 'bg-white border border-slate-200 rounded-2xl p-4 shadow-xs';
+            const inpCls = isDark ? 'cad-input w-full' : 'w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-900';
+            const quadOpts = ['252A','252B','252C','253A','253B','SRA','SRB','SRA1'].map(q => `<option value="${q}" ${(AppState.cuadrante === q) ? 'selected' : ''}>${q}</option>`).join('');
+            const tab = IntelState.tab;
+
+            // --- TAB 1: ESCÁNER DE PATENTES LPR (CÁMARA OCR + LISTA NEGRA) ---
+            if (tab === 'scanner') {
+                const activos = getIntelRobadosDB().filter(v => String(v.estado || '').toUpperCase() !== 'RECUPERADO');
+                wrap.innerHTML = `
+                    <div class="${cardCls} space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-sm font-black ${isDark ? 'text-cyan-400' : 'text-[#0a2463]'}"><i class="fa-solid fa-camera mr-1.5"></i>Escáner LPR — Lista Negra de Vehículos Robados</h3>
+                                <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'}">Enfoque la patente con la cámara o ingrésela manualmente para verificar encargo vigente (${activos.length} patentes en lista negra).</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            <label class="cursor-pointer bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow">
+                                <i class="fa-solid fa-camera text-base"></i> ESCANEAR PATENTE CON CÁMARA
+                                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleLprCameraScan(event, '${ctx}')">
+                            </label>
+                            <div class="flex gap-1.5">
+                                <input type="text" id="lpr-manual-input-${ctx}" placeholder="Patente (Ej: ABCD12)" class="${inpCls} font-mono uppercase text-sm font-black tracking-widest" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();checkPlateAgainstBlacklist(this.value,'${ctx}');}">
+                                <button type="button" onclick="checkPlateAgainstBlacklist(document.getElementById('lpr-manual-input-${ctx}').value, '${ctx}')" class="px-4 py-2 rounded-xl bg-[#0a2463] hover:bg-blue-900 text-white font-black text-xs shrink-0">VERIFICAR</button>
+                            </div>
+                        </div>
+                        <div id="lpr-scan-status-${ctx}" class="hidden text-xs font-bold p-3 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400"></div>
+                        <div id="lpr-scan-result-${ctx}"></div>
+                    </div>
+                `;
+                return;
+            }
+
+            // --- TAB 2: LISTA DE VEHÍCULOS ROBADOS / LISTA NEGRA ---
+            if (tab === 'robados') {
+                const list = getIntelRobadosDB();
+                wrap.innerHTML = `
+                    <div class="${cardCls} space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-black ${isDark ? 'text-red-400' : 'text-red-700'}"><i class="fa-solid fa-car-burst mr-1.5"></i>Lista Negra — Vehículos Robados (${list.length})</h3>
+                            <button type="button" onclick="document.getElementById('intel-form-robado-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-black">+ Registrar Robado</button>
+                        </div>
+                        <form id="intel-form-robado-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelRobado(event, '${ctx}')">
+                            <input type="text" id="rob-patente-${ctx}" required placeholder="Patente * (Ej: ABCD12)" class="${inpCls} font-mono uppercase font-black">
+                            <input type="text" id="rob-marca-${ctx}" required placeholder="Marca / Modelo *" class="${inpCls}">
+                            <input type="text" id="rob-color-${ctx}" placeholder="Color" class="${inpCls}">
+                            <select id="rob-tipo-${ctx}" class="${inpCls}"><option>ROBO VEHÍCULO</option><option>PORTONAZO / ENCERRONA</option><option>LISTA NEGRA / SOSPECHOSO</option><option>ENCARGO CARABINEROS</option></select>
+                            <select id="rob-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
+                            <select id="rob-estado-${ctx}" class="${inpCls}"><option value="ENCARGO VIGENTE">🔴 ENCARGO VIGENTE</option><option value="RECUPERADO">🟢 RECUPERADO</option></select>
+                            <input type="text" id="rob-obs-${ctx}" placeholder="Observaciones / Lugar robo / Denuncia" class="${inpCls} md:col-span-2">
+                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-cyan-500 text-cyan-500 text-xs font-bold flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
+                            </label>
+                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs">Guardar en Lista Negra (Drive + Sheets)</button>
+                        </form>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin vehículos registrados en Lista Negra aún.</p>` : list.map(v => {
+                                const img = intelDriveImgSrc(v.foto);
+                                const vigente = String(v.estado || '').toUpperCase() !== 'RECUPERADO';
+                                return `
+                                <div class="rounded-xl border ${vigente ? 'border-red-500/50' : 'border-emerald-500/40'} ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
+                                    ${img ? `<img src="${img}" class="w-full h-36 object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-car-burst"></i></div>`}
+                                    <div class="p-3 space-y-1 text-xs flex-1">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <span class="font-mono font-black text-sm px-2 py-0.5 rounded bg-slate-950 text-amber-300 tracking-widest">${v.patente}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black ${vigente ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}">${v.estado}</span>
+                                        </div>
+                                        <div class="font-bold ${isDark ? 'cad-text' : 'text-slate-900'}">${v.marcaModelo} ${v.color ? `• ${v.color}` : ''}</div>
+                                        <div class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-500'}">${v.tipoEncargo} • Cuadrante ${v.cuadrante}</div>
+                                        ${v.observaciones ? `<p class="text-[11px] ${isDark ? 'cad-text' : 'text-slate-700'}">${v.observaciones}</p>` : ''}
+                                        <div class="flex gap-1.5 pt-2">
+                                            <button type="button" onclick="alertIntelSightingToCenco('ROBADO','${v.id}')" class="flex-1 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-black">🚨 Avistado</button>
+                                            <button type="button" onclick="deleteIntelItem('robado','${v.id}','${ctx}')" class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // --- TAB 3: LISTA DE MECHEROS CON FOTO ---
+            if (tab === 'mecheros') {
+                const list = getIntelMecherosDB();
+                wrap.innerHTML = `
+                    <div class="${cardCls} space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}"><i class="fa-solid fa-user-secret mr-1.5"></i>Lista de Mecheros con Foto (${list.length})</h3>
+                            <button type="button" onclick="document.getElementById('intel-form-mechero-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black">+ Registrar Mechero</button>
+                        </div>
+                        <form id="intel-form-mechero-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelMechero(event, '${ctx}')">
+                            <input type="text" id="mech-alias-${ctx}" required placeholder="Nombre / Apodo / Alias *" class="${inpCls}">
+                            <select id="mech-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
+                            <input type="text" id="mech-sector-${ctx}" placeholder="Comercio / Sector habitual" class="${inpCls}">
+                            <input type="text" id="mech-senas-${ctx}" placeholder="Vestimenta / Señas particulares" class="${inpCls} md:col-span-2">
+                            <select id="mech-riesgo-${ctx}" class="${inpCls}"><option value="ALTO">🔴 Riesgo ALTO</option><option value="MEDIO">🟡 Riesgo MEDIO</option><option value="BAJO">🟢 Riesgo BAJO</option></select>
+                            <input type="text" id="mech-obs-${ctx}" placeholder="Modus operandi / Observaciones" class="${inpCls} md:col-span-2">
+                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-amber-500 text-amber-500 text-xs font-bold flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
+                            </label>
+                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs">Guardar Ficha Mechero (Drive + Sheets)</button>
+                        </form>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin mecheros registrados aún.</p>` : list.map(m => {
+                                const img = intelDriveImgSrc(m.foto);
+                                return `
+                                <div class="rounded-xl border border-amber-500/40 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
+                                    ${img ? `<img src="${img}" class="w-full h-36 object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-user-secret"></i></div>`}
+                                    <div class="p-3 space-y-1 text-xs flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-black ${isDark ? 'cad-text' : 'text-slate-900'}">${m.alias}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40">${m.cuadrante} • ${m.riesgo}</span>
+                                        </div>
+                                        <div class="text-[11px] font-semibold ${isDark ? 'text-cyan-300' : 'text-blue-700'}">${m.sector || 'Sector sin especificar'}</div>
+                                        ${m.senas ? `<div class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-600'}">Señas: ${m.senas}</div>` : ''}
+                                        ${m.observaciones ? `<p class="text-[11px] ${isDark ? 'cad-text' : 'text-slate-700'}">${m.observaciones}</p>` : ''}
+                                        <div class="flex gap-1.5 pt-2">
+                                            <button type="button" onclick="alertIntelSightingToCenco('MECHERO','${m.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-black">🚨 Reportar Avistamiento</button>
+                                            <button type="button" onclick="deleteIntelItem('mechero','${m.id}','${ctx}')" class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // --- TAB 4: PERSONAS EN SITUACIÓN DE CALLE CON FOTO Y PERFIL ---
+            if (tab === 'calle') {
+                const list = getIntelCalleDB();
+                wrap.innerHTML = `
+                    <div class="${cardCls} space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-black ${isDark ? 'text-blue-400' : 'text-[#0a2463]'}"><i class="fa-solid fa-person-shelter mr-1.5"></i>Catastro Situación de Calle (${list.length})</h3>
+                            <button type="button" onclick="document.getElementById('intel-form-calle-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-black">+ Registrar Persona</button>
+                        </div>
+                        <form id="intel-form-calle-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelCalle(event, '${ctx}')">
+                            <input type="text" id="calle-nombre-${ctx}" required placeholder="Nombre / Apodo *" class="${inpCls}">
+                            <input type="text" id="calle-rutedad-${ctx}" placeholder="RUT / Edad aprox." class="${inpCls}">
+                            <select id="calle-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
+                            <input type="text" id="calle-ubic-${ctx}" required placeholder="Ubicación / Punto habitual *" class="${inpCls}">
+                            <div class="flex gap-1">
+                                <input type="text" id="calle-gps-${ctx}" placeholder="GPS (lat, lon)" class="${inpCls} font-mono">
+                                <button type="button" onclick="captureIntelGpsInto('calle-gps-${ctx}')" class="px-2.5 rounded-xl bg-blue-600 text-white text-xs shrink-0" title="Capturar GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
+                            </div>
+                            <select id="calle-estado-${ctx}" class="${inpCls}"><option>EN SEGUIMIENTO</option><option>DERIVADO DIDECO / SALUD</option><option>ALBERGADO</option><option>RECHAZA APOYO</option></select>
+                            <input type="text" id="calle-perfil-${ctx}" placeholder="Perfil social / salud (consumo, salud mental, adulto mayor, red apoyo...)" class="${inpCls} md:col-span-2">
+                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-blue-500 text-blue-400 text-xs font-bold flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
+                            </label>
+                            <input type="text" id="calle-obs-${ctx}" placeholder="Observaciones adicionales" class="${inpCls} md:col-span-3">
+                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs">Guardar Perfil Situación Calle (Drive + Sheets)</button>
+                        </form>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin personas en situación de calle catastradas aún.</p>` : list.map(p => {
+                                const img = intelDriveImgSrc(p.foto);
+                                return `
+                                <div class="rounded-xl border border-blue-500/35 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
+                                    ${img ? `<img src="${img}" class="w-full h-36 object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-person-shelter"></i></div>`}
+                                    <div class="p-3 space-y-1 text-xs flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-black ${isDark ? 'cad-text' : 'text-slate-900'}">${p.nombre}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/20 text-blue-400">${p.cuadrante}</span>
+                                        </div>
+                                        <div class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-500'}">${p.rutEdad || 'Sin RUT/Edad'} • <strong>${p.estado}</strong></div>
+                                        <div class="text-[11px] font-semibold ${isDark ? 'text-cyan-300' : 'text-blue-700'}"><i class="fa-solid fa-location-dot mr-1"></i>${p.ubicacion}</div>
+                                        ${p.perfil ? `<div class="text-[11px] ${isDark ? 'cad-text' : 'text-slate-700'}"><strong>Perfil:</strong> ${p.perfil}</div>` : ''}
+                                        ${p.observaciones ? `<p class="text-[10px] ${isDark ? 'cad-muted' : 'text-slate-600'}">${p.observaciones}</p>` : ''}
+                                        <div class="flex justify-end pt-1">
+                                            <button type="button" onclick="deleteIntelItem('calle','${p.id}','${ctx}')" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // --- TAB 5: PUNTOS DE CALOR (VEHÍCULOS ABANDONADOS, RUCOS E INCIVILIDADES) ---
+            if (tab === 'calor') {
+                const list = getIntelCalorDB();
+                wrap.innerHTML = `
+                    <div class="${cardCls} space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <h3 class="text-sm font-black ${isDark ? 'text-orange-400' : 'text-orange-700'}"><i class="fa-solid fa-fire mr-1.5"></i>Puntos de Calor: Vehículos Abandonados, Rucos e Incivilidades (${list.length})</h3>
+                                <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'}">Todos los puntos alimentan automáticamente el <strong>Mapa de Calor</strong> y el <strong>Mapa de Sensación de Seguridad</strong>.</p>
+                            </div>
+                            <button type="button" onclick="document.getElementById('intel-form-calor-${ctx}').classList.toggle('hidden')" class="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-black">+ Registrar Punto</button>
+                        </div>
+                        <form id="intel-form-calor-${ctx}" class="hidden grid grid-cols-1 md:grid-cols-3 gap-2 pt-2 border-t ${isDark ? 'cad-border' : 'border-slate-200'}" onsubmit="submitIntelCalor(event, '${ctx}')">
+                            <select id="calor-tipo-${ctx}" class="${inpCls}">
+                                <option value="VEHICULO_ABANDONADO">🚗 Vehículo Abandonado</option>
+                                <option value="RUCO">⛺ Ruco / Ocupación Irregular</option>
+                                <option value="INCIVILIDAD">⚠️ Incivilidad / Foco Conflictivo</option>
+                                <option value="CONSUMO_ALCOHOL_DROGAS">🍷 Consumo Alcohol / Drogas</option>
+                                <option value="MICROBASURAL">🗑️ Microbasural / Escombros</option>
+                            </select>
+                            <select id="calor-quad-${ctx}" class="${inpCls}">${quadOpts}</select>
+                            <select id="calor-estado-${ctx}" class="${inpCls}"><option value="ACTIVO">🔴 ACTIVO</option><option value="RETIRADO">🟢 RETIRADO / RESUELTO</option></select>
+                            <input type="text" id="calor-dir-${ctx}" required placeholder="Dirección exacta / Referencia *" class="${inpCls} md:col-span-2">
+                            <div class="flex gap-1">
+                                <input type="text" id="calor-gps-${ctx}" placeholder="GPS (lat, lon)" class="${inpCls} font-mono">
+                                <button type="button" onclick="captureIntelGpsInto('calor-gps-${ctx}')" class="px-2.5 rounded-xl bg-orange-600 text-white text-xs shrink-0" title="Capturar GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
+                            </div>
+                            <input type="text" id="calor-desc-${ctx}" placeholder="Descripción (patente si aplica, cantidad personas, reincidencia...)" class="${inpCls} md:col-span-2">
+                            <label class="cursor-pointer px-3 py-2 rounded-xl border border-dashed border-orange-500 text-orange-400 text-xs font-bold flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-camera"></i> <span id="intel-photo-lbl-${ctx}">Adjuntar Foto</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="handleIntelPhotoSelect(event, '${ctx}')">
+                            </label>
+                            <button type="submit" class="md:col-span-3 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs">Registrar en Mapa de Calor (Drive + Sheets)</button>
+                        </form>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            ${list.length === 0 ? `<p class="text-xs ${isDark ? 'cad-muted' : 'text-slate-500'} col-span-full py-4 text-center">Sin puntos de calor registrados aún.</p>` : list.map(pt => {
+                                const img = intelDriveImgSrc(pt.foto);
+                                return `
+                                <div class="rounded-xl border border-orange-500/40 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col">
+                                    ${img ? `<img src="${img}" class="w-full h-32 object-cover bg-slate-900" onerror="this.style.display='none'">` : ''}
+                                    <div class="p-3 space-y-1 text-xs flex-1">
+                                        <div class="flex items-center justify-between gap-1">
+                                            <span class="px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 font-black text-[10px]">${pt.tipo.replace(/_/g, ' ')}</span>
+                                            <span class="text-[10px] font-bold ${pt.estado === 'ACTIVO' ? 'text-red-400' : 'text-emerald-400'}">${pt.cuadrante} • ${pt.estado}</span>
+                                        </div>
+                                        <div class="font-bold ${isDark ? 'cad-text' : 'text-slate-900'}">${pt.direccion}</div>
+                                        ${pt.descripcion ? `<p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-600'}">${pt.descripcion}</p>` : ''}
+                                        <div class="flex items-center justify-between pt-1 text-[10px] ${isDark ? 'cad-muted' : 'text-slate-500'}">
+                                            <span>${pt.fecha}</span>
+                                            <button type="button" onclick="deleteIntelItem('calor','${pt.id}','${ctx}')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function handleIntelPhotoSelect(event, ctx) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            try {
+                IntelState.tempPhotoB64 = await compressImageFileToBase64(file);
+                const lbl = document.getElementById(`intel-photo-lbl-${ctx}`);
+                if (lbl) lbl.innerText = '✓ Foto lista';
+            } catch (e) { showToast('Error al procesar foto', 'bg-red-600'); }
+        }
+
+        function captureIntelGpsInto(inputId) {
+            const el = document.getElementById(inputId);
+            if (!el || !navigator.geolocation) return;
+            el.value = 'Obteniendo GPS...';
+            navigator.geolocation.getCurrentPosition(
+                pos => { el.value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`; },
+                () => { el.value = ''; showToast('No se pudo obtener GPS', 'bg-amber-600'); },
+                { enableHighAccuracy: true, timeout: 8000 }
+            );
+        }
+
+        // --- ESCÁNER OCR DE PATENTES CON CÁMARA (TESSERACT.JS) + VERIFICACIÓN LISTA NEGRA ---
+        async function handleLprCameraScan(event, ctx) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const statusEl = document.getElementById(`lpr-scan-status-${ctx}`);
+            const inpEl = document.getElementById(`lpr-manual-input-${ctx}`);
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Analizando imagen y leyendo patente con OCR...';
+            }
+            try {
+                if (typeof Tesseract === 'undefined') throw new Error('OCR no disponible offline');
+                const res = await Tesseract.recognize(file, 'eng', {
+                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- '
+                });
+                const rawText = String(res?.data?.text || '').toUpperCase();
+                // Buscar patrones chilenos de patente: 4 letras + 2 números (ABCD12) o 2 letras + 4 números (AB1234) o motos (ABC12)
+                const cleaned = rawText.replace(/[^A-Z0-9\s]/g, ' ');
+                const tokens = cleaned.split(/\s+/).filter(Boolean);
+                const joined = tokens.join('');
+                const matchPat = cleaned.match(/\b([A-Z]{4}\s?\d{2}|[A-Z]{2}\s?\d{4}|[A-Z]{3}\s?\d{2,3})\b/)
+                    || joined.match(/([A-Z]{4}\d{2}|[A-Z]{2}\d{4}|[A-Z]{3}\d{2,3})/);
+                const detected = matchPat ? normalizePlate(matchPat[1]) : normalizePlate(tokens.find(t => t.length >= 5 && t.length <= 7) || '');
+                if (detected) {
+                    if (inpEl) inpEl.value = detected;
+                    if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-check mr-1"></i>Patente detectada por cámara: <strong class="font-mono text-base">${detected}</strong>`;
+                    checkPlateAgainstBlacklist(detected, ctx);
+                } else {
+                    if (statusEl) statusEl.innerHTML = `⚠️ No se pudo leer claramente la patente (texto detectado: "${rawText.trim().slice(0, 40)}"). Acérquese más o ingrésela manualmente.`;
+                }
+            } catch (err) {
+                if (statusEl) statusEl.innerHTML = `⚠️ Error OCR: ${err.message}. Ingrese la patente manualmente para verificar en Lista Negra.`;
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        function checkPlateAgainstBlacklist(rawPlate, ctx) {
+            const plate = normalizePlate(rawPlate);
+            const resEl = document.getElementById(`lpr-scan-result-${ctx}`);
+            if (!resEl) return;
+            if (!plate || plate.length < 4) {
+                resEl.innerHTML = '<div class="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs font-bold">Ingrese al menos 4 caracteres de la patente.</div>';
+                return;
+            }
+            const robados = getIntelRobadosDB();
+            const match = robados.find(v => normalizePlate(v.patente) === plate);
+            if (match) {
+                if (navigator.vibrate) navigator.vibrate([250, 100, 250, 100, 400]);
+                const img = intelDriveImgSrc(match.foto);
+                resEl.innerHTML = `
+                    <div class="rounded-2xl border-2 border-red-500 bg-red-950/90 text-white p-4 space-y-3 shadow-2xl animate-pulse">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-black uppercase tracking-wide text-red-300"><i class="fa-solid fa-siren-on fa-triangle-exclamation mr-1.5"></i>¡ALERTA! PATENTE EN LISTA NEGRA</span>
+                            <span class="font-mono font-black text-base px-2.5 py-0.5 rounded bg-red-600 text-white">${match.patente}</span>
+                        </div>
+                        ${img ? `<img src="${img}" class="w-full max-h-48 object-cover rounded-xl border border-red-400/50">` : ''}
+                        <div class="text-xs space-y-1">
+                            <div><strong>Vehículo:</strong> ${match.marcaModelo} ${match.color ? `(${match.color})` : ''}</div>
+                            <div><strong>Tipo Encargo:</strong> ${match.tipoEncargo} • <strong>Estado:</strong> ${match.estado}</div>
+                            <div><strong>Sector / Cuadrante:</strong> ${match.cuadrante}</div>
+                            ${match.observaciones ? `<div><strong>Detalle:</strong> ${match.observaciones}</div>` : ''}
+                        </div>
+                        <button type="button" onclick="alertIntelSightingToCenco('ROBADO','${match.id}')" class="w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase shadow-lg">
+                            🚨 ALERTAR A CENCO / DESPACHO INMEDIATO (PRIORIDAD CRÍTICA)
+                        </button>
+                    </div>
+                `;
+            } else {
+                resEl.innerHTML = `
+                    <div class="rounded-2xl border border-emerald-500/50 bg-emerald-950/70 text-emerald-200 p-4 flex items-center justify-between gap-3">
+                        <div class="text-xs">
+                            <div class="font-black text-emerald-300 text-sm"><i class="fa-solid fa-circle-check mr-1.5"></i>PATENTE SIN ENCARGO EN PEÑA SEGURO 1410</div>
+                            <div class="mt-0.5">La patente <strong class="font-mono text-white">${plate}</strong> no figura en nuestra Lista Negra actual (${robados.length} registros revisados).</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function alertIntelSightingToCenco(kind, id) {
+            const isRobado = kind === 'ROBADO';
+            const item = isRobado ? getIntelRobadosDB().find(x => x.id === id) : getIntelMecherosDB().find(x => x.id === id);
+            if (!item) return;
+            const nowStr = new Date().toLocaleString('es-CL');
+            const folioId = `CAD-${isRobado ? 'LPR' : 'MCH'}-${String(Date.now()).slice(-5)}`;
+            const detalle = isRobado
+                ? `🚨 AVISTAMIENTO VEHÍCULO ROBADO (LISTA NEGRA): Patente ${item.patente} (${item.marcaModelo} ${item.color || ''}) — ${item.tipoEncargo}. Reportado por ${AppState.userName || AppState.userRut} (${AppState.movil || 'CENCO'}). ${item.observaciones || ''}`
+                : `🚨 AVISTAMIENTO MECHERO REGISTRADO: "${item.alias}" (Riesgo ${item.riesgo}, Sector habitual: ${item.sector}). Reportado por ${AppState.userName || AppState.userRut} (${AppState.movil || 'CENCO'}).`;
+            const incident = {
+                folioId,
+                fechaIngreso: nowStr,
+                origen: isRobado ? 'ALERTA LPR LISTA NEGRA' : 'AVISTAMIENTO MECHERO',
+                estado: 'PENDIENTE_DESPACHO',
+                prioridad: isRobado ? 'CRITICA' : 'ALTA',
+                categoria: isRobado ? 'Robo de Vehículo / Encargo Vigente' : 'Delito / Mechero Identificado',
+                subcategoria: isRobado ? `Patente ${item.patente} (${item.marcaModelo})` : item.alias,
+                cuadrante: AppState.cuadrante || item.cuadrante || '252A',
+                direccion: `Avistamiento en terreno (${AppState.movil || 'CENCO'})`,
+                denunciante: AppState.userName || AppState.userRut || 'Inspector Municipal',
+                detalle,
+                ingresadoPor: AppState.userName || AppState.userRut || 'Inspector',
+                movilesAsignados: AppState.movil || '',
+                imagenes: (item.foto && item.foto !== 'Sin foto') ? [item.foto] : [],
+                turnoCencoId: getActiveCencoShift()?.turnoCencoId || '',
+                historial: [{ fecha: nowStr, rol: 'INTELIGENCIA', usuario: AppState.userName || AppState.userRut || 'Operador', accion: detalle }]
+            };
+            const list = getCencoIncidentsDB();
+            list.unshift(incident);
+            saveCencoIncidentsDB(list);
+            await sendPayloadToGoogleSheets(Object.assign({ action: 'CENCO_CREAR_INCIDENTE' }, incident));
+            showToast(`🚨 Alerta ${folioId} enviada a CENCO CAD con prioridad ${incident.prioridad}`, 'bg-red-700');
+            renderAllCencoPanels();
+        }
+
+        async function submitIntelRobado(e, ctx) {
+            e.preventDefault();
+            const item = {
+                id: 'ROB-' + String(Date.now()).slice(-6),
+                fecha: new Date().toLocaleString('es-CL'),
+                patente: normalizePlate(document.getElementById(`rob-patente-${ctx}`).value),
+                marcaModelo: document.getElementById(`rob-marca-${ctx}`).value.trim(),
+                color: document.getElementById(`rob-color-${ctx}`).value.trim(),
+                tipoEncargo: document.getElementById(`rob-tipo-${ctx}`).value,
+                cuadrante: document.getElementById(`rob-quad-${ctx}`).value,
+                estado: document.getElementById(`rob-estado-${ctx}`).value,
+                observaciones: document.getElementById(`rob-obs-${ctx}`).value.trim(),
+                foto: IntelState.tempPhotoB64 || 'Sin foto',
+                fotoBase64: IntelState.tempPhotoB64 || '',
+                registradoPor: AppState.userName || AppState.userRut || 'Operador'
+            };
+            const list = getIntelRobadosDB();
+            list.unshift(item);
+            saveIntelRobadosDB(list);
+            IntelState.tempPhotoB64 = '';
+            renderIntelWorkspace(ctx);
+            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_ROBADO' }, item));
+            showToast(`✓ Patente ${item.patente} guardada en Lista Negra`, 'bg-emerald-600');
+        }
+
+        async function submitIntelMechero(e, ctx) {
+            e.preventDefault();
+            const item = {
+                id: 'MECH-' + String(Date.now()).slice(-6),
+                fecha: new Date().toLocaleString('es-CL'),
+                alias: document.getElementById(`mech-alias-${ctx}`).value.trim(),
+                cuadrante: document.getElementById(`mech-quad-${ctx}`).value,
+                sector: document.getElementById(`mech-sector-${ctx}`).value.trim(),
+                senas: document.getElementById(`mech-senas-${ctx}`).value.trim(),
+                riesgo: document.getElementById(`mech-riesgo-${ctx}`).value,
+                estado: 'ACTIVO',
+                observaciones: document.getElementById(`mech-obs-${ctx}`).value.trim(),
+                foto: IntelState.tempPhotoB64 || 'Sin foto',
+                fotoBase64: IntelState.tempPhotoB64 || '',
+                registradoPor: AppState.userName || AppState.userRut || 'Operador'
+            };
+            const list = getIntelMecherosDB();
+            list.unshift(item);
+            saveIntelMecherosDB(list);
+            IntelState.tempPhotoB64 = '';
+            renderIntelWorkspace(ctx);
+            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_MECHERO' }, item));
+            showToast(`✓ Mechero "${item.alias}" guardado`, 'bg-emerald-600');
+        }
+
+        async function submitIntelCalle(e, ctx) {
+            e.preventDefault();
+            const item = {
+                id: 'CALLE-' + String(Date.now()).slice(-6),
+                fecha: new Date().toLocaleString('es-CL'),
+                nombre: document.getElementById(`calle-nombre-${ctx}`).value.trim(),
+                rutEdad: document.getElementById(`calle-rutedad-${ctx}`).value.trim(),
+                cuadrante: document.getElementById(`calle-quad-${ctx}`).value,
+                ubicacion: document.getElementById(`calle-ubic-${ctx}`).value.trim(),
+                gps: document.getElementById(`calle-gps-${ctx}`).value.trim(),
+                perfil: document.getElementById(`calle-perfil-${ctx}`).value.trim(),
+                estado: document.getElementById(`calle-estado-${ctx}`).value,
+                observaciones: document.getElementById(`calle-obs-${ctx}`).value.trim(),
+                foto: IntelState.tempPhotoB64 || 'Sin foto',
+                fotoBase64: IntelState.tempPhotoB64 || '',
+                registradoPor: AppState.userName || AppState.userRut || 'Operador'
+            };
+            const list = getIntelCalleDB();
+            list.unshift(item);
+            saveIntelCalleDB(list);
+            IntelState.tempPhotoB64 = '';
+            renderIntelWorkspace(ctx);
+            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_CALLE' }, item));
+            showToast(`✓ Perfil situación calle guardado`, 'bg-emerald-600');
+        }
+
+        async function submitIntelCalor(e, ctx) {
+            e.preventDefault();
+            const item = {
+                id: 'HEAT-' + String(Date.now()).slice(-6),
+                fecha: new Date().toLocaleString('es-CL'),
+                tipo: document.getElementById(`calor-tipo-${ctx}`).value,
+                cuadrante: document.getElementById(`calor-quad-${ctx}`).value,
+                direccion: document.getElementById(`calor-dir-${ctx}`).value.trim(),
+                gps: document.getElementById(`calor-gps-${ctx}`).value.trim(),
+                estado: document.getElementById(`calor-estado-${ctx}`).value,
+                descripcion: document.getElementById(`calor-desc-${ctx}`).value.trim(),
+                foto: IntelState.tempPhotoB64 || 'Sin foto',
+                fotoBase64: IntelState.tempPhotoB64 || '',
+                registradoPor: AppState.userName || AppState.userRut || 'Operador'
+            };
+            const list = getIntelCalorDB();
+            list.unshift(item);
+            saveIntelCalorDB(list);
+            IntelState.tempPhotoB64 = '';
+            renderIntelWorkspace(ctx);
+            if (CencoState.map) renderCadMapMarkers();
+            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_PUNTO_CALOR' }, item));
+            showToast(`✓ Punto registrado en Mapa de Calor`, 'bg-emerald-600');
+        }
+
+        async function deleteIntelItem(kind, id, ctx) {
+            if (!confirm('¿Eliminar este registro de la base de datos?')) return;
+            const cfg = {
+                robado: { get: getIntelRobadosDB, save: saveIntelRobadosDB, action: 'INTEL_DELETE_ROBADO' },
+                mechero: { get: getIntelMecherosDB, save: saveIntelMecherosDB, action: 'INTEL_DELETE_MECHERO' },
+                calle: { get: getIntelCalleDB, save: saveIntelCalleDB, action: 'INTEL_DELETE_CALLE' },
+                calor: { get: getIntelCalorDB, save: saveIntelCalorDB, action: 'INTEL_DELETE_PUNTO_CALOR' }
+            }[kind];
+            if (!cfg) return;
+            cfg.save(cfg.get().filter(x => x.id !== id));
+            renderIntelWorkspace(ctx);
+            if (CencoState.map) renderCadMapMarkers();
+            await sendPayloadToGoogleSheets({ action: cfg.action, id });
+            showToast('Registro eliminado', 'bg-amber-600');
+        }
+
+        // ========================================================================
+        // MAPA DE CALOR (LEAFLET.HEAT) + MAPA MACRO SENSACIÓN DE SEGURIDAD (0–100)
+        // ========================================================================
+        function computeSecurityPerceptionByQuadrant() {
+            const incidents = getCencoIncidentsDB();
+            const heatPts = getIntelCalorDB().filter(p => String(p.estado || '').toUpperCase() === 'ACTIVO');
+            const robados = getIntelRobadosDB().filter(v => String(v.estado || '').toUpperCase() !== 'RECUPERADO');
+
+            const results = (CARABINEROS_QUADRANTS_GEO || []).map(q => {
+                const qid = q.id;
+                let delitosGraves = 0, drogasAlcohol = 0, incivilidadesRucos = 0, otrosProc = 0;
+
+                incidents.forEach(inc => {
+                    if (String(inc.cuadrante || '').trim().toUpperCase() !== qid) return;
+                    const txt = `${inc.categoria || ''} ${inc.subcategoria || ''} ${inc.detalle || ''}`.toUpperCase();
+                    if (/ROBO|ASALTO|PORTONAZO|ENCERRONA|HURTO|ARMA|DISPARO|HOMICID|DELITO|MECHERO/.test(txt)) delitosGraves++;
+                    else if (/DROGA|ALCOHOL|EBRIO|ESTUPEFACIENTE|MICROTR/.test(txt)) drogasAlcohol++;
+                    else if (/RUCO|ABANDONAD|INCIVILIDAD|BASURA|RUIDO|RIÑA|DESORDEN/.test(txt)) incivilidadesRucos++;
+                    else otrosProc++;
+                });
+
+                heatPts.forEach(p => {
+                    if (String(p.cuadrante || '').trim().toUpperCase() !== qid) return;
+                    if (p.tipo === 'CONSUMO_ALCOHOL_DROGAS') drogasAlcohol++;
+                    else incivilidadesRucos++;
+                });
+
+                robados.forEach(r => {
+                    if (String(r.cuadrante || '').trim().toUpperCase() === qid) delitosGraves++;
+                });
+
+                // Puntaje ponderado de riesgo -> Sensación de Seguridad hacia el Vecino (100 = óptima, 0 = crítica)
+                const penalty = (delitosGraves * 12) + (drogasAlcohol * 7) + (incivilidadesRucos * 5) + (otrosProc * 2);
+                const score = Math.max(5, Math.min(100, Math.round(100 - penalty)));
+                let level = 'ALTA SEGURIDAD', fill = '#10b981', badgeCls = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                if (score < 25) { level = 'FOCO CRÍTICO'; fill = '#dc2626'; badgeCls = 'bg-red-500/20 text-red-300 border-red-500/40'; }
+                else if (score < 50) { level = 'ALERTA PREVENTIVA'; fill = '#f97316'; badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; }
+                else if (score < 75) { level = 'SEGURIDAD MODERADA'; fill = '#eab308'; badgeCls = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; }
+
+                return {
+                    id: qid, desc: q.desc, coords: q.coords, center: q.center,
+                    score, level, fill, badgeCls,
+                    delitosGraves, drogasAlcohol, incivilidadesRucos, otrosProc,
+                    totalEventos: delitosGraves + drogasAlcohol + incivilidadesRucos + otrosProc
+                };
+            });
+            return results;
+        }
+
+        function buildHeatmapPoints() {
+            const pts = [];
+            getIntelCalorDB().filter(p => String(p.estado || '').toUpperCase() === 'ACTIVO').forEach((p, idx) => {
+                const c = parseGpsOrQuadrantCoords(p.gps || p.direccion, p.cuadrante, idx);
+                const w = p.tipo === 'CONSUMO_ALCOHOL_DROGAS' ? 0.95 : (p.tipo === 'RUCO' ? 0.85 : 0.75);
+                pts.push([c[0], c[1], w]);
+            });
+            getCencoIncidentsDB().forEach((inc, idx) => {
+                const c = parseGpsOrQuadrantCoords(inc.direccion, inc.cuadrante, idx + 3);
+                const w = inc.prioridad === 'CRITICA' ? 1.0 : (inc.prioridad === 'ALTA' ? 0.8 : 0.55);
+                pts.push([c[0], c[1], w]);
+            });
+            return pts;
+        }
+
+        function renderCadMapHeatmapAndSecurity() {
+            if (!CencoState.map) return;
+            // Heatmap layer
+            if (CencoState.mapLayers.heatmapLayer) {
+                CencoState.map.removeLayer(CencoState.mapLayers.heatmapLayer);
+                CencoState.mapLayers.heatmapLayer = null;
+            }
+            if (CencoState.mapVisibility.heatmap && typeof L.heatLayer === 'function') {
+                const pts = buildHeatmapPoints();
+                if (pts.length > 0) {
+                    CencoState.mapLayers.heatmapLayer = L.heatLayer(pts, { radius: 28, blur: 20, maxZoom: 16 }).addTo(CencoState.map);
+                }
+            }
+            // Security Perception Choropleth Overlay on Tactical Map
+            if (CencoState.mapLayers.securityGroup) {
+                CencoState.mapLayers.securityGroup.clearLayers();
+                if (CencoState.mapVisibility.security) {
+                    computeSecurityPerceptionByQuadrant().forEach(q => {
+                        L.polygon(q.coords, {
+                            color: q.fill, weight: 2.5, fillColor: q.fill, fillOpacity: 0.42
+                        }).bindPopup(`
+                            <div class="text-xs font-sans space-y-1">
+                                <div class="font-black text-sm">Cuadrante ${q.id} — ${q.score}/100</div>
+                                <div class="font-bold" style="color:${q.fill}">${q.level}</div>
+                                <div>Robos / Asaltos / Portonazos: <strong>${q.delitosGraves}</strong></div>
+                                <div>Drogas y Alcohol: <strong>${q.drogasAlcohol}</strong></div>
+                                <div>Incivilidades / Rucos / Abandonados: <strong>${q.incivilidadesRucos}</strong></div>
+                            </div>
+                        `).addTo(CencoState.mapLayers.securityGroup);
+                    });
+                }
+            }
+        }
+
+        function renderMacroSecurityModule() {
+            const data = computeSecurityPerceptionByQuadrant();
+            const avgScore = data.length ? Math.round(data.reduce((a, b) => a + b.score, 0) / data.length) : 100;
+            const totDelitos = data.reduce((a, b) => a + b.delitosGraves, 0);
+            const totDrogas = data.reduce((a, b) => a + b.drogasAlcohol, 0);
+            const totInciv = data.reduce((a, b) => a + b.incivilidadesRucos, 0);
+
+            const sumEl = document.getElementById('macro-security-summary');
+            if (sumEl) {
+                sumEl.innerHTML = `
+                    <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Índice Comunal Vecino</div><div class="text-2xl font-black ${avgScore >= 75 ? 'text-emerald-400' : (avgScore >= 50 ? 'text-yellow-400' : 'text-red-400')} mt-1">${avgScore} / 100</div></div>
+                    <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Robos / Asaltos / Portonazos</div><div class="text-2xl font-black text-red-400 mt-1">${totDelitos}</div></div>
+                    <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Consumo Drogas / Alcohol</div><div class="text-2xl font-black text-amber-400 mt-1">${totDrogas}</div></div>
+                    <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Incivilidades / Rucos / Aband.</div><div class="text-2xl font-black text-orange-400 mt-1">${totInciv}</div></div>
+                `;
+            }
+
+            const listEl = document.getElementById('macro-security-quadrants-list');
+            if (listEl) {
+                const sorted = [...data].sort((a, b) => a.score - b.score);
+                listEl.innerHTML = sorted.map(q => `
+                    <div class="cad-surface border cad-border rounded-xl p-3 space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <span class="font-black cad-text text-sm">Cuadrante ${q.id}</span>
+                                <span class="text-[10px] cad-muted ml-1.5">${q.desc}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${q.badgeCls}">${q.score}/100 • ${q.level}</span>
+                        </div>
+                        <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full" style="width:${q.score}%;background:${q.fill}"></div></div>
+                        <div class="grid grid-cols-3 gap-1 text-[10px] cad-muted pt-0.5">
+                            <span>🚨 Delitos: <strong class="cad-text">${q.delitosGraves}</strong></span>
+                            <span>🍷 Drogas/Alc: <strong class="cad-text">${q.drogasAlcohol}</strong></span>
+                            <span>🔥 Rucos/Inciv: <strong class="cad-text">${q.incivilidadesRucos}</strong></span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const mapEl = document.getElementById('macro-security-map');
+            if (!mapEl || typeof L === 'undefined') return;
+            if (!IntelState.macroMap) {
+                IntelState.macroMap = L.map('macro-security-map', { zoomControl: true }).setView([-33.6063, -70.8768], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(IntelState.macroMap);
+                IntelState.macroLayers = L.layerGroup().addTo(IntelState.macroMap);
+            }
+            IntelState.macroMap.invalidateSize();
+            IntelState.macroLayers.clearLayers();
+
+            if (typeof PENAFLOR_COMMUNE_BOUNDARY !== 'undefined') {
+                L.polygon(PENAFLOR_COMMUNE_BOUNDARY, { color: '#1e293b', weight: 3, dashArray: '6,4', fillOpacity: 0.02 }).addTo(IntelState.macroLayers);
+            }
+            data.forEach(q => {
+                L.polygon(q.coords, { color: q.fill, weight: 2.5, fillColor: q.fill, fillOpacity: 0.45 }).bindPopup(`
+                    <div class="text-xs font-sans space-y-1">
+                        <div class="font-black text-sm">Cuadrante ${q.id} — ${q.score}/100</div>
+                        <div class="font-bold" style="color:${q.fill}">${q.level}</div>
+                        <div>Robos/Asaltos/Portonazos: <strong>${q.delitosGraves}</strong></div>
+                        <div>Drogas y Alcohol: <strong>${q.drogasAlcohol}</strong></div>
+                        <div>Incivilidades/Rucos/Abandonados: <strong>${q.incivilidadesRucos}</strong></div>
+                    </div>
+                `).addTo(IntelState.macroLayers);
+                const lbl = L.divIcon({
+                    className: '',
+                    html: `<div style="background:${q.fill};color:#fff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:900;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.5);white-space:nowrap;">${q.id}: ${q.score}</div>`,
+                    iconSize: [68, 22], iconAnchor: [34, 11]
+                });
+                L.marker(q.center, { icon: lbl, interactive: false }).addTo(IntelState.macroLayers);
+            });
+            const pts = buildHeatmapPoints();
+            if (pts.length > 0 && typeof L.heatLayer === 'function') {
+                L.heatLayer(pts, { radius: 26, blur: 18, maxZoom: 16 }).addTo(IntelState.macroLayers);
+            }
+        }
     </script>
 </body>
 </html>
