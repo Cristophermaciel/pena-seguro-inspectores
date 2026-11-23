@@ -9940,24 +9940,66 @@
             const quadOpts = ['252A','252B','252C','253A','253B','SRA','SRB','SRA1'].map(q => `<option value="${q}" ${(AppState.cuadrante === q) ? 'selected' : ''}>${q}</option>`).join('');
             const tab = IntelState.tab;
 
-            // --- TAB 1: ESCÁNER DE PATENTES LPR (CÁMARA OCR + LISTA NEGRA) ---
+            // --- TAB 1: ESCÁNER DE PATENTES LPR (CÁMARA EN VIVO CON GUÍA + RECORTE FOTO + OCR PSM 7) ---
             if (tab === 'scanner') {
                 const activos = getIntelRobadosDB().filter(v => String(v.estado || '').toUpperCase() !== 'RECUPERADO');
                 wrap.innerHTML = `
                     <div class="${cardCls} space-y-3">
                         <div>
                             <h3 class="text-sm font-black ${isDark ? 'text-cyan-400' : 'text-[#0a2463]'} leading-snug"><i class="fa-solid fa-camera mr-1.5"></i>Escáner LPR — Lista Negra de Vehículos Robados</h3>
-                            <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} mt-0.5 leading-relaxed">Enfoque la patente con la cámara o ingrésela manualmente para verificar encargo vigente (${activos.length} patentes en lista negra).</p>
+                            <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} mt-0.5 leading-relaxed">Encuadre la patente dentro del rectángulo guía o toque la patente en una foto (${activos.length} patentes en lista negra).</p>
                         </div>
-                        <div class="${isDark ? 'grid grid-cols-1 md:grid-cols-2 gap-2.5' : 'space-y-2.5'}">
-                            <label class="cursor-pointer bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow text-center">
-                                <i class="fa-solid fa-camera text-base shrink-0"></i> <span>ESCANEAR PATENTE CON CÁMARA</span>
-                                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleLprCameraScan(event, '${ctx}')">
+
+                        <div class="grid grid-cols-1 ${isDark ? 'md:grid-cols-2' : ''} gap-2">
+                            <button type="button" onclick="startLiveLprCamera('${ctx}')" class="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow">
+                                <i class="fa-solid fa-video text-base shrink-0"></i> <span>ABRIR CÁMARA LPR EN VIVO</span>
+                            </button>
+                            <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white font-black text-xs py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow text-center">
+                                <i class="fa-solid fa-crop-simple text-base shrink-0 text-amber-400"></i> <span>SUBIR FOTO Y ENCUADRAR PATENTE</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="loadLprPhotoForCrop(event, '${ctx}')">
                             </label>
-                            <div class="flex gap-1.5 min-w-0">
-                                <input type="text" id="lpr-manual-input-${ctx}" placeholder="Patente (Ej: ABCD12)" class="${inpCls} flex-1 font-mono uppercase text-sm font-black tracking-widest" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();checkPlateAgainstBlacklist(this.value,'${ctx}');}">
-                                <button type="button" onclick="checkPlateAgainstBlacklist(document.getElementById('lpr-manual-input-${ctx}').value, '${ctx}')" class="px-3.5 py-2 rounded-xl bg-[#0a2463] hover:bg-blue-900 text-white font-black text-xs shrink-0">VERIFICAR</button>
+                        </div>
+
+                        <!-- Visor Cámara en Vivo con Rectángulo Guía para la Patente -->
+                        <div id="lpr-live-cam-wrap-${ctx}" class="hidden rounded-2xl overflow-hidden border-2 border-cyan-500 bg-black relative">
+                            <video id="lpr-live-video-${ctx}" autoplay playsinline muted class="w-full max-h-72 object-cover"></video>
+                            <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                                <div class="w-[78%] max-w-[300px] h-[72px] border-2 border-cyan-400 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.52)] flex items-end justify-center pb-1">
+                                    <span class="bg-cyan-500/90 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded uppercase">Alinee solo la patente aquí</span>
+                                </div>
                             </div>
+                            <div class="p-2.5 bg-slate-950 flex gap-2">
+                                <button type="button" onclick="captureLiveLprFrame('${ctx}')" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs"><i class="fa-solid fa-bolt mr-1"></i>ESCANEAR PATENTE</button>
+                                <button type="button" onclick="stopLiveLprCamera('${ctx}')" class="px-3.5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs">Cerrar</button>
+                            </div>
+                        </div>
+
+                        <!-- Visor Recorte Interactivo sobre Foto (Toque sobre la patente) -->
+                        <div id="lpr-photo-crop-wrap-${ctx}" class="hidden rounded-2xl overflow-hidden border-2 border-amber-400 bg-slate-950 p-2.5 space-y-2">
+                            <div class="flex items-center justify-between text-[11px] text-amber-300 font-bold">
+                                <span><i class="fa-solid fa-hand-pointer mr-1"></i>Toque exactamente sobre la patente para encuadrarla:</span>
+                                <button type="button" onclick="document.getElementById('lpr-photo-crop-wrap-${ctx}').classList.add('hidden')" class="text-slate-400 hover:text-white px-1">✕</button>
+                            </div>
+                            <div class="relative flex justify-center bg-black rounded-xl overflow-hidden">
+                                <canvas id="lpr-crop-canvas-${ctx}" class="max-w-full max-h-72 cursor-crosshair touch-none"></canvas>
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px] text-slate-300">
+                                <span class="shrink-0 font-bold">Tamaño caja:</span>
+                                <input type="range" id="lpr-crop-size-${ctx}" min="16" max="85" value="36" oninput="redrawLprCropCanvas('${ctx}')" class="flex-1 accent-amber-400">
+                                <button type="button" onclick="scanCroppedLprPhoto('${ctx}')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shrink-0"><i class="fa-solid fa-bolt mr-1"></i>LEER PATENTE</button>
+                            </div>
+                        </div>
+
+                        <!-- Ingreso Manual Rápido -->
+                        <div class="flex gap-1.5 min-w-0">
+                            <input type="text" id="lpr-manual-input-${ctx}" placeholder="Patente (Ej: GJBS79)" class="${inpCls} flex-1 font-mono uppercase text-sm font-black tracking-widest" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){event.preventDefault();checkPlateAgainstBlacklist(this.value,'${ctx}');}">
+                            <button type="button" onclick="checkPlateAgainstBlacklist(document.getElementById('lpr-manual-input-${ctx}').value, '${ctx}')" class="px-3.5 py-2 rounded-xl bg-[#0a2463] hover:bg-blue-900 text-white font-black text-xs shrink-0">VERIFICAR</button>
+                        </div>
+
+                        <!-- Vista previa del recorte binarizado + estado OCR -->
+                        <div id="lpr-scan-preview-${ctx}" class="hidden flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/90 border border-slate-700">
+                            <img id="lpr-scan-preview-img-${ctx}" class="h-12 rounded border border-cyan-500/50 bg-white object-contain">
+                            <div class="text-[10px] text-slate-300 leading-tight"><strong>Recorte leído por OCR</strong><br>Si las letras no se ven nítidas, acerque o toque sobre la patente.</div>
                         </div>
                         <div id="lpr-scan-status-${ctx}" class="hidden text-xs font-bold p-3 rounded-xl bg-blue-500/15 border border-blue-500/40 text-blue-400 break-words"></div>
                         <div id="lpr-scan-result-${ctx}"></div>
@@ -10293,72 +10335,237 @@
             return edits + (s1.length - i) + (s2.length - j);
         }
 
-        function preprocessPlateImageForOcr(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onerror = reject;
-                reader.onload = () => {
-                    const img = new Image();
-                    img.onerror = reject;
-                    img.onload = () => {
-                        const makeVariant = (cropX, cropY, cropW, cropH, contrast) => {
-                            const maxW = 1100;
-                            const scale = Math.min(1.8, maxW / cropW);
-                            const w = Math.max(200, Math.round(cropW * scale));
-                            const h = Math.max(120, Math.round(cropH * scale));
-                            const canvas = document.createElement('canvas');
-                            canvas.width = w; canvas.height = h;
-                            const c = canvas.getContext('2d');
-                            c.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, w, h);
-                            const imgData = c.getImageData(0, 0, w, h);
-                            const d = imgData.data;
-                            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-                            for (let i = 0; i < d.length; i += 4) {
-                                const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                                const adj = Math.max(0, Math.min(255, factor * (gray - 128) + 128));
-                                d[i] = d[i + 1] = d[i + 2] = adj;
-                            }
-                            c.putImageData(imgData, 0, 0);
-                            return canvas.toDataURL('image/png');
-                        };
-                        // Variante 1: Recorte central (donde naturalmente apunta el inspector la patente) con alto contraste
-                        const centerUrl = makeVariant(img.width * 0.15, img.height * 0.22, img.width * 0.70, img.height * 0.56, 70);
-                        // Variante 2: Imagen completa en escala de grises alto contraste
-                        const fullUrl = makeVariant(0, 0, img.width, img.height, 55);
-                        resolve({ centerUrl, fullUrl });
-                    };
-                    img.src = reader.result;
+        // --- MOTOR LPR v29: CÁMARA EN VIVO + RECORTE TÁCTIL + BINARIZACIÓN OTSU + TESSERACT PSM 7 (UNA LÍNEA) ---
+        const LprCropState = {
+            stream: null,
+            img: null,
+            cx: 0.5,
+            cy: 0.5,
+            ctxName: 'mobile'
+        };
+
+        async function startLiveLprCamera(ctx) {
+            stopLiveLprCamera(ctx);
+            const wrap = document.getElementById(`lpr-live-cam-wrap-${ctx}`);
+            const video = document.getElementById(`lpr-live-video-${ctx}`);
+            if (!wrap || !video || !navigator.mediaDevices?.getUserMedia) {
+                showToast('Cámara en vivo no disponible en este navegador. Use "Subir Foto y Encuadrar".', 'bg-amber-600');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                LprCropState.stream = stream;
+                video.srcObject = stream;
+                wrap.classList.remove('hidden');
+                document.getElementById(`lpr-photo-crop-wrap-${ctx}`)?.classList.add('hidden');
+            } catch (err) {
+                showToast('Permiso de cámara denegado. Puede usar "Subir Foto y Encuadrar".', 'bg-amber-600');
+            }
+        }
+
+        function stopLiveLprCamera(ctx) {
+            if (LprCropState.stream) {
+                LprCropState.stream.getTracks().forEach(t => t.stop());
+                LprCropState.stream = null;
+            }
+            document.getElementById(`lpr-live-cam-wrap-${ctx}`)?.classList.add('hidden');
+        }
+
+        async function captureLiveLprFrame(ctx) {
+            const video = document.getElementById(`lpr-live-video-${ctx}`);
+            if (!video || !video.videoWidth) return;
+            const vw = video.videoWidth, vh = video.videoHeight;
+            // Recortar exactamente la franja central del rectángulo guía (78% ancho x 30% alto)
+            const cw = Math.round(vw * 0.78);
+            const ch = Math.round(vh * 0.30);
+            const cx = Math.round((vw - cw) / 2);
+            const cy = Math.round((vh - ch) / 2);
+            const c = document.createElement('canvas');
+            c.width = cw; c.height = ch;
+            c.getContext('2d').drawImage(video, cx, cy, cw, ch, 0, 0, cw, ch);
+            stopLiveLprCamera(ctx);
+            await runTightPlateOcrOnCanvas(c, ctx);
+        }
+
+        function loadLprPhotoForCrop(event, ctx) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            stopLiveLprCamera(ctx);
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    LprCropState.img = img;
+                    LprCropState.cx = 0.5;
+                    LprCropState.cy = 0.5;
+                    LprCropState.ctxName = ctx;
+                    const wrap = document.getElementById(`lpr-photo-crop-wrap-${ctx}`);
+                    if (wrap) wrap.classList.remove('hidden');
+                    bindLprCropCanvasPointer(ctx);
+                    redrawLprCropCanvas(ctx);
                 };
-                reader.readAsDataURL(file);
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function bindLprCropCanvasPointer(ctx) {
+            const canvas = document.getElementById(`lpr-crop-canvas-${ctx}`);
+            if (!canvas || canvas.dataset.bound === '1') return;
+            canvas.dataset.bound = '1';
+            const moveBox = (clientX, clientY) => {
+                const rect = canvas.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+                LprCropState.cx = Math.max(0.08, Math.min(0.92, (clientX - rect.left) / rect.width));
+                LprCropState.cy = Math.max(0.08, Math.min(0.92, (clientY - rect.top) / rect.height));
+                redrawLprCropCanvas(ctx);
+            };
+            canvas.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                moveBox(e.clientX, e.clientY);
+            });
+            canvas.addEventListener('pointermove', (e) => {
+                if (e.buttons === 1) { e.preventDefault(); moveBox(e.clientX, e.clientY); }
             });
         }
 
-        async function handleLprCameraScan(event, ctx) {
-            const file = event.target.files?.[0];
-            if (!file) return;
+        function redrawLprCropCanvas(ctx) {
+            const canvas = document.getElementById(`lpr-crop-canvas-${ctx}`);
+            const img = LprCropState.img;
+            if (!canvas || !img) return;
+            const maxW = 540;
+            const scale = Math.min(1, maxW / img.width);
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const g = canvas.getContext('2d');
+            g.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const pct = Number(document.getElementById(`lpr-crop-size-${ctx}`)?.value || 36) / 100;
+            const bw = canvas.width * pct;
+            const bh = bw * 0.34; // proporción real patente chilena (360mm x 130mm ≈ 2.8:1)
+            const bx = Math.max(0, Math.min(canvas.width - bw, LprCropState.cx * canvas.width - bw / 2));
+            const by = Math.max(0, Math.min(canvas.height - bh, LprCropState.cy * canvas.height - bh / 2));
+
+            g.fillStyle = 'rgba(0,0,0,0.45)';
+            g.fillRect(0, 0, canvas.width, by);
+            g.fillRect(0, by + bh, canvas.width, canvas.height - (by + bh));
+            g.fillRect(0, by, bx, bh);
+            g.fillRect(bx + bw, by, canvas.width - (bx + bw), bh);
+
+            g.strokeStyle = '#fbbf24';
+            g.lineWidth = 3;
+            g.strokeRect(bx, by, bw, bh);
+        }
+
+        async function scanCroppedLprPhoto(ctx) {
+            const img = LprCropState.img;
+            if (!img) return;
+            const pct = Number(document.getElementById(`lpr-crop-size-${ctx}`)?.value || 36) / 100;
+            const bw = img.width * pct;
+            const bh = bw * 0.34;
+            const bx = Math.max(0, Math.min(img.width - bw, LprCropState.cx * img.width - bw / 2));
+            const by = Math.max(0, Math.min(img.height - bh, LprCropState.cy * img.height - bh / 2));
+
+            const c = document.createElement('canvas');
+            c.width = Math.max(120, Math.round(bw));
+            c.height = Math.max(45, Math.round(bh));
+            c.getContext('2d').drawImage(img, bx, by, bw, bh, 0, 0, c.width, c.height);
+            await runTightPlateOcrOnCanvas(c, ctx);
+        }
+
+        function binarizePlateCanvasOtsu(srcCanvas, bias = 0) {
+            // Escalar a ancho óptimo 640px + borde blanco de 22px (clave para Tesseract PSM 7)
+            const targetW = 640;
+            const targetH = Math.max(140, Math.round((srcCanvas.height / srcCanvas.width) * targetW));
+            const pad = 22;
+            const out = document.createElement('canvas');
+            out.width = targetW + pad * 2;
+            out.height = targetH + pad * 2;
+            const g = out.getContext('2d');
+            g.fillStyle = '#ffffff';
+            g.fillRect(0, 0, out.width, out.height);
+            g.drawImage(srcCanvas, pad, pad, targetW, targetH);
+
+            const imgData = g.getImageData(pad, pad, targetW, targetH);
+            const d = imgData.data;
+            const hist = new Uint32Array(256);
+            const grays = new Uint8Array(targetW * targetH);
+            for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                const gr = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+                grays[p] = gr;
+                hist[gr]++;
+            }
+            // Umbral de Otsu
+            const total = grays.length;
+            let sum = 0;
+            for (let t = 0; t < 256; t++) sum += t * hist[t];
+            let sumB = 0, wB = 0, varMax = 0, threshold = 128;
+            for (let t = 0; t < 256; t++) {
+                wB += hist[t];
+                if (wB === 0) continue;
+                const wF = total - wB;
+                if (wF === 0) break;
+                sumB += t * hist[t];
+                const mB = sumB / wB;
+                const mF = (sum - sumB) / wF;
+                const varBetween = wB * wF * (mB - mF) * (mB - mF);
+                if (varBetween > varMax) { varMax = varBetween; threshold = t; }
+            }
+            const thr = Math.max(30, Math.min(225, threshold + bias));
+            for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                const v = grays[p] < thr ? 0 : 255;
+                d[i] = d[i + 1] = d[i + 2] = v;
+                d[i + 3] = 255;
+            }
+            g.putImageData(imgData, pad, pad);
+            return out.toDataURL('image/png');
+        }
+
+        async function runTightPlateOcrOnCanvas(srcCanvas, ctx) {
             const statusEl = document.getElementById(`lpr-scan-status-${ctx}`);
             const inpEl = document.getElementById(`lpr-manual-input-${ctx}`);
+            const prevWrap = document.getElementById(`lpr-scan-preview-${ctx}`);
+            const prevImg = document.getElementById(`lpr-scan-preview-img-${ctx}`);
+
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Mejorando contraste y leyendo patente chilena (2 pasadas OCR)...';
+                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Binarizando patente (Otsu) y leyendo línea única (PSM 7)...';
             }
             try {
                 if (typeof Tesseract === 'undefined') throw new Error('OCR no disponible offline');
-                const { centerUrl, fullUrl } = await preprocessPlateImageForOcr(file);
-                const opts = { tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-· ' };
-                const res1 = await Tesseract.recognize(centerUrl, 'eng', opts);
-                let allCands = extractChileanPlateCandidates(res1?.data?.text || '');
+                const binNormal = binarizePlateCanvasOtsu(srcCanvas, 0);
+                if (prevImg) prevImg.src = binNormal;
+                if (prevWrap) prevWrap.classList.remove('hidden');
 
-                // Segunda pasada en imagen completa si no hay coincidencia exacta en Lista Negra aún
                 const robados = getIntelRobadosDB();
-                const hasExact1 = allCands.some(p => robados.some(v => normalizePlate(v.patente) === p));
-                if (!hasExact1) {
-                    const res2 = await Tesseract.recognize(fullUrl, 'eng', opts);
-                    const cands2 = extractChileanPlateCandidates(res2?.data?.text || '');
-                    cands2.forEach(p => { if (!allCands.includes(p)) allCands.push(p); });
+                const allCands = [];
+                const rawTexts = [];
+
+                const worker = await Tesseract.createWorker('eng');
+                try {
+                    await worker.setParameters({
+                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+                        tessedit_pageseg_mode: '7' // Single text line — ideal para placas patentes
+                    });
+
+                    // Probar 3 umbrales (normal, más claro, más oscuro) hasta hallar patente válida / match
+                    const variants = [binNormal, binarizePlateCanvasOtsu(srcCanvas, -22), binarizePlateCanvasOtsu(srcCanvas, 22)];
+                    for (const vUrl of variants) {
+                        const r = await worker.recognize(vUrl);
+                        const txt = String(r?.data?.text || '').trim();
+                        if (txt) rawTexts.push(txt);
+                        extractChileanPlateCandidates(txt).forEach(p => { if (!allCands.includes(p)) allCands.push(p); });
+                        // Si ya encontró match exacto en Lista Negra, detener inmediatamente
+                        if (allCands.some(p => robados.some(v => normalizePlate(v.patente) === p))) break;
+                    }
+                } finally {
+                    await worker.terminate();
                 }
 
-                // Priorizar si alguno de los candidatos coincide (exacto o 1 char) con nuestra Lista Negra
                 let bestPlate = allCands[0] || '';
                 const exactHit = allCands.find(p => robados.some(v => normalizePlate(v.patente) === p));
                 const fuzzyHit = !exactHit ? allCands.find(p => robados.some(v => plateSimilarityDistance(v.patente, p) <= 1)) : '';
@@ -10371,16 +10578,14 @@
                         ? `<div class="mt-2 flex flex-wrap items-center gap-1"><span class="text-[10px] opacity-80">Otras lecturas:</span>${allCands.slice(0, 5).map(p => `<button type="button" onclick="document.getElementById('lpr-manual-input-${ctx}').value='${p}';checkPlateAgainstBlacklist('${p}','${ctx}')" class="px-2 py-0.5 rounded bg-slate-900 text-amber-300 font-mono text-[11px] font-black border border-slate-600">${p}</button>`).join('')}</div>`
                         : '';
                     if (statusEl) {
-                        statusEl.innerHTML = `<div><i class="fa-solid fa-check mr-1"></i>Patente leída: <strong class="font-mono text-base">${bestPlate}</strong> <span class="text-[10px] opacity-75">(puede corregir arriba si falló 1 carácter)</span></div>${chipsHtml}`;
+                        statusEl.innerHTML = `<div><i class="fa-solid fa-check mr-1"></i>Patente detectada: <strong class="font-mono text-base">${bestPlate}</strong></div>${chipsHtml}`;
                     }
                     checkPlateAgainstBlacklist(bestPlate, ctx, allCands);
                 } else {
-                    if (statusEl) statusEl.innerHTML = '⚠️ No se detectó una patente chilena clara en la foto. Acérquese más a la placa (que ocupe el centro) o ingrésela manualmente arriba.';
+                    if (statusEl) statusEl.innerHTML = `⚠️ No se leyó una patente chilena clara (lectura bruta: "${rawTexts.join(' / ').slice(0, 50)}"). Ajuste la caja amarilla sobre las letras de la patente y presione <strong>LEER PATENTE</strong>.`;
                 }
             } catch (err) {
-                if (statusEl) statusEl.innerHTML = `⚠️ Error OCR: ${err.message}. Ingrese la patente manualmente para verificar en Lista Negra.`;
-            } finally {
-                event.target.value = '';
+                if (statusEl) statusEl.innerHTML = `⚠️ Error OCR: ${err.message}. Ingrese la patente manualmente arriba.`;
             }
         }
 
