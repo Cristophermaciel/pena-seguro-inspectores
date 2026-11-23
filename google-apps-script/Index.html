@@ -7748,11 +7748,44 @@
             }
         }
 
+        // Brecha operativa de 30 minutos al conformar turno y 30 minutos antes del cierre (turnos 8h: 07-15, 15-23, 23-07)
+        const SHIFT_GRACE_CONFIG = {
+            GRACE_MINUTES: 30,
+            SHIFT_BOUNDARIES_MIN: [
+                { label: 'Inicio Mañana (07:00–07:30)', start: 7 * 60, end: 7 * 60 + 30 },
+                { label: 'Cierre Mañana (14:30–15:00)', start: 14 * 60 + 30, end: 15 * 60 },
+                { label: 'Inicio Tarde (15:00–15:30)', start: 15 * 60, end: 15 * 60 + 30 },
+                { label: 'Cierre Tarde (22:30–23:00)', start: 22 * 60 + 30, end: 23 * 60 },
+                { label: 'Inicio Noche (23:00–23:30)', start: 23 * 60, end: 23 * 60 + 30 },
+                { label: 'Cierre Noche (06:30–07:00)', start: 6 * 60 + 30, end: 7 * 60 }
+            ]
+        };
+
+        function getQuadrantGraceWindowInfo(sh, nowMs = Date.now()) {
+            const graceMs = SHIFT_GRACE_CONFIG.GRACE_MINUTES * 60 * 1000;
+            // 1. 30 minutos desde la conformación real del turno del móvil
+            const startMs = parseShiftStartMs(sh);
+            if (!isNaN(startMs) && nowMs >= startMs && (nowMs - startMs) <= graceMs) {
+                const remMin = Math.max(1, Math.ceil((graceMs - (nowMs - startMs)) / 60000));
+                return { inGrace: true, reason: `Brecha conformación turno (${remMin} min rest.)` };
+            }
+            // 2. 30 minutos al inicio o 30 minutos antes del cierre de los turnos de 8h (07-15, 15-23, 23-07)
+            const d = new Date(nowMs);
+            const curMin = d.getHours() * 60 + d.getMinutes();
+            for (const w of SHIFT_GRACE_CONFIG.SHIFT_BOUNDARIES_MIN) {
+                if (curMin >= w.start && curMin < w.end) {
+                    return { inGrace: true, reason: `Brecha relevo: ${w.label}` };
+                }
+            }
+            return { inGrace: false, reason: '' };
+        }
+
         function evaluateGpsGeofences() {
             const activeShifts = getActiveCheckedInShifts();
             const alerts = [];
             const nowMs = Date.now();
             const COOLDOWN_MS = 15 * 60 * 1000; // Evitar duplicar registros por 15 min por móvil y tipo
+            CencoState.geofenceGraceActive = getQuadrantGraceWindowInfo(null, nowMs).reason || '';
 
             activeShifts.forEach(sh => {
                 const gps = findLiveGpsForUnitName(sh.movil);
@@ -7764,6 +7797,7 @@
                 const detectedQuad = detectQuadrantForPoint(gps.lat, gps.lon);
                 const assignedQuad = String(sh.cuadrante || '').trim().toUpperCase();
                 const isVolante = !assignedQuad || assignedQuad.includes('VOLANTE') || assignedQuad.includes('TODA');
+                const graceInfo = getQuadrantGraceWindowInfo(sh, nowMs);
 
                 let violationType = '';
                 let motivo = '';
@@ -7774,6 +7808,11 @@
                     motivo = 'FUERA DEL LÍMITE COMUNAL DE PEÑAFLOR';
                     prioridad = 'CRITICA';
                 } else if (!isVolante && detectedQuad && detectedQuad !== assignedQuad) {
+                    // Respetar brecha de 30 min desde conformación y 30 min antes del cierre de turno (sin registro en bitácora)
+                    if (graceInfo.inGrace) {
+                        if (!CencoState.geofenceGraceActive) CencoState.geofenceGraceActive = graceInfo.reason;
+                        return;
+                    }
                     violationType = 'FUERA_CUADRANTE';
                     motivo = `FUERA DE SU CUADRANTE ASIGNADO (${assignedQuad} → detectado en ${detectedQuad})`;
                     prioridad = 'ALTA';
@@ -7893,7 +7932,8 @@
             } else if (CencoState.gpsUnits.length > 0) {
                 const onlineCount = CencoState.gpsUnits.filter(u => u.online).length;
                 dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-                txt.innerText = `GPS En Vivo: ${onlineCount}/${CencoState.gpsUnits.length} online (${CencoState.gpsLastFetch || 'ahora'})`;
+                const graceTag = CencoState.geofenceGraceActive ? ` • ⏱️ ${CencoState.geofenceGraceActive}` : '';
+                txt.innerText = `GPS En Vivo: ${onlineCount}/${CencoState.gpsUnits.length} online (${CencoState.gpsLastFetch || 'ahora'})${graceTag}`;
             } else if (CencoState.gpsError) {
                 dot.className = 'w-2 h-2 rounded-full bg-red-500';
                 txt.innerText = `GPS: ${CencoState.gpsError}`;
