@@ -184,27 +184,46 @@ function inicializarHojas() {
     }
   });
 
-  // Sembrar catálogo base de cámaras CCTV si está vacío
+  // Sembrar o migrar catálogo oficial de 22 cámaras reales de Peñaflor (KMZ)
   const shCam = ss.getSheetByName(SHEETS.CENCO_CAMARAS);
-  if (shCam && shCam.getLastRow() <= 1) {
+  if (shCam) {
     const defaultCams = [
-      ["CAM-01", "Plaza de Armas / Av. Vicuña Mackenna con Alcalde Luis Araya", "252A", "Peñaflor Centro", "PTZ 360°", "OPERATIVA", "-33.6063, -70.8768", "Cobertura Plaza y Bancos"],
-      ["CAM-02", "Manuel Rodríguez con Av. Caupolicán", "252A", "Peñaflor Centro", "PTZ 360°", "OPERATIVA", "-33.6085, -70.8792", "Control de flujo vehicular y colegios"],
-      ["CAM-03", "CESFAM Peñaflor / SAR Alcalde Luis Araya Cereceda", "252A", "Villa San Fernando", "Fija HD", "OPERATIVA", "-33.6039, -70.8745", "Acceso recinto salud"],
-      ["CAM-04", "Av. Malloquito con 14 de Julio", "252B", "Población 14 de Julio", "PTZ 360°", "OPERATIVA", "-33.6152, -70.8721", "Sector Malloquito y Villa Duralitte"],
-      ["CAM-05", "Cancha Los Diamelos Sur / Av. del Parque", "252B", "Villa Los Diamelos", "PTZ 360°", "OPERATIVA", "-33.6190, -70.8695", "Foco preventivo nocturno"],
-      ["CAM-06", "Acceso Parque Municipal El Trapiche / Camino El Trapiche", "252C", "El Trapiche", "LPR Patentes", "OPERATIVA", "-33.6124, -70.8920", "Lectura patentes acceso poniente"],
-      ["CAM-07", "Av. Las Palmeras con Villa Alameda", "252C", "Villa Alameda", "PTZ 360°", "OPERATIVA", "-33.6098, -70.8884", "Vigilancia especial Las Palmeras"],
-      ["CAM-08", "Plaza de Malloco / Av. Balmaceda con Toribio Larraín", "253A", "Malloco Norte", "PTZ 360°", "OPERATIVA", "-33.6130, -70.8542", "Cobertura Plaza Malloco y comercio"],
-      ["CAM-09", "CESFAM Dr. Fernando Monckeberg / Los Bosques", "253A", "Villa Los Bosques", "Fija HD", "OPERATIVA", "-33.6105, -70.8510", "Acceso CESFAM Malloco"],
-      ["CAM-10", "Centro Seguridad Comunitario Las Praderas (Sector Amarillo)", "253B", "Población Las Praderas", "PTZ 360°", "OPERATIVA", "-33.6215, -70.8568", "Monitoreo permanente Las Praderas"],
-      ["CAM-11", "Av. La Paz con Punta Arenas / Villa Berlín", "253B", "Malloco Sur", "PTZ 360°", "OPERATIVA", "-33.6240, -70.8595", "Cruce comercial y florerías"],
-      ["CAM-12", "Camino a Pelvín / Cruce Acceso Rural", "SRA", "Sector Pelvín", "LPR Patentes", "OPERATIVA", "-33.5910, -70.8950", "Control ingreso rural norte"],
-      ["CAM-13", "Camino El Guanaco / Peñaflor Alto", "SRB", "Peñaflor Alto", "PTZ 360°", "OPERATIVA", "-33.5880, -70.8710", "Vigilancia sector alto"],
-      ["CAM-14", "Ruta G-78 Camino a Valparaíso con Calle Bilbao", "SRC", "Camino Valparaíso", "LPR Patentes", "OPERATIVA", "-33.6045, -70.8615", "Pórtico lector de patentes Ruta G-78"],
-      ["CAM-15", "Cuesta de Mallarauco / Cruce El Sotillo", "SRA1", "Mallarauco", "LPR Patentes", "OPERATIVA", "-33.6010, -70.9180", "Control acceso poniente Mallarauco"]
+      ["CAM-101", "Av. Troncal - Ulkantún", "253A", "Malloco", "PTZ 360°", "OPERATIVA", "-33.604367, -70.864410", ""],
+      ["CAM-102", "21 de mayo - María Ester Garay", "252A", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.608441, -70.899745", ""],
+      ["CAM-103", "Bilbao - Vicuña Mackena", "252C", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.611011, -70.880928", ""],
+      ["CAM-104", "AV. Peñaflor - Calle 2", "252C", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.612676, -70.905891", ""],
+      ["CAM-105", "Vicuña Mackena - C. Eduardo Yañez", "253A", "Malloco", "PTZ 360°", "OPERATIVA", "-33.610024, -70.860956", ""],
+      ["CAM-106", "Malloquito - Progreso", "252B", "Peñaflor", "PTZ 360°", "CON OBSERVACIONES", "-33.603285, -70.884017", "Con problemas eléctricos no disponible, funciona a veces"],
+      ["CAM-107", "Catorce de Julio - 12 de Septiembre", "252B", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.600836, -70.880500", ""],
+      ["CAM-108", "Av. Bernardo O. - Av. La Paz", "253A", "Malloco", "PTZ 360°", "OPERATIVA", "-33.604786, -70.852579", ""],
+      ["CAM-109", "Balmaceda - Eliana Del Pin", "253A", "Malloco", "PTZ 360°", "CON OBSERVACIONES", "-33.607362, -70.855136", "Cámara necesita cambio"],
+      ["CAM-110", "Av. Peñaflor - Camino Mallarauco - Vicuña Mackena - San Martín", "252C", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.610697, -70.904997", ""],
+      ["CAM-111", "Vicuña Mackena - Concepción - Plaza 22", "253B", "Malloco", "PTZ 360°", "CON OBSERVACIONES", "-33.610482, -70.871418", "Problema eléctrico, cámara necesita cambio de ubicación"],
+      ["CAM-112", "Vicuña Mackena - Los Guindos", "252C", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.610687, -70.875501", ""],
+      ["CAM-113", "21 de Mayo - Francisco Bilbao", "252B", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.605944, -70.878208", ""],
+      ["CAM-114", "21 de Mayo - Concepción", "253A", "Malloco", "PTZ 360°", "OPERATIVA", "-33.608604, -70.870417", ""],
+      ["CAM-115", "Av. Miraflores - Av. Balmaceda", "253A", "Malloco", "PTZ 360°", "OPERATIVA", "-33.602943, -70.850953", ""],
+      ["CAM-116", "Plaza de Peñaflor - Alcalde Luis Araya Cereceda - Dr. Prado Tagle", "252A", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.608006, -70.900423", ""],
+      ["CAM-117", "Vicuña Mackena - 21 de Mayo", "252A", "Peñaflor", "PTZ 360°", "CON OBSERVACIONES", "-33.611106, -70.901979", "Problemas de focalización, cámara necesita reubicación"],
+      ["CAM-118", "Basterrica - 21 de Mayo", "252A", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.609379, -70.900961", ""],
+      ["CAM-119", "Torre Interior Municipalidad", "252A", "Peñaflor", "PTZ 360°", "OPERATIVA", "-33.607930, -70.900869", ""],
+      ["CAM-120", "Plaza de Malloco - Manuel González", "253A", "Malloco", "PTZ 360°", "OPERATIVA", "-33.604736, -70.852585", ""],
+      ["CAM-121", "Ulkantún Fija", "253A", "Malloco", "Fija HD", "OPERATIVA", "-33.604376, -70.864491", ""],
+      ["CAM-122", "21 de Mayo Fija", "252A", "Peñaflor", "Fija HD", "OPERATIVA", "-33.608376, -70.899820", ""]
     ];
-    shCam.getRange(2, 1, defaultCams.length, 8).setValues(defaultCams);
+
+    let shouldSeedRealCams = shCam.getLastRow() <= 1;
+    if (!shouldSeedRealCams && shCam.getLastRow() > 1) {
+      const existingIds = shCam.getRange(2, 1, shCam.getLastRow() - 1, 1).getValues().map(r => String(r[0] || "").trim().toUpperCase());
+      const hasLegacyDummy = existingIds.indexOf("CAM-01") >= 0 && existingIds.indexOf("CAM-101") === -1;
+      if (hasLegacyDummy) {
+        shCam.getRange(2, 1, shCam.getLastRow() - 1, 8).clearContent();
+        shouldSeedRealCams = true;
+      }
+    }
+    if (shouldSeedRealCams) {
+      shCam.getRange(2, 1, defaultCams.length, 8).setValues(defaultCams);
+    }
   }
 
   obtenerCarpetaEvidencias();
@@ -1614,6 +1633,21 @@ function apiHandleAction(payload) {
         shCam.getRange(foundRow, 1, 1, 8).setValues([rowVals]);
       } else {
         shCam.appendRow(rowVals);
+      }
+      return { ok: true, action: action, id: id };
+    }
+
+    if (action === "CENCO_ELIMINAR_CAMARA") {
+      const shCam = ss.getSheetByName(SHEETS.CENCO_CAMARAS);
+      const id = String(payload.id || "").trim().toUpperCase();
+      if (id && shCam && shCam.getLastRow() > 1) {
+        const ids = shCam.getRange(2, 1, shCam.getLastRow() - 1, 1).getValues();
+        for (let i = ids.length - 1; i >= 0; i--) {
+          if (String(ids[i][0] || "").trim().toUpperCase() === id) {
+            shCam.deleteRow(i + 2);
+            break;
+          }
+        }
       }
       return { ok: true, action: action, id: id };
     }
