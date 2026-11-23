@@ -2207,43 +2207,100 @@
                     </div>
 
                     <!-- ================================================================ -->
-                    <!-- MÓDULO 7: REPORTES (GENERADOR POR PERÍODO + ESTADÍSTICAS)        -->
+                    <!-- MÓDULO 7: REPORTES (FILTRO POR PERÍODO Y CATEGORIZACIÓN PDF/EXCEL) -->
                     <!-- ================================================================ -->
                     <div id="cad-mod-reportes" class="cad-module hidden flex-1 p-5 space-y-5">
-                        <div class="max-w-xl mx-auto cad-surface border cad-border rounded-xl p-5 space-y-4">
-                            <div>
-                                <h2 class="text-base font-bold cad-text">Generador de Reportes CAD</h2>
-                                <p class="text-xs cad-muted">Exporte informes consolidados por período en PDF oficial o planilla Excel (.CSV).</p>
-                            </div>
-                            <div class="space-y-3 text-xs">
+                        <div class="max-w-3xl mx-auto cad-surface border cad-border rounded-xl p-5 space-y-4">
+                            <div class="flex flex-wrap items-start justify-between gap-2">
                                 <div>
-                                    <label class="block font-semibold cad-text mb-1">Tipo de Reporte</label>
-                                    <select id="cad-rep-tipo" class="cad-input w-full">
-                                        <option value="PERIODO">Reporte Operativo por Período (Resumen + Bitácora)</option>
-                                        <option value="PROCEDIMIENTOS">Procedimientos CAD Detallados</option>
-                                        <option value="CCTV">Reporte de Alertas y Seguimiento CCTV</option>
-                                    </select>
+                                    <h2 class="text-base font-bold cad-text flex items-center gap-2"><i class="fa-solid fa-file-export text-blue-400"></i> Exportador de Registros CENCO (PDF y Excel)</h2>
+                                    <p class="text-xs cad-muted">Filtra por período y tipo de categorización para descargar informes oficiales en PDF o planilla Excel (.CSV).</p>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3">
+                                <span id="cad-rep-match-badge" class="px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-xs font-black">0 registros</span>
+                            </div>
+
+                            <!-- Atajos rápidos de período -->
+                            <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                                <span class="cad-muted mr-1">Período rápido:</span>
+                                <button type="button" onclick="setCencoReportPeriodPreset('today')" class="px-2.5 py-1 rounded-md cad-elevated border cad-border hover:border-blue-400 cad-text">Hoy</button>
+                                <button type="button" onclick="setCencoReportPeriodPreset('7d')" class="px-2.5 py-1 rounded-md cad-elevated border cad-border hover:border-blue-400 cad-text">Últimos 7 días</button>
+                                <button type="button" onclick="setCencoReportPeriodPreset('month')" class="px-2.5 py-1 rounded-md cad-elevated border cad-border hover:border-blue-400 cad-text">Este Mes</button>
+                                <button type="button" onclick="setCencoReportPeriodPreset('all')" class="px-2.5 py-1 rounded-md cad-elevated border cad-border hover:border-blue-400 cad-text">Todo el historial</button>
+                            </div>
+
+                            <div class="space-y-3 text-xs">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
                                         <label class="block font-semibold cad-text mb-1">Fecha inicio</label>
-                                        <input type="date" id="cad-rep-desde" class="cad-input w-full">
+                                        <input type="date" id="cad-rep-desde" onchange="updateCencoReportPreview()" class="cad-input w-full">
                                     </div>
                                     <div>
                                         <label class="block font-semibold cad-text mb-1">Fecha término</label>
-                                        <input type="date" id="cad-rep-hasta" class="cad-input w-full">
+                                        <input type="date" id="cad-rep-hasta" onchange="updateCencoReportPreview()" class="cad-input w-full">
                                     </div>
                                 </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block font-semibold cad-text mb-1">Tipo de Categorización</label>
+                                        <select id="cad-rep-categoria" onchange="updateCencoReportPreview()" class="cad-input w-full">
+                                            <option value="ALL">Todas las Categorizaciones</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block font-semibold cad-text mb-1">Origen del Registro</label>
+                                        <select id="cad-rep-origen" onchange="updateCencoReportPreview()" class="cad-input w-full">
+                                            <option value="ALL">Todos los Orígenes</option>
+                                            <option value="LLAMADO 1410">Llamado 1410</option>
+                                            <option value="CCTV">CCTV</option>
+                                            <option value="INSPECTOR TERRENO">Inspector Terreno</option>
+                                            <option value="TAREA DIARIA">Tarea Diaria</option>
+                                            <option value="ALERTA GPS GEOCERCA">Alerta GPS Geocerca</option>
+                                            <option value="ALERTA LPR LISTA NEGRA">Alerta LPR Lista Negra</option>
+                                            <option value="AVISTAMIENTO MECHERO">Avistamiento Mechero</option>
+                                            <option value="EMERGENCIA">Emergencia</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block font-semibold cad-text mb-1">Cuadrante</label>
+                                        <select id="cad-rep-cuadrante" onchange="updateCencoReportPreview()" class="cad-input w-full">
+                                            <option value="ALL">Todos los Cuadrantes</option>
+                                            <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                                            <option value="253A">253A</option><option value="253B">253B</option>
+                                            <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                                            <option value="FUERA_COMUNA">FUERA DE COMUNA</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block font-semibold cad-text mb-1">Estado</label>
+                                        <select id="cad-rep-estado" onchange="updateCencoReportPreview()" class="cad-input w-full">
+                                            <option value="ALL">Todos los Estados</option>
+                                            <option value="PENDIENTE_DESPACHO">Pendiente Despacho</option>
+                                            <option value="DESPACHADO">Despachado</option>
+                                            <option value="EN_PROCEDIMIENTO">En Procedimiento</option>
+                                            <option value="FINALIZADO">Cerrado / Finalizado</option>
+                                            <option value="DESCARTADA">Descartado</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <label class="flex items-center gap-2 cad-muted cursor-pointer">
                                     <input type="checkbox" id="cad-rep-importantes" checked class="accent-blue-500">
-                                    <span>Incluir detalle de procedimientos importantes y evidencias</span>
+                                    <span>Incluir detalle completo de cada procedimiento en el PDF</span>
                                 </label>
-                                <div class="flex gap-2 pt-2">
-                                    <button type="button" onclick="generateCencoReportPDF()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-md shadow">
-                                        <i class="fa-solid fa-file-pdf mr-1"></i> Generar reporte PDF
+
+                                <!-- Resumen rápido de la selección -->
+                                <div id="cad-rep-preview-summary" class="cad-elevated border cad-border rounded-lg p-3 text-[11px] cad-muted"></div>
+
+                                <div class="flex flex-wrap gap-2 pt-1">
+                                    <button type="button" onclick="generateCencoReportPDF()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-2.5 px-4 rounded-lg shadow flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-file-pdf"></i> Descargar PDF Filtrado
                                     </button>
-                                    <button type="button" onclick="exportCencoBitacoraCSV()" class="px-4 cad-elevated border cad-border hover:border-emerald-400 cad-text font-bold py-2.5 rounded-md">
-                                        <i class="fa-solid fa-file-excel text-emerald-400 mr-1"></i> Excel .CSV
+                                    <button type="button" onclick="exportCencoFilteredExcel()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 px-4 rounded-lg shadow flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-file-excel"></i> Descargar Excel (.CSV)
                                     </button>
                                 </div>
                             </div>
@@ -7486,6 +7543,9 @@
                 renderIntelWorkspace('cenco');
             } else if (modName === 'seguridad') {
                 setTimeout(() => renderMacroSecurityModule(), 100);
+            } else if (modName === 'reportes') {
+                populateCencoReportCategories();
+                updateCencoReportPreview();
             }
         }
 
@@ -9188,20 +9248,186 @@
             return doc.output('datauristring');
         }
 
+        function parseIncidentDateToISO(fechaStr) {
+            const s = String(fechaStr || '').trim();
+            if (!s) return '';
+            // YYYY-MM-DD
+            const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+            // DD-MM-YYYY or DD/MM/YYYY
+            const cl = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            if (cl) return `${cl[3]}-${String(cl[2]).padStart(2, '0')}-${String(cl[1]).padStart(2, '0')}`;
+            const t = Date.parse(s);
+            if (!isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+            return '';
+        }
+
+        function populateCencoReportCategories() {
+            const sel = document.getElementById('cad-rep-categoria');
+            if (!sel) return;
+            const prev = sel.value || 'ALL';
+            const set = new Set(Object.keys(CENCO_CATEGORIES || {}));
+            getCencoIncidentsDB().forEach(i => {
+                if (i.categoria && String(i.categoria).trim()) set.add(String(i.categoria).trim());
+            });
+            const sorted = Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+            sel.innerHTML = '<option value="ALL">Todas las Categorizaciones</option>' +
+                sorted.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c}</option>`).join('');
+            if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+        }
+
+        function setCencoReportPeriodPreset(preset) {
+            const dEl = document.getElementById('cad-rep-desde');
+            const hEl = document.getElementById('cad-rep-hasta');
+            const now = new Date();
+            const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            if (preset === 'today') {
+                if (dEl) dEl.value = fmt(now);
+                if (hEl) hEl.value = fmt(now);
+            } else if (preset === '7d') {
+                const start = new Date(now.getTime() - 6 * 86400000);
+                if (dEl) dEl.value = fmt(start);
+                if (hEl) hEl.value = fmt(now);
+            } else if (preset === 'month') {
+                const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                if (dEl) dEl.value = fmt(start);
+                if (hEl) hEl.value = fmt(now);
+            } else {
+                if (dEl) dEl.value = '';
+                if (hEl) hEl.value = '';
+            }
+            updateCencoReportPreview();
+        }
+
+        function getFilteredCencoReportData() {
+            const desde = document.getElementById('cad-rep-desde')?.value || '';
+            const hasta = document.getElementById('cad-rep-hasta')?.value || '';
+            const cat = document.getElementById('cad-rep-categoria')?.value || 'ALL';
+            const orig = document.getElementById('cad-rep-origen')?.value || 'ALL';
+            const quad = document.getElementById('cad-rep-cuadrante')?.value || 'ALL';
+            const est = document.getElementById('cad-rep-estado')?.value || 'ALL';
+
+            const filtered = getCencoIncidentsDB().filter(inc => {
+                const iso = parseIncidentDateToISO(inc.fechaIngreso);
+                if (desde && iso && iso < desde) return false;
+                if (hasta && iso && iso > hasta) return false;
+                if (cat !== 'ALL' && String(inc.categoria || '').trim().toLowerCase() !== cat.toLowerCase()) return false;
+                if (orig !== 'ALL' && !String(inc.origen || '').toUpperCase().includes(orig.toUpperCase())) return false;
+                if (quad !== 'ALL' && String(inc.cuadrante || '').trim().toUpperCase() !== quad.toUpperCase()) return false;
+                if (est !== 'ALL' && String(inc.estado || '').trim().toUpperCase() !== est.toUpperCase()) return false;
+                return true;
+            });
+            return { filtered, desde, hasta, cat, orig, quad, est };
+        }
+
+        function updateCencoReportPreview() {
+            const { filtered, desde, hasta, cat } = getFilteredCencoReportData();
+            const badge = document.getElementById('cad-rep-match-badge');
+            if (badge) badge.innerText = `${filtered.length} registro${filtered.length === 1 ? '' : 's'}`;
+            const sumEl = document.getElementById('cad-rep-preview-summary');
+            if (!sumEl) return;
+            if (filtered.length === 0) {
+                sumEl.innerHTML = 'No hay registros que coincidan con el período y categorización seleccionados.';
+                return;
+            }
+            const byCat = {};
+            filtered.forEach(i => { const k = i.categoria || 'Sin categoría'; byCat[k] = (byCat[k] || 0) + 1; });
+            const top = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            sumEl.innerHTML = `
+                <div class="font-bold cad-text mb-1">Resumen selección (${desde || 'Inicio'} → ${hasta || 'Hoy'} • ${cat === 'ALL' ? 'Todas las categorizaciones' : cat}):</div>
+                <div class="flex flex-wrap gap-1.5">
+                    ${top.map(([k, v]) => `<span class="px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30 font-semibold">${k}: <strong>${v}</strong></span>`).join('')}
+                </div>
+            `;
+        }
+
         function generateCencoReportPDF() {
-            const activeShift = getActiveCencoShift() || {
-                turnoCencoId: `REP-CAD-${Date.now().toString().slice(-6)}`,
-                fechaInicio: document.getElementById('cad-rep-desde')?.value || new Date().toLocaleDateString('es-CL'),
-                fechaCierre: document.getElementById('cad-rep-hasta')?.value || new Date().toLocaleDateString('es-CL'),
-                operador: AppState.userName || AppState.userRut,
-                rolCenco: AppState.userRole,
-                puesto: 'Reporte Consolidado CENCO',
-                rangoHorario: 'PERÍODO',
-                novedadesInicio: 'Reporte operativo generado desde Generador de Reportes CAD',
-                resumenCierre: 'Consolidado oficial Peña Seguro 1410'
-            };
-            generateCencoShiftPDF(activeShift, true);
-            showToast('✓ Reporte PDF descargado', 'bg-emerald-600');
+            const { filtered, desde, hasta, cat, orig, quad, est } = getFilteredCencoReportData();
+            if (filtered.length === 0) {
+                showToast('Sin registros para exportar con esos filtros', 'bg-amber-600');
+                return;
+            }
+            if (!window.jspdf) { showToast('Librería PDF no cargada', 'bg-red-600'); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+            const includeDetail = document.getElementById('cad-rep-importantes')?.checked !== false;
+
+            // Header institucional
+            doc.setFillColor(10, 36, 99);
+            doc.rect(0, 0, 279, 24, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.text('PEÑA SEGURO 1410 — REPORTE DE REGISTROS CENTRAL CENCO CAD', 12, 11);
+            doc.setFontSize(8.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Período: ${desde || 'Todo'} a ${hasta || 'Hoy'}  |  Categorización: ${cat === 'ALL' ? 'Todas' : cat}  |  Origen: ${orig === 'ALL' ? 'Todos' : orig}  |  Cuadrante: ${quad === 'ALL' ? 'Todos' : quad}  |  Total: ${filtered.length}`, 12, 18);
+
+            // Resumen por categorización
+            const byCat = {};
+            filtered.forEach(i => { const k = i.categoria || 'Sin categoría'; byCat[k] = (byCat[k] || 0) + 1; });
+            const catRows = Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, String(v), `${Math.round((v / filtered.length) * 100)}%`]);
+            doc.autoTable({
+                startY: 28,
+                head: [['Categorización', 'Cantidad', '% del Total']],
+                body: catRows,
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [30, 58, 138], textColor: 255 },
+                tableWidth: 130,
+                margin: { left: 12 }
+            });
+
+            // Tabla detallada de registros
+            const headCols = includeDetail
+                ? [['Folio', 'Fecha', 'Origen', 'Categorización / Tipo', 'Cuadr.', 'Dirección', 'Móvil', 'Estado', 'Detalle']]
+                : [['Folio', 'Fecha', 'Origen', 'Categorización / Tipo', 'Cuadr.', 'Dirección', 'Móvil', 'Estado']];
+            const bodyRows = filtered.map(i => {
+                const base = [
+                    i.folioId || '-',
+                    i.fechaIngreso || '-',
+                    i.origen || '-',
+                    `${i.categoria || '-'}${i.subcategoria ? ' / ' + i.subcategoria : ''}`,
+                    i.cuadrante || '-',
+                    i.direccion || '-',
+                    i.movilesAsignados || '-',
+                    i.estado || '-'
+                ];
+                if (includeDetail) base.push(String(i.detalle || '-').slice(0, 160));
+                return base;
+            });
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 6,
+                head: headCols,
+                body: bodyRows,
+                theme: 'striped',
+                styles: { fontSize: 7.2, cellPadding: 1.8, overflow: 'linebreak' },
+                headStyles: { fillColor: [15, 23, 42], textColor: 255 },
+                margin: { left: 12, right: 12 }
+            });
+
+            const slug = (cat === 'ALL' ? 'Todas' : cat).replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 24);
+            doc.save(`Reporte_CENCO_${slug}_${desde || 'inicio'}_a_${hasta || 'hoy'}.pdf`);
+            showToast(`✓ Reporte PDF descargado (${filtered.length} registros)`, 'bg-emerald-600');
+        }
+
+        function exportCencoFilteredExcel() {
+            const { filtered, desde, hasta, cat } = getFilteredCencoReportData();
+            if (filtered.length === 0) {
+                showToast('Sin registros para exportar con esos filtros', 'bg-amber-600');
+                return;
+            }
+            const headers = ['Folio', 'Fecha', 'Origen', 'Estado', 'Prioridad', 'Categorizacion', 'Subcategoria', 'Cuadrante', 'Direccion', 'Denunciante', 'Telefono', 'Detalle', 'Operador', 'Moviles', 'Resolucion', 'Imagenes'];
+            const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const rows = filtered.map(i => [i.folioId, i.fechaIngreso, i.origen, i.estado, i.prioridad, i.categoria, i.subcategoria, i.cuadrante, i.direccion, i.denunciante, i.telefono, i.detalle, i.ingresadoPor, i.movilesAsignados, i.resolucion, (i.imagenes || []).join(' | ')].map(esc).join(','));
+            const blob = new Blob(['\uFEFF' + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const slug = (cat === 'ALL' ? 'Todas' : cat).replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 24);
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Registros_CENCO_${slug}_${desde || 'inicio'}_a_${hasta || 'hoy'}.csv`;
+            a.click();
+            showToast(`✓ Excel (.CSV) descargado (${filtered.length} registros)`, 'bg-emerald-600');
         }
 
         function exportSingleCencoFolioPDF() {
