@@ -1946,19 +1946,38 @@
                             </div>
                         </div>
 
-                        <!-- Form Nueva Cámara -->
-                        <form id="form-cenco-new-camera" class="hidden cad-surface border border-cyan-500/40 rounded-lg p-4 grid grid-cols-1 md:grid-cols-6 gap-2 text-xs">
-                            <input type="text" id="new-cam-id" class="cad-input" placeholder="ID (Ej: CAM-16)" required>
-                            <select id="new-cam-quad" class="cad-input">
-                                <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
-                                <option value="253A">253A</option><option value="253B">253B</option><option value="SRA">SRA</option>
-                                <option value="SRB">SRB</option><option value="SRC">SRC</option><option value="SRA1">SRA1</option>
-                            </select>
-                            <input type="text" id="new-cam-name" class="cad-input md:col-span-2" placeholder="Intersección / Ubicación exacta" required>
-                            <input type="text" id="new-cam-sector" class="cad-input" placeholder="Sector / Villa">
-                            <div class="flex gap-1.5">
-                                <select id="new-cam-tipo" class="cad-input flex-1"><option value="PTZ 360°">PTZ 360°</option><option value="Fija HD">Fija HD</option><option value="LPR Patentes">LPR</option></select>
-                                <button type="submit" class="bg-cyan-500 text-slate-950 font-black px-3 rounded-md">Guardar</button>
+                        <!-- Form Crear / Modificar Cámara CCTV -->
+                        <form id="form-cenco-new-camera" class="hidden cad-surface border border-cyan-500/40 rounded-lg p-4 space-y-2.5 text-xs">
+                            <div class="flex items-center justify-between border-b cad-border pb-2">
+                                <span id="cam-form-title" class="font-bold text-cyan-400 uppercase tracking-wide"><i class="fa-solid fa-video mr-1"></i> Nueva Cámara CCTV</span>
+                                <button type="button" onclick="cancelEditCencoCamera()" class="cad-muted hover:cad-text text-xs font-bold">✕ Cancelar</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-6 gap-2">
+                                <input type="text" id="new-cam-id" class="cad-input" placeholder="ID (Ej: CAM-123)" required>
+                                <select id="new-cam-quad" class="cad-input">
+                                    <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                                    <option value="253A">253A</option><option value="253B">253B</option><option value="SRA">SRA</option>
+                                    <option value="SRB">SRB</option><option value="SRC">SRC</option><option value="SRA1">SRA1</option>
+                                </select>
+                                <input type="text" id="new-cam-name" class="cad-input md:col-span-2" placeholder="Intersección / Ubicación exacta" required>
+                                <input type="text" id="new-cam-sector" class="cad-input" placeholder="Sector (Peñaflor / Malloco)">
+                                <select id="new-cam-tipo" class="cad-input">
+                                    <option value="PTZ 360°">PTZ 360°</option>
+                                    <option value="Fija HD">Fija HD</option>
+                                    <option value="LPR Patentes">LPR Patentes</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-6 gap-2">
+                                <select id="new-cam-estado" class="cad-input">
+                                    <option value="OPERATIVA">🟢 OPERATIVA</option>
+                                    <option value="CON OBSERVACIONES">🟡 CON OBSERVACIONES</option>
+                                    <option value="FUERA DE SERVICIO">🔴 FUERA DE SERVICIO</option>
+                                </select>
+                                <input type="text" id="new-cam-gps" class="cad-input md:col-span-2 font-mono" placeholder="GPS: -33.608441, -70.899745">
+                                <input type="text" id="new-cam-obs" class="cad-input md:col-span-2" placeholder="Observaciones (ej: problema eléctrico, reubicación...)">
+                                <button type="submit" id="btn-save-cam-submit" class="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-black px-3 py-2 rounded-md">
+                                    <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar
+                                </button>
                             </div>
                         </form>
 
@@ -7073,29 +7092,37 @@
             'SRA1': ['252C', 'SRA']
         };
 
+        // 22 Cámaras Reales de Peñaflor (importadas desde Cámaras_Peñaflor_(actuales).kmz)
         const DEFAULT_CENCO_CAMERAS = [
-            { id: 'CAM-01', nombre: 'Plaza de Armas / Av. Vicuña Mackenna con Alcalde Luis Araya', cuadrante: '252A', sector: 'Peñaflor Centro', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6063, -70.8768', observaciones: 'Cobertura Plaza y Bancos' },
-            { id: 'CAM-02', nombre: 'Manuel Rodríguez con Av. Caupolicán', cuadrante: '252A', sector: 'Peñaflor Centro', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6085, -70.8792', observaciones: 'Control de flujo vehicular y colegios' },
-            { id: 'CAM-03', nombre: 'CESFAM Peñaflor / SAR Alcalde Luis Araya Cereceda', cuadrante: '252A', sector: 'Villa San Fernando', tipo: 'Fija HD', estado: 'OPERATIVA', gps: '-33.6039, -70.8745', observaciones: 'Acceso recinto salud' },
-            { id: 'CAM-04', nombre: 'Av. Malloquito con 14 de Julio', cuadrante: '252B', sector: 'Población 14 de Julio', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6152, -70.8721', observaciones: 'Sector Malloquito y Villa Duralitte' },
-            { id: 'CAM-05', nombre: 'Cancha Los Diamelos Sur / Av. del Parque', cuadrante: '252B', sector: 'Villa Los Diamelos', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6190, -70.8695', observaciones: 'Foco preventivo nocturno' },
-            { id: 'CAM-06', nombre: 'Acceso Parque Municipal El Trapiche / Camino El Trapiche', cuadrante: '252C', sector: 'El Trapiche', tipo: 'LPR Patentes', estado: 'OPERATIVA', gps: '-33.6124, -70.8920', observaciones: 'Lectura patentes acceso poniente' },
-            { id: 'CAM-07', nombre: 'Av. Las Palmeras con Villa Alameda', cuadrante: '252C', sector: 'Villa Alameda', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6098, -70.8884', observaciones: 'Vigilancia especial Las Palmeras' },
-            { id: 'CAM-08', nombre: 'Plaza de Malloco / Av. Balmaceda con Toribio Larraín', cuadrante: '253A', sector: 'Malloco Norte', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6130, -70.8542', observaciones: 'Cobertura Plaza Malloco y comercio' },
-            { id: 'CAM-09', nombre: 'CESFAM Dr. Fernando Monckeberg / Los Bosques', cuadrante: '253A', sector: 'Villa Los Bosques', tipo: 'Fija HD', estado: 'OPERATIVA', gps: '-33.6105, -70.8510', observaciones: 'Acceso CESFAM Malloco' },
-            { id: 'CAM-10', nombre: 'Centro Seguridad Comunitario Las Praderas (Sector Amarillo)', cuadrante: '253B', sector: 'Población Las Praderas', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6215, -70.8568', observaciones: 'Monitoreo permanente Las Praderas' },
-            { id: 'CAM-11', nombre: 'Av. La Paz con Punta Arenas / Villa Berlín', cuadrante: '253B', sector: 'Malloco Sur', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.6240, -70.8595', observaciones: 'Cruce comercial y florerías' },
-            { id: 'CAM-12', nombre: 'Camino a Pelvín / Cruce Acceso Rural', cuadrante: 'SRA', sector: 'Sector Pelvín', tipo: 'LPR Patentes', estado: 'OPERATIVA', gps: '-33.5910, -70.8950', observaciones: 'Control ingreso rural norte' },
-            { id: 'CAM-13', nombre: 'Camino El Guanaco / Peñaflor Alto', cuadrante: 'SRB', sector: 'Peñaflor Alto', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.5880, -70.8710', observaciones: 'Vigilancia sector alto' },
-            { id: 'CAM-14', nombre: 'Ruta G-78 Camino a Valparaíso con Calle Bilbao', cuadrante: 'SRC', sector: 'Camino Valparaíso', tipo: 'LPR Patentes', estado: 'OPERATIVA', gps: '-33.6045, -70.8615', observaciones: 'Pórtico lector de patentes Ruta G-78' },
-            { id: 'CAM-15', nombre: 'Cuesta de Mallarauco / Cruce El Sotillo', cuadrante: 'SRA1', sector: 'Mallarauco', tipo: 'LPR Patentes', estado: 'OPERATIVA', gps: '-33.6010, -70.9180', observaciones: 'Control acceso poniente Mallarauco' }
+            { id: 'CAM-101', nombre: 'Av. Troncal - Ulkantún', cuadrante: '253A', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.604367, -70.864410', observaciones: '' },
+            { id: 'CAM-102', nombre: '21 de mayo - María Ester Garay', cuadrante: '252A', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.608441, -70.899745', observaciones: '' },
+            { id: 'CAM-103', nombre: 'Bilbao - Vicuña Mackena', cuadrante: '252C', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.611011, -70.880928', observaciones: '' },
+            { id: 'CAM-104', nombre: 'AV. Peñaflor - Calle 2', cuadrante: '252C', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.612676, -70.905891', observaciones: '' },
+            { id: 'CAM-105', nombre: 'Vicuña Mackena - C. Eduardo Yañez', cuadrante: '253A', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.610024, -70.860956', observaciones: '' },
+            { id: 'CAM-106', nombre: 'Malloquito - Progreso', cuadrante: '252B', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'CON OBSERVACIONES', gps: '-33.603285, -70.884017', observaciones: 'Con problemas eléctricos no disponible, funciona a veces' },
+            { id: 'CAM-107', nombre: 'Catorce de Julio - 12 de Septiembre', cuadrante: '252B', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.600836, -70.880500', observaciones: '' },
+            { id: 'CAM-108', nombre: 'Av. Bernardo O. - Av. La Paz', cuadrante: '253A', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.604786, -70.852579', observaciones: '' },
+            { id: 'CAM-109', nombre: 'Balmaceda - Eliana Del Pin', cuadrante: '253A', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'CON OBSERVACIONES', gps: '-33.607362, -70.855136', observaciones: 'Cámara necesita cambio' },
+            { id: 'CAM-110', nombre: 'Av. Peñaflor - Camino Mallarauco - Vicuña Mackena - San Martín', cuadrante: '252C', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.610697, -70.904997', observaciones: '' },
+            { id: 'CAM-111', nombre: 'Vicuña Mackena - Concepción - Plaza 22', cuadrante: '253B', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'CON OBSERVACIONES', gps: '-33.610482, -70.871418', observaciones: 'Problema eléctrico, cámara necesita cambio de ubicación' },
+            { id: 'CAM-112', nombre: 'Vicuña Mackena - Los Guindos', cuadrante: '252C', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.610687, -70.875501', observaciones: '' },
+            { id: 'CAM-113', nombre: '21 de Mayo - Francisco Bilbao', cuadrante: '252B', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.605944, -70.878208', observaciones: '' },
+            { id: 'CAM-114', nombre: '21 de Mayo - Concepción', cuadrante: '253A', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.608604, -70.870417', observaciones: '' },
+            { id: 'CAM-115', nombre: 'Av. Miraflores - Av. Balmaceda', cuadrante: '253A', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.602943, -70.850953', observaciones: '' },
+            { id: 'CAM-116', nombre: 'Plaza de Peñaflor - Alcalde Luis Araya Cereceda - Dr. Prado Tagle', cuadrante: '252A', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.608006, -70.900423', observaciones: '' },
+            { id: 'CAM-117', nombre: 'Vicuña Mackena - 21 de Mayo', cuadrante: '252A', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'CON OBSERVACIONES', gps: '-33.611106, -70.901979', observaciones: 'Problemas de focalización, cámara necesita reubicación' },
+            { id: 'CAM-118', nombre: 'Basterrica - 21 de Mayo', cuadrante: '252A', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.609379, -70.900961', observaciones: '' },
+            { id: 'CAM-119', nombre: 'Torre Interior Municipalidad', cuadrante: '252A', sector: 'Peñaflor', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.607930, -70.900869', observaciones: '' },
+            { id: 'CAM-120', nombre: 'Plaza de Malloco - Manuel González', cuadrante: '253A', sector: 'Malloco', tipo: 'PTZ 360°', estado: 'OPERATIVA', gps: '-33.604736, -70.852585', observaciones: '' },
+            { id: 'CAM-121', nombre: 'Ulkantún Fija', cuadrante: '253A', sector: 'Malloco', tipo: 'Fija HD', estado: 'OPERATIVA', gps: '-33.604376, -70.864491', observaciones: '' },
+            { id: 'CAM-122', nombre: '21 de Mayo Fija', cuadrante: '252A', sector: 'Peñaflor', tipo: 'Fija HD', estado: 'OPERATIVA', gps: '-33.608376, -70.899820', observaciones: '' }
         ];
 
         const CencoState = {
             activeModule: 'central',
             centralMainTab: 'procedimientos',
             centralProcSubtab: 'crear',
-            selectedCameraId: 'CAM-01',
+            selectedCameraId: 'CAM-101',
             currentModalFolioId: '',
             tempImages: { tel: [], cctv: [], modal: [] },
             initialized: false,
@@ -7137,7 +7164,15 @@
         function getCencoCamerasDB() {
             try {
                 const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.CENCO_CAMERAS));
-                return (Array.isArray(stored) && stored.length > 0) ? stored : DEFAULT_CENCO_CAMERAS;
+                if (Array.isArray(stored) && stored.length > 0) {
+                    const hasLegacyDummy = stored.some(c => c.id === 'CAM-01') && !stored.some(c => c.id === 'CAM-101');
+                    if (hasLegacyDummy) {
+                        saveCencoCamerasDB(DEFAULT_CENCO_CAMERAS);
+                        return DEFAULT_CENCO_CAMERAS;
+                    }
+                    return stored;
+                }
+                return DEFAULT_CENCO_CAMERAS;
             } catch (e) { return DEFAULT_CENCO_CAMERAS; }
         }
         function saveCencoCamerasDB(list) {
@@ -7937,22 +7972,30 @@
                 });
             }
 
-            // 2. Cámaras CCTV (con acceso directo a alerta)
+            // 2. Cámaras CCTV Reales (con estado visual, alerta y edición directa)
             if (CencoState.mapVisibility.cameras) {
                 getCencoCamerasDB().forEach((cam, idx) => {
                     const coords = parseGpsOrQuadrantCoords(cam.gps, cam.cuadrante, idx);
+                    const st = String(cam.estado || 'OPERATIVA').toUpperCase();
+                    const pillStyle = st.includes('FUERA')
+                        ? 'background:#991b1b;border-color:#f87171;'
+                        : (st.includes('OBS') ? 'background:#92400e;border-color:#fbbf24;' : '');
                     const icon = L.divIcon({
                         className: '',
-                        html: `<div class="cad-map-cam-pill"><i class="fa-solid fa-video mr-1"></i>${cam.id}</div>`,
-                        iconSize: [64, 22],
-                        iconAnchor: [32, 11]
+                        html: `<div class="cad-map-cam-pill" style="${pillStyle}"><i class="fa-solid fa-video mr-1"></i>${cam.id}</div>`,
+                        iconSize: [72, 22],
+                        iconAnchor: [36, 11]
                     });
                     L.marker(coords, { icon }).bindPopup(`
                         <div class="text-xs font-sans space-y-1">
                             <div class="font-black text-cyan-900">${cam.id} • Cuadrante ${cam.cuadrante}</div>
                             <div class="font-semibold">${cam.nombre}</div>
-                            <div class="text-slate-500">${cam.tipo} • ${cam.sector}</div>
-                            <button onclick="jumpFromMapToCctvCamera('${cam.id}')" style="background:#0891b2;color:#fff;padding:4px 8px;border-radius:6px;font-weight:700;font-size:11px;margin-top:4px;cursor:pointer;">Ver Móviles Cercanos / Alertar</button>
+                            <div class="text-slate-500">${cam.tipo} • ${cam.sector} • <strong>${st}</strong></div>
+                            ${cam.observaciones ? `<div class="text-[11px] text-amber-800 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5">${cam.observaciones}</div>` : ''}
+                            <div class="flex gap-1.5 mt-1.5">
+                                <button onclick="jumpFromMapToCctvCamera('${cam.id}')" style="background:#0891b2;color:#fff;padding:4px 8px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">Alertar</button>
+                                <button onclick="editCencoCameraFromMap('${cam.id}')" style="background:#334155;color:#fff;padding:4px 8px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;">✏️ Editar</button>
+                            </div>
                         </div>
                     `).addTo(camerasGroup);
                 });
@@ -8372,15 +8415,29 @@
             if (listEl) {
                 listEl.innerHTML = filtered.map(c => {
                     const sel = c.id === CencoState.selectedCameraId;
+                    const st = String(c.estado || 'OPERATIVA').toUpperCase();
+                    const stBadge = st.includes('FUERA')
+                        ? '<span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[9px] font-bold">FUERA SERV.</span>'
+                        : (st.includes('OBS') ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-bold">OBS.</span>' : '');
                     return `
-                        <button type="button" onclick="onCencoCctvCameraSelect('${c.id}')" class="text-left p-2.5 rounded-lg border transition ${sel ? 'border-cyan-400 bg-cyan-500/15' : 'cad-elevated cad-border hover:border-blue-400'}">
-                            <div class="flex items-center justify-between">
+                        <div onclick="onCencoCctvCameraSelect('${c.id}')" class="cursor-pointer text-left p-2.5 rounded-lg border transition ${sel ? 'border-cyan-400 bg-cyan-500/15' : 'cad-elevated cad-border hover:border-blue-400'}">
+                            <div class="flex items-center justify-between gap-1">
                                 <span class="font-bold text-xs text-cyan-400"><i class="fa-solid fa-video mr-1"></i>${c.id}</span>
-                                <span class="px-1.5 py-0.5 rounded cad-surface border cad-border text-[10px] font-bold cad-text">${c.cuadrante}</span>
+                                <div class="flex items-center gap-1">
+                                    ${stBadge}
+                                    <span class="px-1.5 py-0.5 rounded cad-surface border cad-border text-[10px] font-bold cad-text">${c.cuadrante}</span>
+                                </div>
                             </div>
                             <p class="text-[11px] font-semibold cad-text mt-1 line-clamp-2">${c.nombre}</p>
-                            <p class="text-[10px] cad-muted mt-0.5">${c.tipo} • ${c.sector}</p>
-                        </button>
+                            ${c.observaciones ? `<p class="text-[10px] text-amber-400 mt-0.5 line-clamp-1" title="${c.observaciones}"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>${c.observaciones}</p>` : ''}
+                            <div class="flex items-center justify-between mt-1.5 pt-1 border-t cad-border/60">
+                                <span class="text-[10px] cad-muted">${c.tipo} • ${c.sector}</span>
+                                <div class="flex items-center gap-1" onclick="event.stopPropagation()">
+                                    <button type="button" onclick="editCencoCamera('${c.id}')" class="px-1.5 py-0.5 rounded bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 text-[10px] font-bold" title="Modificar cámara"><i class="fa-solid fa-pen"></i></button>
+                                    <button type="button" onclick="deleteCencoCamera('${c.id}')" class="px-1.5 py-0.5 rounded bg-red-500/15 hover:bg-red-500/35 text-red-300 text-[10px] font-bold" title="Eliminar cámara"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
                     `;
                 }).join('');
             }
@@ -8432,7 +8489,60 @@
         }
 
         function toggleNewCameraForm() {
-            document.getElementById('form-cenco-new-camera')?.classList.toggle('hidden');
+            const form = document.getElementById('form-cenco-new-camera');
+            if (!form) return;
+            const willShow = form.classList.contains('hidden');
+            if (willShow) {
+                form.reset();
+                const idEl = document.getElementById('new-cam-id');
+                if (idEl) idEl.readOnly = false;
+                const titleEl = document.getElementById('cam-form-title');
+                if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-video mr-1"></i> Nueva Cámara CCTV';
+            }
+            form.classList.toggle('hidden');
+        }
+
+        function editCencoCamera(camId) {
+            const cam = getCencoCamerasDB().find(c => c.id === camId);
+            const form = document.getElementById('form-cenco-new-camera');
+            if (!cam || !form) return;
+            form.classList.remove('hidden');
+            const idEl = document.getElementById('new-cam-id');
+            if (idEl) { idEl.value = cam.id; idEl.readOnly = true; }
+            document.getElementById('new-cam-quad').value = cam.cuadrante || '252A';
+            document.getElementById('new-cam-name').value = cam.nombre || '';
+            document.getElementById('new-cam-sector').value = cam.sector || 'Peñaflor';
+            document.getElementById('new-cam-tipo').value = cam.tipo || 'PTZ 360°';
+            document.getElementById('new-cam-estado').value = cam.estado || 'OPERATIVA';
+            document.getElementById('new-cam-gps').value = cam.gps || '';
+            document.getElementById('new-cam-obs').value = cam.observaciones || '';
+            const titleEl = document.getElementById('cam-form-title');
+            if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-pen-to-square mr-1"></i> Editando ${cam.id}`;
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function editCencoCameraFromMap(camId) {
+            switchCencoModule('cctv');
+            setTimeout(() => editCencoCamera(camId), 120);
+        }
+
+        function cancelEditCencoCamera() {
+            const form = document.getElementById('form-cenco-new-camera');
+            if (!form) return;
+            form.reset();
+            const idEl = document.getElementById('new-cam-id');
+            if (idEl) idEl.readOnly = false;
+            form.classList.add('hidden');
+        }
+
+        async function deleteCencoCamera(camId) {
+            if (!confirm(`¿Eliminar la cámara ${camId} del catálogo CCTV y del mapa?`)) return;
+            const cams = getCencoCamerasDB().filter(c => c.id !== camId);
+            saveCencoCamerasDB(cams);
+            renderCencoCamerasList();
+            renderCadMapMarkers();
+            await sendPayloadToGoogleSheets({ action: 'CENCO_ELIMINAR_CAMARA', id: camId });
+            showToast(`Cámara ${camId} eliminada`, 'bg-amber-600');
         }
 
         function renderCencoCctvHistory() {
@@ -9182,27 +9292,32 @@
                 showToast(`✓ Alerta ${alertaId} enviada al Despachador`, 'bg-cyan-700');
             });
 
-            // 5. Nueva Cámara CCTV
+            // 5. Crear o Modificar Cámara CCTV
             document.getElementById('form-cenco-new-camera')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const gpsVal = (document.getElementById('new-cam-gps')?.value || '').trim();
+                let quadVal = document.getElementById('new-cam-quad').value;
+                // Si se ingresó GPS válido y el cuadrante no se cambió, mantener el elegido por el usuario
                 const cam = {
                     id: document.getElementById('new-cam-id').value.trim().toUpperCase(),
-                    cuadrante: document.getElementById('new-cam-quad').value,
+                    cuadrante: quadVal,
                     nombre: document.getElementById('new-cam-name').value.trim(),
                     sector: document.getElementById('new-cam-sector').value.trim() || 'Peñaflor',
                     tipo: document.getElementById('new-cam-tipo').value,
-                    estado: 'OPERATIVA', gps: '', observaciones: ''
+                    estado: document.getElementById('new-cam-estado')?.value || 'OPERATIVA',
+                    gps: gpsVal,
+                    observaciones: (document.getElementById('new-cam-obs')?.value || '').trim()
                 };
                 const cams = getCencoCamerasDB();
                 const idx = cams.findIndex(c => c.id === cam.id);
-                if (idx >= 0) cams[idx] = cam; else cams.push(cam);
+                const isEdit = idx >= 0;
+                if (isEdit) cams[idx] = cam; else cams.push(cam);
                 saveCencoCamerasDB(cams);
-                toggleNewCameraForm();
-                e.target.reset();
+                cancelEditCencoCamera();
                 renderCencoCamerasList();
                 renderCadMapMarkers();
                 await sendPayloadToGoogleSheets(Object.assign({ action: 'CENCO_GUARDAR_CAMARA' }, cam));
-                showToast(`✓ Cámara ${cam.id} guardada`, 'bg-emerald-600');
+                showToast(`✓ Cámara ${cam.id} ${isEdit ? 'actualizada' : 'creada'} en mapa y planilla`, 'bg-emerald-600');
             });
 
             // 6. Modal Confirmar Despacho
