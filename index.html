@@ -10201,7 +10201,138 @@
             );
         }
 
-        // --- ESCÁNER OCR DE PATENTES CON CÁMARA (TESSERACT.JS) + VERIFICACIÓN LISTA NEGRA ---
+        // --- ESCÁNER OCR DE PATENTES CHILENAS (PREPROCESAMIENTO + REGLAS POSICIONALES + MATCH EXACTO Y SIMILARIDAD) ---
+        const LPR_NOISE_WORDS = new Set(['CHILE', 'CERATO', 'TOYOTA', 'SUZUKI', 'HYUNDAI', 'NISSAN', 'HONDA', 'MAZDA', 'CHEVROLET', 'PEUGEOT', 'RENAULT', 'SUBARU', 'MITSUBISHI', 'FORD', 'TURBO', 'SPORT', 'SEDAN', 'DIESEL', 'MOTOR', 'AUTOS']);
+
+        function fixToLetters(s) {
+            return s.replace(/0/g, 'O').replace(/1/g, 'I').replace(/2/g, 'Z').replace(/5/g, 'S').replace(/6/g, 'G').replace(/8/g, 'B').replace(/4/g, 'A');
+        }
+        function fixToDigits(s) {
+            return s.replace(/[ODQ]/g, '0').replace(/[IL]/g, '1').replace(/Z/g, '2').replace(/S/g, '5').replace(/G/g, '6').replace(/B/g, '8').replace(/A/g, '4');
+        }
+
+        function extractChileanPlateCandidates(rawText) {
+            const upper = String(rawText || '').toUpperCase().replace(/[·•\.\-_]/g, ' ');
+            const lines = upper.split(/\r?\n/).map(l => l.replace(/[^A-Z0-9\s]/g, ' ').trim()).filter(Boolean);
+            const candidates = [];
+            const seen = new Set();
+            const pushCand = (c, score) => {
+                const clean = normalizePlate(c);
+                if (!clean || clean.length < 5 || clean.length > 6 || LPR_NOISE_WORDS.has(clean)) return;
+                // Validar formato chileno real: LLLLNN, LLNNNN o LLLNN
+                const isNewCar = /^[B-DF-HJ-LP-TV-Z]{4}\d{2}$/.test(clean) || /^[A-Z]{4}\d{2}$/.test(clean);
+                const isOldCar = /^[A-Z]{2}\d{4}$/.test(clean);
+                const isMoto = /^[A-Z]{3}\d{2}$/.test(clean);
+                if (!isNewCar && !isOldCar && !isMoto) return;
+                if (!seen.has(clean)) {
+                    seen.add(clean);
+                    candidates.push({ plate: clean, score: score + (isNewCar ? 10 : (isOldCar ? 8 : 5)) });
+                }
+            };
+
+            // Analizar línea por línea (una patente casi siempre está en una sola línea, ej. "GJ BS 79")
+            lines.forEach(line => {
+                const compact = line.replace(/\s+/g, '');
+                // Ventanas deslizantes de 6 y 5 caracteres en cada línea
+                for (let len of [6, 5]) {
+                    for (let i = 0; i <= compact.length - len; i++) {
+                        const sub = compact.slice(i, i + len);
+                        if (LPR_NOISE_WORDS.has(sub)) continue;
+                        if (len === 6) {
+                            // 1) Formato exacto sin corrección
+                            if (/^[A-Z]{4}\d{2}$/.test(sub) || /^[A-Z]{2}\d{4}$/.test(sub)) pushCand(sub, 30);
+                            // 2) Corrección posicional chilena LLLLNN (4 letras + 2 dígitos)
+                            const asNew = fixToLetters(sub.slice(0, 4)) + fixToDigits(sub.slice(4, 6));
+                            if (/^[A-Z]{4}\d{2}$/.test(asNew)) {
+                                // Contar cuántos cambios se necesitaron (menos cambios = mayor confianza)
+                                let diffs = 0;
+                                for (let k = 0; k < 6; k++) if (asNew[k] !== sub[k]) diffs++;
+                                if (diffs <= 2) pushCand(asNew, 24 - diffs * 4);
+                            }
+                            // 3) Corrección posicional chilena LLNNNN (2 letras + 4 dígitos)
+                            const asOld = fixToLetters(sub.slice(0, 2)) + fixToDigits(sub.slice(2, 6));
+                            if (/^[A-Z]{2}\d{4}$/.test(asOld)) {
+                                let diffs = 0;
+                                for (let k = 0; k < 6; k++) if (asOld[k] !== sub[k]) diffs++;
+                                if (diffs <= 2) pushCand(asOld, 22 - diffs * 4);
+                            }
+                        } else if (len === 5) {
+                            const asMoto = fixToLetters(sub.slice(0, 3)) + fixToDigits(sub.slice(3, 5));
+                            if (/^[A-Z]{3}\d{2}$/.test(asMoto)) {
+                                let diffs = 0;
+                                for (let k = 0; k < 5; k++) if (asMoto[k] !== sub[k]) diffs++;
+                                if (diffs <= 1) pushCand(asMoto, 14 - diffs * 4);
+                            }
+                        }
+                    }
+                }
+            });
+
+            return candidates.sort((a, b) => b.score - a.score).map(c => c.plate);
+        }
+
+        function plateSimilarityDistance(a, b) {
+            const s1 = normalizePlate(a), s2 = normalizePlate(b);
+            if (s1 === s2) return 0;
+            if (!s1 || !s2 || Math.abs(s1.length - s2.length) > 1) return 99;
+            if (s1.length === s2.length) {
+                let d = 0;
+                for (let i = 0; i < s1.length; i++) if (s1[i] !== s2[i]) d++;
+                return d;
+            }
+            // Levenshtein rápido para diferencia de longitud 1
+            let i = 0, j = 0, edits = 0;
+            while (i < s1.length && j < s2.length) {
+                if (s1[i] === s2[j]) { i++; j++; }
+                else {
+                    edits++;
+                    if (edits > 1) return 99;
+                    if (s1.length > s2.length) i++; else j++;
+                }
+            }
+            return edits + (s1.length - i) + (s2.length - j);
+        }
+
+        function preprocessPlateImageForOcr(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = reject;
+                    img.onload = () => {
+                        const makeVariant = (cropX, cropY, cropW, cropH, contrast) => {
+                            const maxW = 1100;
+                            const scale = Math.min(1.8, maxW / cropW);
+                            const w = Math.max(200, Math.round(cropW * scale));
+                            const h = Math.max(120, Math.round(cropH * scale));
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w; canvas.height = h;
+                            const c = canvas.getContext('2d');
+                            c.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, w, h);
+                            const imgData = c.getImageData(0, 0, w, h);
+                            const d = imgData.data;
+                            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+                            for (let i = 0; i < d.length; i += 4) {
+                                const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                                const adj = Math.max(0, Math.min(255, factor * (gray - 128) + 128));
+                                d[i] = d[i + 1] = d[i + 2] = adj;
+                            }
+                            c.putImageData(imgData, 0, 0);
+                            return canvas.toDataURL('image/png');
+                        };
+                        // Variante 1: Recorte central (donde naturalmente apunta el inspector la patente) con alto contraste
+                        const centerUrl = makeVariant(img.width * 0.15, img.height * 0.22, img.width * 0.70, img.height * 0.56, 70);
+                        // Variante 2: Imagen completa en escala de grises alto contraste
+                        const fullUrl = makeVariant(0, 0, img.width, img.height, 55);
+                        resolve({ centerUrl, fullUrl });
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function handleLprCameraScan(event, ctx) {
             const file = event.target.files?.[0];
             if (!file) return;
@@ -10209,27 +10340,42 @@
             const inpEl = document.getElementById(`lpr-manual-input-${ctx}`);
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Analizando imagen y leyendo patente con OCR...';
+                statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Mejorando contraste y leyendo patente chilena (2 pasadas OCR)...';
             }
             try {
                 if (typeof Tesseract === 'undefined') throw new Error('OCR no disponible offline');
-                const res = await Tesseract.recognize(file, 'eng', {
-                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- '
-                });
-                const rawText = String(res?.data?.text || '').toUpperCase();
-                // Buscar patrones chilenos de patente: 4 letras + 2 números (ABCD12) o 2 letras + 4 números (AB1234) o motos (ABC12)
-                const cleaned = rawText.replace(/[^A-Z0-9\s]/g, ' ');
-                const tokens = cleaned.split(/\s+/).filter(Boolean);
-                const joined = tokens.join('');
-                const matchPat = cleaned.match(/\b([A-Z]{4}\s?\d{2}|[A-Z]{2}\s?\d{4}|[A-Z]{3}\s?\d{2,3})\b/)
-                    || joined.match(/([A-Z]{4}\d{2}|[A-Z]{2}\d{4}|[A-Z]{3}\d{2,3})/);
-                const detected = matchPat ? normalizePlate(matchPat[1]) : normalizePlate(tokens.find(t => t.length >= 5 && t.length <= 7) || '');
-                if (detected) {
-                    if (inpEl) inpEl.value = detected;
-                    if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-check mr-1"></i>Patente detectada por cámara: <strong class="font-mono text-base">${detected}</strong>`;
-                    checkPlateAgainstBlacklist(detected, ctx);
+                const { centerUrl, fullUrl } = await preprocessPlateImageForOcr(file);
+                const opts = { tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-· ' };
+                const res1 = await Tesseract.recognize(centerUrl, 'eng', opts);
+                let allCands = extractChileanPlateCandidates(res1?.data?.text || '');
+
+                // Segunda pasada en imagen completa si no hay coincidencia exacta en Lista Negra aún
+                const robados = getIntelRobadosDB();
+                const hasExact1 = allCands.some(p => robados.some(v => normalizePlate(v.patente) === p));
+                if (!hasExact1) {
+                    const res2 = await Tesseract.recognize(fullUrl, 'eng', opts);
+                    const cands2 = extractChileanPlateCandidates(res2?.data?.text || '');
+                    cands2.forEach(p => { if (!allCands.includes(p)) allCands.push(p); });
+                }
+
+                // Priorizar si alguno de los candidatos coincide (exacto o 1 char) con nuestra Lista Negra
+                let bestPlate = allCands[0] || '';
+                const exactHit = allCands.find(p => robados.some(v => normalizePlate(v.patente) === p));
+                const fuzzyHit = !exactHit ? allCands.find(p => robados.some(v => plateSimilarityDistance(v.patente, p) <= 1)) : '';
+                if (exactHit) bestPlate = exactHit;
+                else if (fuzzyHit) bestPlate = fuzzyHit;
+
+                if (bestPlate) {
+                    if (inpEl) inpEl.value = bestPlate;
+                    const chipsHtml = allCands.length > 1
+                        ? `<div class="mt-2 flex flex-wrap items-center gap-1"><span class="text-[10px] opacity-80">Otras lecturas:</span>${allCands.slice(0, 5).map(p => `<button type="button" onclick="document.getElementById('lpr-manual-input-${ctx}').value='${p}';checkPlateAgainstBlacklist('${p}','${ctx}')" class="px-2 py-0.5 rounded bg-slate-900 text-amber-300 font-mono text-[11px] font-black border border-slate-600">${p}</button>`).join('')}</div>`
+                        : '';
+                    if (statusEl) {
+                        statusEl.innerHTML = `<div><i class="fa-solid fa-check mr-1"></i>Patente leída: <strong class="font-mono text-base">${bestPlate}</strong> <span class="text-[10px] opacity-75">(puede corregir arriba si falló 1 carácter)</span></div>${chipsHtml}`;
+                    }
+                    checkPlateAgainstBlacklist(bestPlate, ctx, allCands);
                 } else {
-                    if (statusEl) statusEl.innerHTML = `⚠️ No se pudo leer claramente la patente (texto detectado: "${rawText.trim().slice(0, 40)}"). Acérquese más o ingrésela manualmente.`;
+                    if (statusEl) statusEl.innerHTML = '⚠️ No se detectó una patente chilena clara en la foto. Acérquese más a la placa (que ocupe el centro) o ingrésela manualmente arriba.';
                 }
             } catch (err) {
                 if (statusEl) statusEl.innerHTML = `⚠️ Error OCR: ${err.message}. Ingrese la patente manualmente para verificar en Lista Negra.`;
@@ -10238,7 +10384,7 @@
             }
         }
 
-        function checkPlateAgainstBlacklist(rawPlate, ctx) {
+        function checkPlateAgainstBlacklist(rawPlate, ctx, extraCandidates = []) {
             const plate = normalizePlate(rawPlate);
             const resEl = document.getElementById(`lpr-scan-result-${ctx}`);
             if (!resEl) return;
@@ -10247,18 +10393,37 @@
                 return;
             }
             const robados = getIntelRobadosDB();
-            const match = robados.find(v => normalizePlate(v.patente) === plate);
+            const toCheck = [plate, ...(Array.isArray(extraCandidates) ? extraCandidates : [])].filter(Boolean);
+
+            // 1. Coincidencia exacta
+            let match = null;
+            let isFuzzy = false;
+            for (const c of toCheck) {
+                match = robados.find(v => normalizePlate(v.patente) === c);
+                if (match) break;
+            }
+            // 2. Coincidencia aproximada (1 carácter de diferencia por foto borrosa/nocturna)
+            if (!match) {
+                for (const c of toCheck) {
+                    match = robados.find(v => plateSimilarityDistance(v.patente, c) <= 1);
+                    if (match) { isFuzzy = true; break; }
+                }
+            }
+
             if (match) {
                 if (navigator.vibrate) navigator.vibrate([250, 100, 250, 100, 400]);
                 const img = intelDriveImgSrc(match.foto);
                 resEl.innerHTML = `
-                    <div class="rounded-2xl border-2 border-red-500 bg-red-950/90 text-white p-4 space-y-3 shadow-2xl animate-pulse">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-black uppercase tracking-wide text-red-300"><i class="fa-solid fa-siren-on fa-triangle-exclamation mr-1.5"></i>¡ALERTA! PATENTE EN LISTA NEGRA</span>
+                    <div class="rounded-2xl border-2 ${isFuzzy ? 'border-amber-400 bg-red-950/95' : 'border-red-500 bg-red-950/95'} text-white p-4 space-y-3 shadow-2xl">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-sm font-black uppercase tracking-wide ${isFuzzy ? 'text-amber-300' : 'text-red-300'}">
+                                <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>${isFuzzy ? '¡POSIBLE COINCIDENCIA EN LISTA NEGRA! (VERIFICAR)' : '¡ALERTA! PATENTE EN LISTA NEGRA'}
+                            </span>
                             <span class="font-mono font-black text-base px-2.5 py-0.5 rounded bg-red-600 text-white">${match.patente}</span>
                         </div>
+                        ${isFuzzy ? `<div class="text-[11px] bg-amber-500/20 border border-amber-400/50 rounded-lg p-2 text-amber-200">Lectura OCR: <strong class="font-mono">${plate}</strong> ≈ Registrada en BD: <strong class="font-mono">${match.patente}</strong>. Confirme visualmente con la foto.</div>` : ''}
                         ${img ? `<img src="${img}" class="w-full max-h-48 object-cover rounded-xl border border-red-400/50">` : ''}
-                        <div class="text-xs space-y-1">
+                        <div class="text-xs space-y-1 break-words">
                             <div><strong>Vehículo:</strong> ${match.marcaModelo} ${match.color ? `(${match.color})` : ''}</div>
                             <div><strong>Tipo Encargo:</strong> ${match.tipoEncargo} • <strong>Estado:</strong> ${match.estado}</div>
                             <div><strong>Sector / Cuadrante:</strong> ${match.cuadrante}</div>
@@ -10272,7 +10437,7 @@
             } else {
                 resEl.innerHTML = `
                     <div class="rounded-2xl border border-emerald-500/50 bg-emerald-950/70 text-emerald-200 p-4 flex items-center justify-between gap-3">
-                        <div class="text-xs">
+                        <div class="text-xs break-words">
                             <div class="font-black text-emerald-300 text-sm"><i class="fa-solid fa-circle-check mr-1.5"></i>PATENTE SIN ENCARGO EN PEÑA SEGURO 1410</div>
                             <div class="mt-0.5">La patente <strong class="font-mono text-white">${plate}</strong> no figura en nuestra Lista Negra actual (${robados.length} registros revisados).</div>
                         </div>
