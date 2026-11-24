@@ -1749,17 +1749,21 @@
 
                                 <!-- SUBVISTA B: TURNO (Resumen de Turno + Operadores + Vehículos Activos) -->
                                 <div id="cad-central-pane-turno" class="hidden space-y-3">
-                                    <!-- Si no hay turno CENCO abierto: formulario rápido de Inicio de Turno -->
+                                    <!-- Si no hay turno CENCO abierto: Conformación completa de Inicio de Turno -->
                                     <div id="cenco-shift-start-panel" class="cad-elevated border border-blue-500/40 rounded-lg p-3 space-y-2.5">
                                         <div class="flex items-center justify-between">
-                                            <h3 class="text-xs font-bold text-blue-400"><i class="fa-solid fa-play mr-1"></i> Iniciar Turno CENCO</h3>
-                                            <span class="text-[10px] cad-muted">Se guarda en CENCO_Turnos</span>
+                                            <h3 class="text-xs font-bold text-blue-400"><i class="fa-solid fa-play mr-1"></i> Iniciar / Conformar Turno CENCO</h3>
+                                            <span class="text-[10px] cad-muted">CENCO_Turnos + Telegram</span>
                                         </div>
-                                        <form id="form-cenco-start-shift" class="space-y-2">
+                                        <button type="button" onclick="openCencoConformacionModal()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs py-2.5 px-3 rounded-lg shadow flex items-center justify-center gap-1.5">
+                                            <i class="fa-solid fa-clipboard-user"></i> 📋 Conformar Turno Completo (Puestos, Porterías, Móviles y Motos)
+                                        </button>
+                                        <form id="form-cenco-start-shift" class="space-y-2 pt-1 border-t cad-border">
+                                            <div class="text-[10px] cad-muted font-semibold">O inicio rápido de consola individual:</div>
                                             <div class="grid grid-cols-2 gap-2">
                                                 <select id="cenco-start-rol" class="cad-input w-full">
-                                                    <option value="CENCO_TELEFONISTA">Telefonista 1410</option>
                                                     <option value="CENCO_DESPACHADOR">Despachador</option>
+                                                    <option value="CENCO_TELEFONISTA">Telefonista 1410</option>
                                                     <option value="CENCO_CCTV">Operador CCTV</option>
                                                     <option value="CENCO_SUPERVISOR">Supervisor CENCO</option>
                                                 </select>
@@ -1770,31 +1774,39 @@
                                                 </select>
                                             </div>
                                             <select id="cenco-start-puesto" class="cad-input w-full">
-                                                <option value="Central Peña Seguro — Telefonía 1410">Central Peña Seguro — Telefonía 1410</option>
                                                 <option value="Central Peña Seguro — Despacho Radial">Central Peña Seguro — Despacho Radial</option>
+                                                <option value="Central Peña Seguro — Telefonía 1410">Central Peña Seguro — Telefonía 1410</option>
                                                 <option value="Central Peña Seguro — Monitoreo CCTV">Central Peña Seguro — Monitoreo CCTV</option>
                                                 <option value="Central Peña Seguro — Supervisión CAD">Central Peña Seguro — Supervisión CAD</option>
                                             </select>
                                             <input type="text" id="cenco-start-novedades" class="cad-input w-full" placeholder="Novedades de recepción de turno...">
                                             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 rounded-md">
-                                                Confirmar Inicio de Turno
+                                                Confirmar Inicio Rápido
                                             </button>
                                         </form>
                                     </div>
 
                                     <!-- Header Turno Activo (Réplica Governa) -->
                                     <div id="cad-active-shift-card" class="space-y-3">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <h3 id="cad-turno-title" class="text-sm font-bold cad-text">Turno Actual — Central 1410</h3>
-                                                <button type="button" onclick="openCencoCloseShiftModal()" class="text-xs font-semibold text-blue-400 hover:underline flex items-center gap-1 mt-0.5">
-                                                    <i class="fa-solid fa-file-pdf text-red-400"></i> Ir a cerrar turno y generar PDF
-                                                </button>
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <h3 id="cad-turno-title" class="text-sm font-bold cad-text truncate">Turno Actual — Central 1410</h3>
+                                                <div class="flex flex-wrap items-center gap-2.5 mt-0.5">
+                                                    <button type="button" onclick="openCencoConformacionModal()" class="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1">
+                                                        <i class="fa-solid fa-clipboard-user"></i> Conformar / Editar Puestos
+                                                    </button>
+                                                    <button type="button" onclick="openCencoCloseShiftModal()" class="text-xs font-semibold text-blue-400 hover:underline flex items-center gap-1">
+                                                        <i class="fa-solid fa-file-pdf text-red-400"></i> Cerrar turno y PDF
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <button type="button" onclick="syncBootstrapFromCloud(true)" class="w-8 h-8 rounded-md cad-elevated border cad-border flex items-center justify-center cad-muted hover:text-white">
+                                            <button type="button" onclick="syncBootstrapFromCloud(true)" class="w-8 h-8 rounded-md cad-elevated border cad-border flex items-center justify-center cad-muted hover:text-white shrink-0">
                                                 <i class="fa-solid fa-rotate text-xs"></i>
                                             </button>
                                         </div>
+
+                                        <!-- Resumen Conformación de Turno Vigente -->
+                                        <div id="cad-conformacion-summary-card" class="hidden cad-elevated border border-cyan-500/35 rounded-lg p-2.5 text-[11px] space-y-1.5"></div>
 
                                         <!-- KPIs Registrados / Descartados / Inspectores -->
                                         <div class="grid grid-cols-3 gap-2">
@@ -1957,6 +1969,110 @@
                                     <i class="fa-brands fa-telegram"></i> Guardar y Probar Respaldo
                                 </button>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Conformación Oficial de Turno CENCO 1410 (Despachador) -->
+                    <div id="cenco-conformacion-modal" class="hidden fixed inset-0 z-[920] bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-3">
+                        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl text-slate-100 overflow-hidden">
+                            <div class="px-5 py-3.5 bg-gradient-to-r from-[#0a2463] via-blue-900 to-slate-900 border-b border-slate-700 flex items-center justify-between gap-3 shrink-0">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fa-solid fa-clipboard-user text-cyan-400 text-xl"></i>
+                                    <div>
+                                        <h3 class="text-sm font-black uppercase tracking-wide">Conformación Oficial de Turno — Peña Seguro 1410</h3>
+                                        <p class="text-[11px] text-blue-200" id="conf-fecha-auto-label">Fecha y horario automático • Los inspectores con checklist se cargan automáticamente</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="closeCencoConformacionModal()" class="text-slate-300 hover:text-white text-xl px-2">&times;</button>
+                            </div>
+
+                            <datalist id="cenco-funcionarios-datalist"></datalist>
+
+                            <form id="form-cenco-conformacion" onsubmit="submitCencoConformacion(event)" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+                                <!-- Horario y Fecha Automática -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 bg-slate-800/70 border border-slate-700 rounded-xl p-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-cyan-300 mb-1">Fecha y Hora Automática</label>
+                                        <input type="text" id="conf-fecha-hora" readonly class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-emerald-300 font-mono font-bold">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-cyan-300 mb-1">Turno de 8 Horas</label>
+                                        <select id="conf-rango-horario" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white font-bold">
+                                            <option value="MANANA">Turno Mañana (07:00 – 15:00)</option>
+                                            <option value="TARDE">Turno Tarde (15:00 – 23:00)</option>
+                                            <option value="NOCHE">Turno Noche (23:00 – 07:00)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-cyan-300 mb-1">Novedades de Recepción</label>
+                                        <input type="text" id="conf-novedades" placeholder="Sin novedades al conformar turno..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white">
+                                    </div>
+                                </div>
+
+                                <!-- 1. CENCO 1410 PEÑAFLOR -->
+                                <div class="bg-slate-800/50 border border-blue-500/30 rounded-xl p-3 space-y-2">
+                                    <h4 class="font-black text-blue-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-headset"></i> 1. CENCO 1410 Peñaflor</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Despachador</label><input type="text" id="conf-cenco-despachador" list="cenco-funcionarios-datalist" placeholder="Nombre Despachador..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Telefonista 1410</label><input type="text" id="conf-cenco-telefonista" list="cenco-funcionarios-datalist" placeholder="Nombre Telefonista..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV Central</label><input type="text" id="conf-cenco-cctv" list="cenco-funcionarios-datalist" placeholder="Nombre CCTV Central..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 2 y 3. CENTROS COMUNITARIOS (MALLOQUITO Y LAS PRADERAS) -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div class="bg-slate-800/50 border border-cyan-500/30 rounded-xl p-3 space-y-2">
+                                        <h4 class="font-black text-cyan-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-video"></i> 2. Centro Comunitario Malloquito</h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 1</label><input type="text" id="conf-mall-cctv1" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 1..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 2</label><input type="text" id="conf-mall-cctv2" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 2..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-slate-800/50 border border-cyan-500/30 rounded-xl p-3 space-y-2">
+                                        <h4 class="font-black text-cyan-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-video"></i> 3. Centro Comunitario Las Praderas</h4>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 1</label><input type="text" id="conf-prad-cctv1" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 1..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 2</label><input type="text" id="conf-prad-cctv2" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 2..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. PORTERÍAS MUNICIPALES -->
+                                <div class="bg-slate-800/50 border border-amber-500/30 rounded-xl p-3 space-y-2">
+                                    <h4 class="font-black text-amber-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-door-open"></i> 4. Porterías Municipales</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Municipalidad</label><input type="text" id="conf-port-muni" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Bodega Municipal</label><input type="text" id="conf-port-bodega" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Parque El Trapiche</label><input type="text" id="conf-port-trapiche" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Espacio Peñaflor</label><input type="text" id="conf-port-espacio" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 5. INSPECTORES EN TERRENO (MÓVILES — AUTO CHECKLIST + AGREGAR MANUAL) -->
+                                <div class="bg-slate-800/50 border border-emerald-500/35 rounded-xl p-3 space-y-2">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="font-black text-emerald-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-car-side"></i> 5. Inspectores en Terreno (Móviles / Camionetas)</h4>
+                                        <button type="button" onclick="addConformacionUnitRow('moviles')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px]">+ Agregar Móvil</button>
+                                    </div>
+                                    <div id="conf-moviles-rows" class="space-y-2"></div>
+                                </div>
+
+                                <!-- 6. INSPECTORES MOTORISTAS (AUTO CHECKLIST + AGREGAR MANUAL) -->
+                                <div class="bg-slate-800/50 border border-orange-500/35 rounded-xl p-3 space-y-2">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="font-black text-orange-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-motorcycle"></i> 6. Inspectores Motoristas (Motos / Tango)</h4>
+                                        <button type="button" onclick="addConformacionUnitRow('motoristas')" class="px-2.5 py-1 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-black text-[11px]">+ Agregar Motorista</button>
+                                    </div>
+                                    <div id="conf-motoristas-rows" class="space-y-2"></div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800 sticky bottom-0 bg-slate-900 py-2">
+                                    <button type="button" onclick="closeCencoConformacionModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">Cancelar</button>
+                                    <button type="submit" id="btn-save-conformacion" class="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white flex items-center gap-1.5 shadow-lg">
+                                        <i class="fa-solid fa-check-double"></i> Guardar Conformación de Turno (Sheets + Telegram)
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
@@ -8690,6 +8806,7 @@
             }
 
             const vehWrap = document.getElementById('cad-roster-vehiculos');
+            if (typeof renderConformacionSummaryCard === 'function') renderConformacionSummaryCard();
             if (vehWrap) {
                 const activeShifts = getActiveCheckedInShifts();
                 vehWrap.innerHTML = activeShifts.length === 0
@@ -11141,6 +11258,275 @@
             if (pts.length > 0 && typeof L.heatLayer === 'function') {
                 L.heatLayer(pts, { radius: 26, blur: 18, maxZoom: 16 }).addTo(IntelState.macroLayers);
             }
+        }
+
+        // ========================================================================
+        // MÓDULO v32: CONFORMACIÓN OFICIAL DE TURNO CENCO 1410 (DESPACHADOR)
+        // Auto-precarga inspectores con checklist + ingreso manual de puestos/móviles/motos
+        // ========================================================================
+        function openCencoConformacionModal() {
+            const modal = document.getElementById('cenco-conformacion-modal');
+            if (!modal) return;
+            const now = new Date();
+            const h = now.getHours();
+            const autoRango = (h >= 7 && h < 15) ? 'MANANA' : ((h >= 15 && h < 23) ? 'TARDE' : 'NOCHE');
+
+            // Poblar datalist de funcionarios para selección rápida
+            const dl = document.getElementById('cenco-funcionarios-datalist');
+            if (dl) {
+                const users = getUsersDB();
+                dl.innerHTML = users.map(u => `<option value="${String(u.nombre || u.rut || '').replace(/"/g, '&quot;')}">${u.rut} • ${u.cargo || u.rol}</option>`).join('');
+            }
+
+            const curShift = getActiveCencoShift();
+            const conf = curShift?.conformacion || {};
+            document.getElementById('conf-fecha-hora').value = curShift?.fechaInicio || now.toLocaleString('es-CL');
+            document.getElementById('conf-rango-horario').value = curShift?.rangoHorario || autoRango;
+            document.getElementById('conf-novedades').value = curShift?.novedadesInicio || '';
+
+            // 1. CENCO 1410
+            document.getElementById('conf-cenco-despachador').value = conf.cenco1410?.despachador || AppState.userName || '';
+            document.getElementById('conf-cenco-telefonista').value = conf.cenco1410?.telefonista || '';
+            document.getElementById('conf-cenco-cctv').value = conf.cenco1410?.cctv || '';
+
+            // 2 y 3. Centros Comunitarios
+            document.getElementById('conf-mall-cctv1').value = conf.malloquito?.cctv1 || '';
+            document.getElementById('conf-mall-cctv2').value = conf.malloquito?.cctv2 || '';
+            document.getElementById('conf-prad-cctv1').value = conf.lasPraderas?.cctv1 || '';
+            document.getElementById('conf-prad-cctv2').value = conf.lasPraderas?.cctv2 || '';
+
+            // 4. Porterías
+            document.getElementById('conf-port-muni').value = conf.porterias?.municipalidad || '';
+            document.getElementById('conf-port-bodega').value = conf.porterias?.bodegaMunicipal || '';
+            document.getElementById('conf-port-trapiche').value = conf.porterias?.parqueTrapiche || '';
+            document.getElementById('conf-port-espacio').value = conf.porterias?.espacioPenaflor || '';
+
+            // 5 y 6. Móviles y Motoristas: combinar los guardados + los que iniciaron turno con checklist automáticamente
+            const movWrap = document.getElementById('conf-moviles-rows');
+            const motoWrap = document.getElementById('conf-motoristas-rows');
+            if (movWrap) movWrap.innerHTML = '';
+            if (motoWrap) motoWrap.innerHTML = '';
+
+            const savedMovs = Array.isArray(conf.moviles) ? conf.moviles : [];
+            const savedMotos = Array.isArray(conf.motoristas) ? conf.motoristas : [];
+            const addedKeys = new Set();
+
+            savedMovs.forEach(u => { addedKeys.add(normalizeVehicleKey(u.movil)); addConformacionUnitRow('moviles', u); });
+            savedMotos.forEach(u => { addedKeys.add(normalizeVehicleKey(u.movil)); addConformacionUnitRow('motoristas', u); });
+
+            // Auto-agregar inspectores en turno activo con checklist que aún no estén en la lista
+            getActiveCheckedInShifts().forEach(sh => {
+                const k = normalizeVehicleKey(sh.movil);
+                if (!k || addedKeys.has(k)) return;
+                addedKeys.add(k);
+                const isMoto = /moto|tango/i.test(sh.movil || '');
+                addConformacionUnitRow(isMoto ? 'motoristas' : 'moviles', {
+                    movil: sh.movil,
+                    cuadrante: sh.cuadrante || '252A',
+                    nombre: sh.rut || '',
+                    kmInicio: sh.kmInicial || '',
+                    radio: '',
+                    pila: '',
+                    camaraCorporal: 'NO',
+                    origen: 'AUTO_CHECKLIST',
+                    turnoId: sh.turnoId || ''
+                });
+            });
+
+            if (movWrap && movWrap.children.length === 0) addConformacionUnitRow('moviles');
+            if (motoWrap && motoWrap.children.length === 0) addConformacionUnitRow('motoristas');
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeCencoConformacionModal() {
+            document.getElementById('cenco-conformacion-modal')?.classList.add('hidden');
+        }
+
+        function addConformacionUnitRow(kind, data = null) {
+            const wrap = document.getElementById(kind === 'motoristas' ? 'conf-motoristas-rows' : 'conf-moviles-rows');
+            if (!wrap) return;
+            const fleet = getFleetDB();
+            const unitOptions = fleet.filter(u => kind === 'motoristas' ? isMotorcycleUnit(u) : !isMotorcycleUnit(u));
+            const selectedMov = data?.movil || '';
+            const movList = unitOptions.map(u => u.nombre);
+            if (selectedMov && !movList.includes(selectedMov)) movList.unshift(selectedMov);
+
+            const quads = ['252A', '252B', '252C', '253A', '253B', 'SRA', 'SRB', 'SRA1', 'VOLANTE / TODA LA COMUNA'];
+            const isAuto = data?.origen === 'AUTO_CHECKLIST';
+
+            const row = document.createElement('div');
+            row.className = 'conf-unit-row grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 items-center bg-slate-950/70 border border-slate-700/80 rounded-lg p-2';
+            row.dataset.origen = isAuto ? 'AUTO_CHECKLIST' : 'MANUAL_CENCO';
+            row.dataset.turnoId = data?.turnoId || '';
+            row.innerHTML = `
+                <div>
+                    <label class="block text-[9px] text-slate-400">${kind === 'motoristas' ? 'Moto' : 'Móvil'} ${isAuto ? '<span class="text-emerald-400 font-black">✓Auto</span>' : ''}</label>
+                    <select class="conf-u-movil w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px] font-bold">
+                        <option value="">-- Elegir --</option>
+                        ${movList.map(m => `<option value="${m.replace(/"/g, '&quot;')}" ${m === selectedMov ? 'selected' : ''}>${m}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[9px] text-slate-400">Cuadrante</label>
+                    <select class="conf-u-quad w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px]">
+                        ${quads.map(q => `<option value="${q}" ${(data?.cuadrante || '252A') === q ? 'selected' : ''}>${q}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-[9px] text-slate-400">Nombre Inspector</label>
+                    <input type="text" list="cenco-funcionarios-datalist" value="${String(data?.nombre || '').replace(/"/g, '&quot;')}" placeholder="Nombre / RUT..." class="conf-u-nombre w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px]">
+                </div>
+                <div>
+                    <label class="block text-[9px] text-slate-400">Km Inicio</label>
+                    <input type="number" value="${data?.kmInicio ?? ''}" placeholder="Km" class="conf-u-km w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px] font-mono">
+                </div>
+                <div>
+                    <label class="block text-[9px] text-slate-400">N° Radio</label>
+                    <input type="text" value="${String(data?.radio || '').replace(/"/g, '&quot;')}" placeholder="Radio" class="conf-u-radio w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px] font-mono">
+                </div>
+                <div>
+                    <label class="block text-[9px] text-slate-400">N° Pila</label>
+                    <input type="text" value="${String(data?.pila || '').replace(/"/g, '&quot;')}" placeholder="Pila" class="conf-u-pila w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px] font-mono">
+                </div>
+                <div class="flex items-end gap-1">
+                    <div class="flex-1">
+                        <label class="block text-[9px] text-slate-400">Cám. Corp.</label>
+                        <select class="conf-u-bodycam w-full px-1.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px] font-bold">
+                            <option value="NO" ${(data?.camaraCorporal || 'NO') === 'NO' ? 'selected' : ''}>NO</option>
+                            <option value="SÍ" ${(data?.camaraCorporal || '') === 'SÍ' ? 'selected' : ''}>SÍ</option>
+                        </select>
+                    </div>
+                    <button type="button" onclick="this.closest('.conf-unit-row').remove()" class="px-2 py-1.5 rounded bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white text-[11px] font-bold" title="Quitar">✕</button>
+                </div>
+            `;
+            wrap.appendChild(row);
+        }
+
+        function collectConformacionUnits(wrapId) {
+            const rows = document.querySelectorAll(`#${wrapId} .conf-unit-row`);
+            const out = [];
+            rows.forEach(r => {
+                const movil = r.querySelector('.conf-u-movil')?.value?.trim() || '';
+                const nombre = r.querySelector('.conf-u-nombre')?.value?.trim() || '';
+                if (!movil && !nombre) return;
+                out.push({
+                    movil,
+                    cuadrante: r.querySelector('.conf-u-quad')?.value || '252A',
+                    nombre,
+                    kmInicio: r.querySelector('.conf-u-km')?.value || '',
+                    radio: r.querySelector('.conf-u-radio')?.value?.trim() || '',
+                    pila: r.querySelector('.conf-u-pila')?.value?.trim() || '',
+                    camaraCorporal: r.querySelector('.conf-u-bodycam')?.value || 'NO',
+                    origen: r.dataset.origen || 'MANUAL_CENCO',
+                    turnoId: r.dataset.turnoId || ''
+                });
+            });
+            return out;
+        }
+
+        async function submitCencoConformacion(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-conformacion');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...'; }
+            try {
+                const fechaInicio = document.getElementById('conf-fecha-hora').value || new Date().toLocaleString('es-CL');
+                const rangoHorario = document.getElementById('conf-rango-horario').value || 'MANANA';
+                const novedades = document.getElementById('conf-novedades').value.trim() || 'Conformación oficial de turno CENCO 1410';
+
+                const conformacion = {
+                    fechaHora: fechaInicio,
+                    rangoHorario,
+                    cenco1410: {
+                        despachador: document.getElementById('conf-cenco-despachador').value.trim(),
+                        telefonista: document.getElementById('conf-cenco-telefonista').value.trim(),
+                        cctv: document.getElementById('conf-cenco-cctv').value.trim()
+                    },
+                    malloquito: {
+                        cctv1: document.getElementById('conf-mall-cctv1').value.trim(),
+                        cctv2: document.getElementById('conf-mall-cctv2').value.trim()
+                    },
+                    lasPraderas: {
+                        cctv1: document.getElementById('conf-prad-cctv1').value.trim(),
+                        cctv2: document.getElementById('conf-prad-cctv2').value.trim()
+                    },
+                    porterias: {
+                        municipalidad: document.getElementById('conf-port-muni').value.trim(),
+                        bodegaMunicipal: document.getElementById('conf-port-bodega').value.trim(),
+                        parqueTrapiche: document.getElementById('conf-port-trapiche').value.trim(),
+                        espacioPenaflor: document.getElementById('conf-port-espacio').value.trim()
+                    },
+                    moviles: collectConformacionUnits('conf-moviles-rows'),
+                    motoristas: collectConformacionUnits('conf-motoristas-rows')
+                };
+
+                // Construir resumen legible para Telegram y bitácora
+                const rLines = [];
+                rLines.push(`CENCO 1410: Desp: ${conformacion.cenco1410.despachador || '-'} | Tel: ${conformacion.cenco1410.telefonista || '-'} | CCTV: ${conformacion.cenco1410.cctv || '-'}`);
+                rLines.push(`Malloquito CCTV: ${conformacion.malloquito.cctv1 || '-'} / ${conformacion.malloquito.cctv2 || '-'}`);
+                rLines.push(`Las Praderas CCTV: ${conformacion.lasPraderas.cctv1 || '-'} / ${conformacion.lasPraderas.cctv2 || '-'}`);
+                rLines.push(`Porterías: Muni(${conformacion.porterias.municipalidad || '-'}), Bodega(${conformacion.porterias.bodegaMunicipal || '-'}), Trapiche(${conformacion.porterias.parqueTrapiche || '-'}), Espacio(${conformacion.porterias.espacioPenaflor || '-'})`);
+                if (conformacion.moviles.length > 0) {
+                    rLines.push(`Móviles (${conformacion.moviles.length}): ` + conformacion.moviles.map(u => `${u.movil}[${u.cuadrante}] ${u.nombre} (Km:${u.kmInicio || '-'}, Rad:${u.radio || '-'}, Pila:${u.pila || '-'}, Cám:${u.camaraCorporal})`).join('; '));
+                }
+                if (conformacion.motoristas.length > 0) {
+                    rLines.push(`Motoristas (${conformacion.motoristas.length}): ` + conformacion.motoristas.map(u => `${u.movil}[${u.cuadrante}] ${u.nombre} (Km:${u.kmInicio || '-'}, Rad:${u.radio || '-'}, Pila:${u.pila || '-'}, Cám:${u.camaraCorporal})`).join('; '));
+                }
+                const conformacionResumen = rLines.join(' | ');
+
+                const existing = getActiveCencoShift();
+                const shiftObj = Object.assign({}, existing || {}, {
+                    turnoCencoId: existing?.turnoCencoId || `CENCO-T-${Date.now().toString().slice(-6)}`,
+                    fechaInicio,
+                    rut: AppState.userRut,
+                    operador: conformacion.cenco1410.despachador || AppState.userName || AppState.userRut,
+                    rolCenco: existing?.rolCenco || 'CENCO_DESPACHADOR',
+                    puesto: 'Central Peña Seguro — Despacho Radial',
+                    rangoHorario,
+                    novedadesInicio: novedades,
+                    estado: 'ACTIVO',
+                    conformacion
+                });
+
+                saveActiveCencoShift(shiftObj);
+                const shifts = getCencoShiftsDB();
+                const idx = shifts.findIndex(s => s.turnoCencoId === shiftObj.turnoCencoId);
+                if (idx >= 0) shifts[idx] = shiftObj; else shifts.unshift(shiftObj);
+                saveCencoShiftsDB(shifts);
+
+                updateCencoShiftHeaderUI();
+                renderConformacionSummaryCard();
+                renderAllCencoPanels();
+                closeCencoConformacionModal();
+                showToast('✓ Conformación de turno guardada en Sheets y enviada a Telegram', 'bg-emerald-600');
+
+                await sendPayloadToGoogleSheets(Object.assign({
+                    action: 'CENCO_GUARDAR_CONFORMACION',
+                    conformacionResumen
+                }, shiftObj));
+                setTimeout(() => syncBootstrapFromCloud(false), 1200);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Guardar Conformación de Turno (Sheets + Telegram)'; }
+            }
+        }
+
+        function renderConformacionSummaryCard() {
+            const card = document.getElementById('cad-conformacion-summary-card');
+            if (!card) return;
+            const conf = getActiveCencoShift()?.conformacion;
+            if (!conf) { card.classList.add('hidden'); return; }
+            card.classList.remove('hidden');
+            const mCount = (conf.moviles || []).length;
+            const motoCount = (conf.motoristas || []).length;
+            card.innerHTML = `
+                <div class="flex items-center justify-between border-b cad-border pb-1">
+                    <span class="font-black text-cyan-400 uppercase text-[10px]"><i class="fa-solid fa-clipboard-check mr-1"></i>Conformación de Turno Activa</span>
+                    <span class="text-[10px] cad-muted">${mCount} Móv • ${motoCount} Motos</span>
+                </div>
+                <div class="cad-text"><strong>CENCO 1410:</strong> Desp: ${conf.cenco1410?.despachador || '-'} • Tel: ${conf.cenco1410?.telefonista || '-'} • CCTV: ${conf.cenco1410?.cctv || '-'}</div>
+                <div class="cad-muted"><strong>Malloquito:</strong> ${conf.malloquito?.cctv1 || '-'} / ${conf.malloquito?.cctv2 || '-'} | <strong>Praderas:</strong> ${conf.lasPraderas?.cctv1 || '-'} / ${conf.lasPraderas?.cctv2 || '-'}</div>
+                <div class="cad-muted"><strong>Porterías:</strong> Muni: ${conf.porterias?.municipalidad || '-'} • Bodega: ${conf.porterias?.bodegaMunicipal || '-'} • Trapiche: ${conf.porterias?.parqueTrapiche || '-'} • Espacio: ${conf.porterias?.espacioPenaflor || '-'}</div>
+            `;
         }
     </script>
 </body>
