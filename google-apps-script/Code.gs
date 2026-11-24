@@ -35,7 +35,9 @@ const SHEETS = {
   INTEL_MECHEROS: "Intel_Mecheros",
   INTEL_ROBADOS: "Intel_Vehiculos_Robados",
   INTEL_CALLE: "Intel_Situacion_Calle",
-  INTEL_CALOR: "Intel_Puntos_Calor"
+  INTEL_CALOR: "Intel_Puntos_Calor",
+  // --- Directorio Oficial de Funcionarios (v34) ---
+  STAFF_FUNCIONARIOS: "Staff_Funcionarios"
 };
 
 /**
@@ -192,6 +194,12 @@ function inicializarHojas() {
         "ID", "Fecha Registro", "Tipo Punto", "Cuadrante", "Dirección",
         "GPS", "Estado", "Descripción", "Foto (Drive)", "Registrado Por"
       ]
+    },
+    {
+      name: SHEETS.STAFF_FUNCIONARIOS,
+      headers: [
+        "ID", "N° Funcionario", "Nombre Completo", "RUT", "Cargo Actual", "Estado"
+      ]
     }
   ];
 
@@ -258,6 +266,92 @@ function inicializarHojas() {
     if (shouldSeedRealCams) {
       shCam.getRange(2, 1, defaultCams.length, 8).setValues(defaultCams);
     }
+  }
+
+  // Sembrar nómina oficial de 78 funcionarios si la hoja Staff_Funcionarios está vacía
+  const shStaff = ss.getSheetByName(SHEETS.STAFF_FUNCIONARIOS);
+  if (shStaff && shStaff.getLastRow() <= 1) {
+    const defaultStaff = [
+      ["STF-001", "725", "ERWIN ORLANDO RODRIGUEZ ERICES", "14244841-6", "INSPECTOR", "ACTIVO"],
+      ["STF-002", "726", "PLUTARCO ABURTO CERNA", "09274315-2", "PORTERO", "ACTIVO"],
+      ["STF-003", "727", "HECTOR ANDRES ALEGRIA CERECEDA", "16561498-4", "INSPECTOR", "ACTIVO"],
+      ["STF-004", "755", "FELIPE GABRIEL GALLARDO CHACON", "17852292-2", "INSPECTOR", "ACTIVO"],
+      ["STF-005", "762", "LUIS ALEJANDRO YAÑEZ MAULEN", "16609509-3", "INSPECTOR", "ACTIVO"],
+      ["STF-006", "788", "RODRIGO ALEXIS DEL RIO URRA", "11708551-1", "INSPECTOR", "ACTIVO"],
+      ["STF-007", "827", "LUIS RICARDO TORO CONTRERAS", "19071479-9", "INSPECTOR", "ACTIVO"],
+      ["STF-008", "899", "HECTOR FELIPE GOMEZ ROMERO", "14383154-K", "INSPECTOR", "ACTIVO"],
+      ["STF-009", "900", "HECTOR ANTONIO VALENZUELA ZUÑIGA", "14343442-7", "INSPECTOR", "ACTIVO"],
+      ["STF-010", "902", "MICHAEL ANDRES COPELLI LECAROS", "18157270-1", "INSPECTOR", "ACTIVO"],
+      ["STF-011", "911", "VANESSA VIRGINIA MERINO RAMIREZ", "16644249-4", "INSPECTOR", "ACTIVO"],
+      ["STF-012", "913", "MANUEL ESTEBAN AGUSTO CABRERA", "10025056-K", "INSPECTOR", "ACTIVO"],
+      ["STF-013", "914", "LUIS ALBERTO GONZALEZ ESPINOSA", "09757919-9", "INSPECTOR", "ACTIVO"],
+      ["STF-014", "915", "MANUEL ALEJANDRO CARREÑO RODRIGUEZ", "18623363-8", "INSPECTOR", "ACTIVO"],
+      ["STF-015", "916", "JUAN DEL TRANSITO HERNANDEZ CISTERNA", "10564788-3", "INSPECTOR", "ACTIVO"],
+      ["STF-016", "919", "JUAN MANUEL URBINA RIVAS", "11332496-1", "INSPECTOR", "ACTIVO"],
+      ["STF-017", "922", "PATRICIO EDUARDO URRA TORRES", "11645831-4", "INSPECTOR", "ACTIVO"],
+      ["STF-018", "925", "JOSE ARSENIO CASTILLO HIDALGO", "17661284-3", "INSPECTOR", "ACTIVO"],
+      ["STF-019", "926", "CARLOS MAURICIO ATENAS NAVARRO", "15649947-1", "INSPECTOR", "ACTIVO"],
+      ["STF-020", "927", "ALEJANDRO JESUS MARAMBIO HERNANDEZ", "21726114-7", "INSPECTOR", "ACTIVO"],
+      ["STF-021", "929", "PATRICIO RAUL FUENTEALBA BARRIA", "12995904-5", "INSPECTOR", "ACTIVO"],
+      ["STF-022", "930", "JERSON ANDRES ARANEDA ZAPATA", "13756174-3", "INSPECTOR", "ACTIVO"],
+      ["STF-023", "932", "ADRIAN ANTONIO CIFUENTES MUÑOZ", "14568998-8", "INSPECTOR", "ACTIVO"],
+      ["STF-024", "933", "IVAN JONATHAN MICHEL VILLARROEL MADRID", "18959871-8", "INSPECTOR", "ACTIVO"],
+      ["STF-025", "944", "LUIS ALEJANDRO BENITEZ BENITEZ", "16352853-3", "INSPECTOR", "ACTIVO"],
+      ["STF-026", "958", "CESAR ANTONIO CASTILLO MIRANDA", "17802628-3", "INSPECTOR", "ACTIVO"],
+      ["STF-027", "959", "EDUARDO ANDRES VILLAGAS SALAZAR", "16713389-4", "INSPECTOR", "ACTIVO"],
+      ["STF-028", "961", "FRANCISCO JAVIER SOLIS GALAZ", "20580191-K", "INSPECTOR", "ACTIVO"],
+      ["STF-029", "962", "HECTOR EDUARDO VIDAL ORELLANA", "10062276-9", "INSPECTOR", "ACTIVO"],
+      ["STF-030", "963", "IGNACIO ALEJANDRO ARRIAGADA LOBOS", "20136357-8", "INSPECTOR", "ACTIVO"],
+      ["STF-031", "964", "JAYSON ELIAS ALISTE URTUBIA", "19063906-1", "INSPECTOR", "ACTIVO"],
+      ["STF-032", "965", "JOSE LUIS ROJAS CALDERON", "12223257-3", "INSPECTOR", "ACTIVO"],
+      ["STF-033", "966", "LUIS ALBERTO CONTRERAS RICHARD", "10029751-5", "INSPECTOR", "ACTIVO"],
+      ["STF-034", "967", "LUIS FELIPE LEIVA PAREJA", "18555957-2", "INSPECTOR", "ACTIVO"],
+      ["STF-035", "968", "MAURICIO ANTONIO AYALA TORO", "14500745-3", "INSPECTOR", "ACTIVO"],
+      ["STF-036", "969", "MAURICIO ALVARO PAILLAQUEO CARILAO", "11488504-5", "INSPECTOR", "ACTIVO"],
+      ["STF-037", "970", "RODRIGO HERNAN GONZALEZ REBOLLEDO", "19650331-5", "INSPECTOR", "ACTIVO"],
+      ["STF-038", "971", "VICTOR ALONSO GARCIA DIAZ", "18186814-7", "INSPECTOR", "ACTIVO"],
+      ["STF-039", "972", "YENNIFER CAROLINA RIOS LARA", "16872698-8", "INSPECTOR", "ACTIVO"],
+      ["STF-040", "973", "CLAUDIO HERNAN SALINAS ESPINOZA", "13557190-3", "INSPECTOR", "ACTIVO"],
+      ["STF-041", "742", "YONATHAN SEBASTIAN CATRICHEO ABURTO", "18589636-6", "INSPECTOR", "ACTIVO"],
+      ["STF-042", "H", "MANUEL VERA DUARTE", "20.537.044-7", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-043", "352", "PAUL BERENGUELA ARAVENA", "6605297-4", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-044", "670", "CARLA JONES MENA", "13026661-4", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-045", "531", "RAUL SOTO QUIROGA", "18326298-K", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-046", "864", "YESSICA ZUÑIGA ACEVEDO", "9752391-6", "INSPECTOR DESPACHADOR", "ACTIVO"],
+      ["STF-047", "862", "FELIPE MILLAN FLORES", "15339144-0", "INSPECTOR DESPACHADOR", "ACTIVO"],
+      ["STF-048", "865", "LETICIA CABRERA CARREÑO", "9106120-1", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-049", "H", "CLAUDIA GONZALEZ JEREZ", "11.811.919-3", "INSPECTOR CALLCENTER", "ACTIVO"],
+      ["STF-050", "H", "MILVA CARCAMO DIAZ", "13.610.243-5", "INSPECTOR CALLCENTER", "ACTIVO"],
+      ["STF-051", "H", "DANIEL MONTECINO EDWARD", "17.933.483-6", "INSPECTOR DESPACHADOR", "ACTIVO"],
+      ["STF-052", "H", "BALDRA GALAZ PÉREZ", "12.314.014-1", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-053", "H", "JORGE SOTO BRANTE", "11.656.428-9", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-054", "H", "JOSHUA IBARRA DIAZ", "21.729.845-8", "INSPECTOR CALLCENTER", "ACTIVO"],
+      ["STF-055", "H", "YASNA AGUILA ROBLES", "13673508-K", "INSPECTOR DESPACHADOR", "ACTIVO"],
+      ["STF-056", "H", "MARCELA MASSONE GABLER", "14.525.223-7", "INSPECTOR DESPACHADOR", "ACTIVO"],
+      ["STF-057", "H", "ROSA MADRID GONZALEZ", "14.307.743-8", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-058", "H", "SOFIA CABRERA BERMÚDEZ", "22.266.795-K", "INSPECTOR CCTV", "ACTIVO"],
+      ["STF-059", "416", "NICOLAS ANDRES VALENZUELA BERRIOS", "", "INSPECTOR", "ACTIVO"],
+      ["STF-060", "533", "DIEGO ANDRES GONZALEZ ATENAS", "", "INSPECTOR", "ACTIVO"],
+      ["STF-061", "417", "JORGE DEL CARMEN GUZMAN OYARZUN", "", "INSPECTOR", "ACTIVO"],
+      ["STF-062", "363", "LUIS FRANCISCO RIOS PALMA", "", "INSPECTOR", "ACTIVO"],
+      ["STF-063", "540", "LUIS FELIPE PUEBLA CARCAMO", "", "INSPECTOR", "ACTIVO"],
+      ["STF-064", "662", "ALDO GIORGIO SOTO LLORENTE", "", "INSPECTOR", "ACTIVO"],
+      ["STF-065", "270", "HERIBERTO ANTONIO CANCINO VASQUEZ", "", "INSPECTOR", "ACTIVO"],
+      ["STF-066", "632", "LUIS MALLEA CONTRERAS", "", "INSPECTOR", "ACTIVO"],
+      ["STF-067", "671", "ORLANDO POBLETE VERGARA", "", "INSPECTOR", "ACTIVO"],
+      ["STF-068", "431", "VICTOR FABIAN FERNANDEZ ARAVENA", "", "INSPECTOR", "ACTIVO"],
+      ["STF-069", "600", "LUIS EDUARDO MORALES OSORIO", "", "INSPECTOR", "ACTIVO"],
+      ["STF-070", "379", "JUAN MARCELO HERNANDEZ MELLADO", "", "INSPECTOR", "ACTIVO"],
+      ["STF-071", "660", "AARON NATANAEL CACERES MORALES", "", "INSPECTOR", "ACTIVO"],
+      ["STF-072", "484", "VICTOR RETAMALES MADARIAGA", "", "PORTERO", "ACTIVO"],
+      ["STF-073", "659", "SERGIO FARIAS FLORES", "", "PORTERO", "ACTIVO"],
+      ["STF-074", "467", "MARIO MUÑOZ ESCOBAR", "", "PORTERO", "ACTIVO"],
+      ["STF-075", "628", "FERNANDO AMIGO ALLENDE", "", "PORTERO", "ACTIVO"],
+      ["STF-076", "204", "LUIS OMAR FUENTES DIAZ", "", "PORTERO", "ACTIVO"],
+      ["STF-077", "464", "JOSE VIELMA DIAZ", "", "PORTERO", "ACTIVO"],
+      ["STF-078", "510", "JUAN IGNACIO CESPEDES AZOCAR", "", "PORTERO", "ACTIVO"]
+    ];
+    shStaff.getRange(2, 1, defaultStaff.length, 6).setValues(defaultStaff);
   }
 
   obtenerCarpetaEvidencias();
@@ -851,6 +945,24 @@ function apiGetBootstrapData() {
     });
   }
 
+  const shStaffDir = ss.getSheetByName(SHEETS.STAFF_FUNCIONARIOS);
+  const staffDirectory = [];
+  if (shStaffDir && shStaffDir.getLastRow() > 1) {
+    const rows = shStaffDir.getRange(2, 1, shStaffDir.getLastRow() - 1, 6).getValues();
+    rows.forEach(r => {
+      if (String(r[0]).trim() && String(r[2]).trim()) {
+        staffDirectory.push({
+          id: String(r[0]).trim(),
+          numero: String(r[1]).trim(),
+          nombre: String(r[2]).trim(),
+          rut: String(r[3]).trim(),
+          cargo: String(r[4]).trim().toUpperCase() || "INSPECTOR",
+          estado: String(r[5]).trim().toUpperCase() || "ACTIVO"
+        });
+      }
+    });
+  }
+
   return {
     ok: true,
     date: todayStr,
@@ -858,6 +970,7 @@ function apiGetBootstrapData() {
     gpsConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("WIALON_TOKEN")),
     telegramConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("TELEGRAM_BOT_TOKEN") && PropertiesService.getScriptProperties().getProperty("TELEGRAM_CHAT_ID")),
     users: users,
+    staffDirectory: staffDirectory,
     tasksCatalog: tasksCatalog,
     fleet: fleet,
     completedTaskIds: completedTaskIds,
@@ -939,6 +1052,55 @@ function apiHandleAction(payload) {
         }
       }
       return { ok: false, error: "Usuario no encontrado" };
+    }
+
+    if (action === "ADMIN_SAVE_STAFF") {
+      const sheet = ss.getSheetByName(SHEETS.STAFF_FUNCIONARIOS);
+      const id = String(payload.id || ("STF-" + Date.now())).trim();
+      const nombre = String(payload.nombre || "").trim().toUpperCase();
+      if (!nombre) return { ok: false, error: "Nombre completo requerido" };
+      const rowValues = [
+        id,
+        String(payload.numero || "").trim(),
+        nombre,
+        String(payload.rut || "").trim(),
+        String(payload.cargo || "INSPECTOR").trim().toUpperCase(),
+        String(payload.estado || "ACTIVO").trim().toUpperCase()
+      ];
+      const lastRow = sheet.getLastRow();
+      let foundRow = -1;
+      if (lastRow > 1) {
+        const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < ids.length; i++) {
+          if (String(ids[i][0]).trim() === id) {
+            foundRow = i + 2;
+            break;
+          }
+        }
+      }
+      if (foundRow > 0) {
+        sheet.getRange(foundRow, 1, 1, 6).setValues([rowValues]);
+      } else {
+        sheet.appendRow(rowValues);
+      }
+      return { ok: true, action: action, id: id };
+    }
+
+    if (action === "ADMIN_DELETE_STAFF") {
+      const sheet = ss.getSheetByName(SHEETS.STAFF_FUNCIONARIOS);
+      const id = String(payload.id || "").trim();
+      if (!id) return { ok: false, error: "ID de funcionario requerido" };
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = ids.length - 1; i >= 0; i--) {
+          if (String(ids[i][0]).trim() === id) {
+            sheet.deleteRow(i + 2);
+            return { ok: true, action: action, id: id };
+          }
+        }
+      }
+      return { ok: false, error: "Funcionario no encontrado" };
     }
 
     if (action === "ADMIN_SAVE_TASK") {
