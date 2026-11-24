@@ -8889,7 +8889,8 @@
                 latestByMovil.set(movKey, s);
             });
             const active = [];
-            latestByMovil.forEach(s => {
+            const activeMovKeys = new Set();
+            latestByMovil.forEach((s, movKey) => {
                 const est = String(s.estadoTurno || '').trim().toUpperCase();
                 const hasTermino = Boolean(String(s.fechaTermino || '').trim()) || Number(s.kmTermino || 0) > 0;
                 const hasChecklist = s.hasChecklist !== undefined
@@ -8899,8 +8900,49 @@
                 const isRecent = !isNaN(startMs) && (nowMs - startMs <= MAX_SHIFT_AGE_MS) && (startMs - nowMs <= 60 * 60 * 1000);
                 if (est === 'ACTIVO' && !hasTermino && hasChecklist && isRecent) {
                     active.push(s);
+                    activeMovKeys.add(movKey);
                 }
             });
+
+            // Incluir también los móviles y motoristas agregados manualmente en la Conformación de Turno CENCO vigente
+            try {
+                const activeCenco = typeof getActiveCencoShift === 'function' ? getActiveCencoShift() : null;
+                if (activeCenco && String(activeCenco.estado || 'ACTIVO').toUpperCase() === 'ACTIVO' && activeCenco.conformacion) {
+                    const confUnits = [].concat(
+                        Array.isArray(activeCenco.conformacion.moviles) ? activeCenco.conformacion.moviles : [],
+                        Array.isArray(activeCenco.conformacion.motoristas) ? activeCenco.conformacion.motoristas : []
+                    );
+                    confUnits.forEach(u => {
+                        const movName = String(u?.movil || '').trim();
+                        const movKey = movName.toUpperCase();
+                        if (!movKey || activeMovKeys.has(movKey)) return;
+                        // Si en la nube ya figura un cierre posterior para este mismo turnoId manual, respetarlo
+                        const cloudLatest = latestByMovil.get(movKey);
+                        if (cloudLatest && u.turnoId && cloudLatest.turnoId === u.turnoId && String(cloudLatest.estadoTurno || '').toUpperCase() !== 'ACTIVO') {
+                            return;
+                        }
+                        activeMovKeys.add(movKey);
+                        active.push({
+                            turnoId: u.turnoId || ('MAN-' + movKey),
+                            fechaInicio: activeCenco.fechaInicio || new Date().toLocaleString('es-CL'),
+                            fechaInicioIso: new Date().toISOString(),
+                            rut: u.nombre || 'Inspector',
+                            rangoHorario: activeCenco.rangoHorario || 'MANANA',
+                            movil: movName,
+                            cuadrante: u.cuadrante || '252A',
+                            kmInicial: Number(u.kmInicio || 0),
+                            estadoChecklist: 'Conformado Manual CENCO',
+                            hasChecklist: true,
+                            observaciones: `Radio: ${u.radio || '-'} | Pila: ${u.pila || '-'} | Cám. Corp.: ${u.camaraCorporal || 'NO'}`,
+                            estadoTurno: 'ACTIVO',
+                            fechaTermino: '',
+                            kmTermino: '',
+                            origen: 'MANUAL_CENCO'
+                        });
+                    });
+                }
+            } catch (ignoreConf) {}
+
             return active;
         }
 
@@ -11763,19 +11805,73 @@
                     motoristas: collectConformacionUnits('conf-motoristas-rows')
                 };
 
-                // Construir resumen legible para Telegram y bitácora
+                // Asignar ID estable a unidades manuales para evitar duplicados y activarlas de inmediato para despacho
+                const nowIso = new Date().toISOString();
+                const nowStamp = Date.now();
+                const allUnits = [...conformacion.moviles, ...conformacion.motoristas];
+                allUnits.forEach((u, idx) => {
+                    if (u.movil && u.origen !== 'AUTO_CHECKLIST' && !u.turnoId) {
+                        u.turnoId = `MAN-${nowStamp}-${idx}`;
+                    }
+                });
+
+                // Inyectar inmediatamente las unidades manuales en AppState.cloudRecentShifts como ACTIVAS en servicio
+                if (!Array.isArray(AppState.cloudRecentShifts)) AppState.cloudRecentShifts = [];
+                allUnits.forEach(u => {
+                    if (!u.movil || u.origen === 'AUTO_CHECKLIST') return;
+                    const movUp = String(u.movil).trim().toUpperCase();
+                    AppState.cloudRecentShifts = AppState.cloudRecentShifts.filter(s =>
+                        !(String(s.movil || '').trim().toUpperCase() === movUp && String(s.turnoId || '') === String(u.turnoId || ''))
+                    );
+                    AppState.cloudRecentShifts.unshift({
+                        turnoId: u.turnoId,
+                        fechaInicio,
+                        fechaInicioIso: nowIso,
+                        rut: u.nombre || 'Inspector',
+                        rangoHorario,
+                        movil: u.movil,
+                        cuadrante: u.cuadrante || '252A',
+                        kmInicial: Number(u.kmInicio || 0),
+                        estadoChecklist: 'Conformado Manual CENCO',
+                        hasChecklist: true,
+                        observaciones: `Radio: ${u.radio || '-'} | Pila: ${u.pila || '-'} | Cám. Corp.: ${u.camaraCorporal || 'NO'}`,
+                        estadoTurno: 'ACTIVO',
+                        fechaTermino: '',
+                        kmTermino: '',
+                        origen: 'MANUAL_CENCO'
+                    });
+                });
+
+                // Construir resumen completo y ordenado con saltos de línea para Telegram y bitácora
                 const rLines = [];
-                rLines.push(`CENCO 1410: Desp: ${conformacion.cenco1410.despachador || '-'} | Tel: ${conformacion.cenco1410.telefonista || '-'} | CCTV: ${conformacion.cenco1410.cctv || '-'}`);
-                rLines.push(`Malloquito CCTV: ${conformacion.malloquito.cctv1 || '-'} / ${conformacion.malloquito.cctv2 || '-'}`);
-                rLines.push(`Pajaritos CCTV: ${conformacion.lasPraderas.cctv1 || '-'} / ${conformacion.lasPraderas.cctv2 || '-'}`);
-                rLines.push(`Porterías: Muni(${conformacion.porterias.municipalidad || '-'}), Bodega(${conformacion.porterias.bodegaMunicipal || '-'}), Trapiche(${conformacion.porterias.parqueTrapiche || '-'}), Espacio(${conformacion.porterias.espacioPenaflor || '-'})`);
+                rLines.push(`📻 CENCO 1410 PEÑAFLOR:`);
+                rLines.push(`• Despachador: ${conformacion.cenco1410.despachador || '-'}`);
+                rLines.push(`• Telefonista 1410: ${conformacion.cenco1410.telefonista || '-'}`);
+                rLines.push(`• CCTV Central: ${conformacion.cenco1410.cctv || '-'}`);
+                rLines.push(`📹 CENTROS COMUNITARIOS:`);
+                rLines.push(`• Malloquito: ${conformacion.malloquito.cctv1 || '-'} / ${conformacion.malloquito.cctv2 || '-'}`);
+                rLines.push(`• Pajaritos: ${conformacion.lasPraderas.cctv1 || '-'} / ${conformacion.lasPraderas.cctv2 || '-'}`);
+                rLines.push(`🚪 PORTERÍAS MUNICIPALES:`);
+                rLines.push(`• Municipalidad: ${conformacion.porterias.municipalidad || '-'}`);
+                rLines.push(`• Bodega Municipal: ${conformacion.porterias.bodegaMunicipal || '-'}`);
+                rLines.push(`• Parque El Trapiche: ${conformacion.porterias.parqueTrapiche || '-'}`);
+                rLines.push(`• Espacio Peñaflor: ${conformacion.porterias.espacioPenaflor || '-'}`);
                 if (conformacion.moviles.length > 0) {
-                    rLines.push(`Móviles (${conformacion.moviles.length}): ` + conformacion.moviles.map(u => `${u.movil}[${u.cuadrante}] ${u.nombre} (Km:${u.kmInicio || '-'}, Rad:${u.radio || '-'}, Pila:${u.pila || '-'}, Cám:${u.camaraCorporal})`).join('; '));
+                    rLines.push(`🚓 MÓVILES EN TERRENO (${conformacion.moviles.length}):`);
+                    conformacion.moviles.forEach(u => {
+                        rLines.push(`• ${u.movil || '-'} [${u.cuadrante || '-'}] — ${u.nombre || '-'} | Km: ${u.kmInicio || '-'} | Radio: ${u.radio || '-'} | Pila: ${u.pila || '-'} | Cám: ${u.camaraCorporal || 'NO'}`);
+                    });
                 }
                 if (conformacion.motoristas.length > 0) {
-                    rLines.push(`Motoristas (${conformacion.motoristas.length}): ` + conformacion.motoristas.map(u => `${u.movil}[${u.cuadrante}] ${u.nombre} (Km:${u.kmInicio || '-'}, Rad:${u.radio || '-'}, Pila:${u.pila || '-'}, Cám:${u.camaraCorporal})`).join('; '));
+                    rLines.push(`🏍️ INSPECTORES MOTORISTAS (${conformacion.motoristas.length}):`);
+                    conformacion.motoristas.forEach(u => {
+                        rLines.push(`• ${u.movil || '-'} [${u.cuadrante || '-'}] — ${u.nombre || '-'} | Km: ${u.kmInicio || '-'} | Radio: ${u.radio || '-'} | Pila: ${u.pila || '-'} | Cám: ${u.camaraCorporal || 'NO'}`);
+                    });
                 }
-                const conformacionResumen = rLines.join(' | ');
+                if (novedades) {
+                    rLines.push(`🗒️ Novedades: ${novedades}`);
+                }
+                const conformacionResumen = rLines.join('\n');
 
                 const existing = getActiveCencoShift();
                 const shiftObj = Object.assign({}, existing || {}, {
