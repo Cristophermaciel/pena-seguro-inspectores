@@ -2029,7 +2029,7 @@
                                         </div>
                                     </div>
                                     <div class="bg-slate-800/50 border border-cyan-500/30 rounded-xl p-3 space-y-2">
-                                        <h4 class="font-black text-cyan-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-video"></i> 3. Centro Comunitario Las Praderas</h4>
+                                        <h4 class="font-black text-cyan-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-video"></i> 3. Centro Comunitario Pajaritos</h4>
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 1</label><input type="text" id="conf-prad-cctv1" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 1..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
                                             <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 2</label><input type="text" id="conf-prad-cctv2" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 2..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
@@ -11464,7 +11464,7 @@
                 const rLines = [];
                 rLines.push(`CENCO 1410: Desp: ${conformacion.cenco1410.despachador || '-'} | Tel: ${conformacion.cenco1410.telefonista || '-'} | CCTV: ${conformacion.cenco1410.cctv || '-'}`);
                 rLines.push(`Malloquito CCTV: ${conformacion.malloquito.cctv1 || '-'} / ${conformacion.malloquito.cctv2 || '-'}`);
-                rLines.push(`Las Praderas CCTV: ${conformacion.lasPraderas.cctv1 || '-'} / ${conformacion.lasPraderas.cctv2 || '-'}`);
+                rLines.push(`Pajaritos CCTV: ${conformacion.lasPraderas.cctv1 || '-'} / ${conformacion.lasPraderas.cctv2 || '-'}`);
                 rLines.push(`Porterías: Muni(${conformacion.porterias.municipalidad || '-'}), Bodega(${conformacion.porterias.bodegaMunicipal || '-'}), Trapiche(${conformacion.porterias.parqueTrapiche || '-'}), Espacio(${conformacion.porterias.espacioPenaflor || '-'})`);
                 if (conformacion.moviles.length > 0) {
                     rLines.push(`Móviles (${conformacion.moviles.length}): ` + conformacion.moviles.map(u => `${u.movil}[${u.cuadrante}] ${u.nombre} (Km:${u.kmInicio || '-'}, Rad:${u.radio || '-'}, Pila:${u.pila || '-'}, Cám:${u.camaraCorporal})`).join('; '));
@@ -11524,7 +11524,7 @@
                     <span class="text-[10px] cad-muted">${mCount} Móv • ${motoCount} Motos</span>
                 </div>
                 <div class="cad-text"><strong>CENCO 1410:</strong> Desp: ${conf.cenco1410?.despachador || '-'} • Tel: ${conf.cenco1410?.telefonista || '-'} • CCTV: ${conf.cenco1410?.cctv || '-'}</div>
-                <div class="cad-muted"><strong>Malloquito:</strong> ${conf.malloquito?.cctv1 || '-'} / ${conf.malloquito?.cctv2 || '-'} | <strong>Praderas:</strong> ${conf.lasPraderas?.cctv1 || '-'} / ${conf.lasPraderas?.cctv2 || '-'}</div>
+                <div class="cad-muted"><strong>Malloquito:</strong> ${conf.malloquito?.cctv1 || '-'} / ${conf.malloquito?.cctv2 || '-'} | <strong>Pajaritos:</strong> ${conf.lasPraderas?.cctv1 || '-'} / ${conf.lasPraderas?.cctv2 || '-'}</div>
                 <div class="cad-muted"><strong>Porterías:</strong> Muni: ${conf.porterias?.municipalidad || '-'} • Bodega: ${conf.porterias?.bodegaMunicipal || '-'} • Trapiche: ${conf.porterias?.parqueTrapiche || '-'} • Espacio: ${conf.porterias?.espacioPenaflor || '-'}</div>
             `;
         }
