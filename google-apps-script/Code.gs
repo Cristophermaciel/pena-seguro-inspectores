@@ -1739,7 +1739,163 @@ function apiHandleAction(payload) {
           pdfUrl || "Generado localmente"
         ]);
       }
-      return { ok: true, action: action, turnoCencoId: turnoCencoId, pdfUrl: pdfUrl };
+
+      // 1. Cerrar TODOS los vehículos activos en Turnos_y_Checklist con sus Km de Término y registrar en Cierres_Turno
+      const vehiculosCierre = Array.isArray(payload.vehiculosCierre) ? payload.vehiculosCierre : [];
+      const cierreByTid = {};
+      const cierreByMov = {};
+      const normVeh = (v) => String(v || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+      vehiculosCierre.forEach(v => {
+        if (!v) return;
+        if (v.turnoId) cierreByTid[String(v.turnoId).trim()] = v;
+        const nk = normVeh(v.movil);
+        if (nk) cierreByMov[nk] = v;
+      });
+
+      const shInspTurnos = ss.getSheetByName(SHEETS.TURNOS);
+      const shCierres = ss.getSheetByName(SHEETS.CIERRES);
+      const closedMovKeys = {};
+      const closedSummaryLines = [];
+      let closedVehiclesCount = 0;
+
+      if (shInspTurnos && shInspTurnos.getLastRow() > 1) {
+        const lastRowT = shInspTurnos.getLastRow();
+        const scanT = Math.min(80, lastRowT - 1);
+        const startRowT = lastRowT - scanT + 1;
+        const rowsT = shInspTurnos.getRange(startRowT, 1, scanT, 17).getValues();
+        for (let i = 0; i < rowsT.length; i++) {
+          const r = rowsT[i];
+          const tid = String(r[0] || "").trim();
+          const est = String(r[13] || "").trim().toUpperCase();
+          const fFin = String(r[14] || "").trim();
+          if (est === "FINALIZADO" || est === "CERRADO" || fFin) continue;
+          const mov = String(r[4] || "").trim();
+          const nk = normVeh(mov);
+          const match = (tid && cierreByTid[tid]) || (nk && cierreByMov[nk]) || null;
+          const kmIni = Number(r[6] || (match ? match.kmInicial : 0) || 0);
+          const kmTerm = match && Number(match.kmTermino || 0) > 0 ? Number(match.kmTermino) : kmIni;
+          const kmRec = kmTerm > kmIni ? (kmTerm - kmIni) : 0;
+
+          shInspTurnos.getRange(startRowT + i, 14, 1, 4).setValues([["FINALIZADO", fechaCierre, kmTerm || "", kmRec]]);
+          if (shCierres) {
+            shCierres.appendRow([
+              "CIE-CENCO-" + Date.now() + "-" + i,
+              fechaCierre,
+              tid,
+              String(r[2] || (match ? match.rut : "") || ""),
+              String(r[3] || payload.rangoHorario || "MANANA"),
+              mov,
+              String(r[5] || (match ? match.cuadrante : "") || ""),
+              kmIni,
+              kmTerm,
+              kmRec
+            ]);
+          }
+          if (kmTerm > 0 && mov) actualizarKmFlota(ss, mov, kmTerm);
+          if (nk) closedMovKeys[nk] = true;
+          closedVehiclesCount++;
+          closedSummaryLines.push("• " + mov + " (" + (r[2] || "-") + "): Km " + kmIni + " → " + kmTerm + " (+" + kmRec + " km)");
+        }
+      }
+
+      // Registrar también cualquier vehículo en vehiculosCierre que no figurara aún como ACTIVO en Turnos_y_Checklist
+      vehiculosCierre.forEach((v, idx) => {
+        const nk = normVeh(v && v.movil);
+        if (!nk || closedMovKeys[nk]) return;
+        const kmIni = Number(v.kmInicial || 0);
+        const kmTerm = Number(v.kmTermino || 0) || kmIni;
+        const kmRec = kmTerm > kmIni ? (kmTerm - kmIni) : 0;
+        if (shCierres) {
+          shCierres.appendRow([
+            "CIE-CENCO-M-" + Date.now() + "-" + idx,
+            fechaCierre,
+            v.turnoId || ("MAN-" + Date.now()),
+            v.rut || "",
+            v.rangoHorario || payload.rangoHorario || "MANANA",
+            v.movil,
+            v.cuadrante || "",
+            kmIni,
+            kmTerm,
+            kmRec
+          ]);
+        }
+        if (kmTerm > 0) actualizarKmFlota(ss, v.movil, kmTerm);
+        closedMovKeys[nk] = true;
+        closedVehiclesCount++;
+        closedSummaryLines.push("• " + v.movil + " (" + (v.rut || "-") + "): Km " + kmIni + " → " + kmTerm + " (+" + kmRec + " km)");
+      });
+
+      // 2. Finalizar TODOS los procedimientos de Geocerca GPS abiertos en CENCO_Bitacora_CAD
+      const shBit = ss.getSheetByName(SHEETS.CENCO_BITACORA);
+      let closedGeofencesCount = 0;
+      if (shBit && shBit.getLastRow() > 1) {
+        const lastRowB = shBit.getLastRow();
+        const scanB = Math.min(150, lastRowB - 1);
+        const startRowB = lastRowB - scanB + 1;
+        const rowsB = shBit.getRange(startRowB, 1, scanB, 24).getValues();
+        for (let i = 0; i < rowsB.length; i++) {
+          const r = rowsB[i];
+          const fId = String(r[0] || "").trim();
+          const orig = String(r[2] || "").trim().toUpperCase();
+          const est = String(r[3] || "").trim().toUpperCase();
+          const cat = String(r[5] || "").trim().toUpperCase();
+          const isGeo = fId.indexOf("CAD-GPS-") === 0 || orig === "ALERTA GPS GEOCERCA" || cat.indexOf("GEOCERCA") >= 0;
+          if (!isGeo) continue;
+          if (est === "FINALIZADO" || est === "CANCELADO" || est === "DESCARTADA") continue;
+
+          const prevRes = String(r[19] || "").trim();
+          const newRes = prevRes
+            ? (prevRes + " | Finalizado al Cierre de Turno CENCO (" + turnoCencoId + ")")
+            : ("Finalizado automáticamente al Cierre de Turno CENCO (" + turnoCencoId + ")");
+          shBit.getRange(startRowB + i, 4).setValue("FINALIZADO");
+          shBit.getRange(startRowB + i, 19).setValue(fechaCierre);
+          shBit.getRange(startRowB + i, 20).setValue(newRes);
+          closedGeofencesCount++;
+        }
+      }
+
+      // 3. Expirar autorizaciones TODO_TURNO en nube para que el turno entrante inicie limpio
+      const updatedAuths = getCloudGeofenceAuths().map(a => {
+        if (a && !a.revocada && (String(a.modo || "").toUpperCase() === "TODO_TURNO" || (turnoCencoId && a.turnoCencoId === turnoCencoId))) {
+          a.revocada = true;
+        }
+        return a;
+      });
+      saveCloudGeofenceAuths(updatedAuths);
+
+      // 4. Enviar resumen de Cierre de Turno y kilometrajes finales a Telegram
+      const tgLines = [
+        "🔒 CIERRE OFICIAL DE TURNO CENCO (" + (payload.rangoHorario || "-") + ")",
+        "👤 Cierra: " + (payload.operador || "-") + (payload.recibeTurno ? ("  |  Recibe: " + payload.recibeTurno) : ""),
+        "📊 Totales: " + Number(payload.totalIngresados || 0) + " registrados • " + Number(payload.totalFinalizados || 0) + " finalizados • " + closedGeofencesCount + " geocercas cerradas",
+        "📝 Novedades: " + (payload.resumenCierre || "Sin novedades")
+      ];
+      if (closedSummaryLines.length > 0) {
+        tgLines.push("🚓 VEHÍCULOS CERRADOS (" + closedVehiclesCount + "):");
+        closedSummaryLines.forEach(l => tgLines.push(l));
+      }
+      enviarRespaldoTelegram({
+        titulo: "CIERRE DE TURNO CENCO " + (payload.rangoHorario || ""),
+        folio: turnoCencoId || ("CENCO-T-" + Date.now()),
+        fecha: fechaCierre,
+        tipo: "Cierre Oficial de Turno y Kilometrajes",
+        cuadrante: "TODA LA COMUNA",
+        lugar: "Central CENCO 1410 Peñaflor",
+        movil: closedVehiclesCount + " vehículo(s) cerrado(s)",
+        responsable: payload.operador || "Operador CENCO",
+        detalle: tgLines.join("\n"),
+        urlFotoDrive: pdfUrl || "",
+        imagenesBase64: []
+      });
+
+      return {
+        ok: true,
+        action: action,
+        turnoCencoId: turnoCencoId,
+        pdfUrl: pdfUrl,
+        closedVehiclesCount: closedVehiclesCount,
+        closedGeofencesCount: closedGeofencesCount
+      };
     }
 
     if (action === "CENCO_CREAR_INCIDENTE") {
