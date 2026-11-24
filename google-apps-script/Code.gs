@@ -37,7 +37,9 @@ const SHEETS = {
   INTEL_CALLE: "Intel_Situacion_Calle",
   INTEL_CALOR: "Intel_Puntos_Calor",
   // --- Directorio Oficial de Funcionarios (v34) ---
-  STAFF_FUNCIONARIOS: "Staff_Funcionarios"
+  STAFF_FUNCIONARIOS: "Staff_Funcionarios",
+  // --- Directorio Oficial de Correos Destinatarios (v40) ---
+  CORREOS_DESTINATARIOS: "Correos_Destinatarios"
 };
 
 /**
@@ -199,6 +201,12 @@ function inicializarHojas() {
       name: SHEETS.STAFF_FUNCIONARIOS,
       headers: [
         "ID", "N° Funcionario", "Nombre Completo", "RUT", "Cargo Actual", "Estado"
+      ]
+    },
+    {
+      name: SHEETS.CORREOS_DESTINATARIOS,
+      headers: [
+        "ID", "Nombre / Área", "Cargo / Institución", "Correo Electrónico", "Estado"
       ]
     }
   ];
@@ -963,14 +971,33 @@ function apiGetBootstrapData() {
     });
   }
 
+  const shEmailsDir = ss.getSheetByName(SHEETS.CORREOS_DESTINATARIOS);
+  const emailDirectory = [];
+  if (shEmailsDir && shEmailsDir.getLastRow() > 1) {
+    const rows = shEmailsDir.getRange(2, 1, shEmailsDir.getLastRow() - 1, 5).getValues();
+    rows.forEach(r => {
+      if (String(r[0]).trim() && String(r[3]).trim()) {
+        emailDirectory.push({
+          id: String(r[0]).trim(),
+          nombre: String(r[1]).trim(),
+          cargo: String(r[2]).trim(),
+          email: String(r[3]).trim().toLowerCase(),
+          estado: String(r[4]).trim().toUpperCase() || "ACTIVO"
+        });
+      }
+    });
+  }
+
   return {
     ok: true,
     date: todayStr,
     spreadsheetUrl: "https://docs.google.com/spreadsheets/d/" + CONFIG.SPREADSHEET_ID + "/edit",
     gpsConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("WIALON_TOKEN")),
     telegramConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("TELEGRAM_BOT_TOKEN") && PropertiesService.getScriptProperties().getProperty("TELEGRAM_CHAT_ID")),
+    mailBridgeConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("MAIL_BRIDGE_URL")),
     users: users,
     staffDirectory: staffDirectory,
+    emailDirectory: emailDirectory,
     tasksCatalog: tasksCatalog,
     fleet: fleet,
     completedTaskIds: completedTaskIds,
@@ -1102,6 +1129,174 @@ function apiHandleAction(payload) {
         }
       }
       return { ok: false, error: "Funcionario no encontrado" };
+    }
+
+    if (action === "ADMIN_SAVE_EMAIL") {
+      const sheet = ss.getSheetByName(SHEETS.CORREOS_DESTINATARIOS);
+      const id = String(payload.id || ("MAIL-" + Date.now())).trim();
+      const email = String(payload.email || "").trim().toLowerCase();
+      if (!email || email.indexOf("@") < 1) return { ok: false, error: "Correo electrónico inválido" };
+      const rowValues = [
+        id,
+        String(payload.nombre || email).trim(),
+        String(payload.cargo || "Destinatario Institucional").trim(),
+        email,
+        String(payload.estado || "ACTIVO").trim().toUpperCase()
+      ];
+      const lastRow = sheet.getLastRow();
+      let foundRow = -1;
+      if (lastRow > 1) {
+        const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < ids.length; i++) {
+          if (String(ids[i][0]).trim() === id) { foundRow = i + 2; break; }
+        }
+      }
+      if (foundRow > 0) sheet.getRange(foundRow, 1, 1, 5).setValues([rowValues]);
+      else sheet.appendRow(rowValues);
+      return { ok: true, action: action, id: id };
+    }
+
+    if (action === "ADMIN_DELETE_EMAIL") {
+      const sheet = ss.getSheetByName(SHEETS.CORREOS_DESTINATARIOS);
+      const id = String(payload.id || "").trim();
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = ids.length - 1; i >= 0; i--) {
+          if (String(ids[i][0]).trim() === id) {
+            sheet.deleteRow(i + 2);
+            return { ok: true, action: action, id: id };
+          }
+        }
+      }
+      return { ok: false, error: "Correo no encontrado" };
+    }
+
+    if (action === "ADMIN_SAVE_MAIL_BRIDGE") {
+      const props = PropertiesService.getScriptProperties();
+      const url = String(payload.bridgeUrl || "").trim();
+      const secret = String(payload.bridgeSecret || "PENA1410-MAIL-BRIDGE").trim();
+      if (url) props.setProperty("MAIL_BRIDGE_URL", url);
+      else props.deleteProperty("MAIL_BRIDGE_URL");
+      props.setProperty("MAIL_BRIDGE_SECRET", secret);
+      return { ok: true, action: action, configured: Boolean(url) };
+    }
+
+    if (action === "CENCO_ENVIAR_CORREO_PROCEDIMIENTO") {
+      const recipients = Array.isArray(payload.recipients)
+        ? payload.recipients.map(e => String(e || "").trim().toLowerCase()).filter(e => e.indexOf("@") > 0)
+        : [];
+      if (recipients.length === 0) return { ok: false, error: "Debe seleccionar al menos un correo destinatario." };
+
+      const inc = payload.incident || {};
+      const folioId = String(inc.folioId || payload.folioId || "SIN-FOLIO").trim();
+      const notaExtra = String(payload.notaAdicional || "").trim();
+      const enviadoPor = String(payload.enviadoPor || "Central CENCO 1410").trim();
+      const esc = (s) => String(s || "-").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      const imgs = Array.isArray(inc.imagenes) ? inc.imagenes.filter(u => String(u || "").indexOf("http") === 0) : [];
+      const imgsHtml = imgs.length > 0
+        ? "<p><strong>Evidencia Fotográfica (Drive):</strong><br>" + imgs.map((u, idx) => "<a href=\"" + u + "\" target=\"_blank\">Ver Fotografía #" + (idx + 1) + "</a>").join(" &nbsp;|&nbsp; ") + "</p>"
+        : "";
+      const hist = Array.isArray(inc.historial) ? inc.historial : [];
+      const histHtml = hist.length > 0
+        ? "<h3 style=\"color:#0a2463;margin:16px 0 6px;font-size:13px;\">Bitácora / Historial del Procedimiento</h3><ul style=\"padding-left:18px;font-size:12px;color:#334155;\">" +
+          hist.map(h => "<li style=\"margin-bottom:4px;\"><strong>[" + esc(h.fecha) + "] " + esc(h.usuario) + ":</strong> " + esc(h.accion) + "</li>").join("") +
+          "</ul>"
+        : "";
+
+      const subject = "[Peña Seguro 1410] Copia Procedimiento " + folioId + " — " + (inc.categoria || "General") + " (" + (inc.cuadrante || "Comuna") + ")";
+      const htmlBody =
+        "<div style=\"font-family:Arial,sans-serif;max-width:680px;margin:0 auto;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden;\">" +
+        "<div style=\"background:#0a2463;color:#ffffff;padding:16px 20px;\">" +
+        "<div style=\"font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#93c5fd;\">Dirección de Seguridad Pública • I. Municipalidad de Peñaflor</div>" +
+        "<div style=\"font-size:18px;font-weight:bold;margin-top:4px;\">COPIA OFICIAL DE PROCEDIMIENTO — " + esc(folioId) + "</div>" +
+        "</div>" +
+        "<div style=\"padding:18px 20px;color:#0f172a;font-size:13px;line-height:1.5;\">" +
+        (notaExtra ? "<div style=\"background:#eff6ff;border-left:4px solid #2563eb;padding:10px 12px;margin-bottom:14px;border-radius:4px;\"><strong>Nota de Central 1410:</strong> " + esc(notaExtra) + "</div>" : "") +
+        "<table style=\"width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;\">" +
+        "<tr><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;color:#475569;width:34%;\"><strong>Fecha / Hora Ingreso:</strong></td><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;\">" + esc(inc.fechaIngreso) + "</td></tr>" +
+        "<tr><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;color:#475569;\"><strong>Estado / Prioridad:</strong></td><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;\"><strong>" + esc(inc.estado) + "</strong> • Prioridad: " + esc(inc.prioridad) + "</td></tr>" +
+        "<tr><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;color:#475569;\"><strong>Categoría / Tipo:</strong></td><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;\">" + esc(inc.categoria) + (inc.subcategoria ? " — " + esc(inc.subcategoria) : "") + "</td></tr>" +
+        "<tr><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;color:#475569;\"><strong>Cuadrante / Dirección:</strong></td><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;\">[" + esc(inc.cuadrante) + "] " + esc(inc.direccion) + "</td></tr>" +
+        "<tr><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;color:#475569;\"><strong>Origen / Canal:</strong></td><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;\">" + esc(inc.origen) + "</td></tr>" +
+        "<tr><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;color:#475569;\"><strong>Móvil(es) Asignado(s):</strong></td><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;\">" + esc(inc.movilesAsignados || "Sin móvil asignado") + "</td></tr>" +
+        "<tr><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;color:#475569;\"><strong>Despachador / Ingresado por:</strong></td><td style=\"padding:6px;border-bottom:1px solid #e2e8f0;\">" + esc(inc.despachador || inc.ingresadoPor) + "</td></tr>" +
+        "</table>" +
+        "<div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;margin-bottom:12px;\"><strong>Relato / Detalle:</strong><br>" + esc(inc.detalle) + "</div>" +
+        (inc.resolucion ? "<div style=\"background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;padding:12px;margin-bottom:12px;\"><strong>Resolución / Resultado:</strong><br>" + esc(inc.resolucion) + "</div>" : "") +
+        imgsHtml + histHtml +
+        "<hr style=\"border:none;border-top:1px solid #e2e8f0;margin:16px 0;\">" +
+        "<div style=\"font-size:11px;color:#64748b;\">Enviado por <strong>" + esc(enviadoPor) + "</strong> el " + esc(nowFormatted) + " desde Central 1410 Peña Seguro (central1410@penaflor.cl).</div>" +
+        "</div></div>";
+
+      const textBody = "PEÑA SEGURO 1410 — COPIA PROCEDIMIENTO " + folioId + "\nFecha: " + (inc.fechaIngreso || "-") +
+        "\nCategoría: " + (inc.categoria || "-") + "\nCuadrante/Dirección: [" + (inc.cuadrante || "-") + "] " + (inc.direccion || "-") +
+        "\nMóvil: " + (inc.movilesAsignados || "-") + "\nDetalle: " + (inc.detalle || "-") +
+        (inc.resolucion ? ("\nResolución: " + inc.resolucion) : "") +
+        (notaExtra ? ("\nNota Central 1410: " + notaExtra) : "");
+
+      const props = PropertiesService.getScriptProperties();
+      const bridgeUrl = String(props.getProperty("MAIL_BRIDGE_URL") || "").trim();
+      const bridgeSecret = String(props.getProperty("MAIL_BRIDGE_SECRET") || "PENA1410-MAIL-BRIDGE").trim();
+      let sentFrom = "central1410@penaflor.cl";
+      let usedBridge = false;
+
+      if (bridgeUrl) {
+        const resp = UrlFetchApp.fetch(bridgeUrl, {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify({
+            secret: bridgeSecret,
+            to: recipients.join(","),
+            subject: subject,
+            htmlBody: htmlBody,
+            textBody: textBody,
+            senderName: "Central 1410 — Peña Seguro",
+            replyTo: "central1410@penaflor.cl"
+          }),
+          muteHttpExceptions: true
+        });
+        const json = JSON.parse(resp.getContentText() || "{}");
+        if (!json.ok) {
+          return { ok: false, error: "Error en puente central1410@penaflor.cl: " + (json.error || resp.getResponseCode()) };
+        }
+        sentFrom = json.sentFrom || "central1410@penaflor.cl";
+        usedBridge = true;
+      } else {
+        // Respaldo automático si aún no se configura la URL del puente central1410@penaflor.cl
+        MailApp.sendEmail({
+          to: recipients.join(","),
+          subject: subject,
+          body: textBody,
+          htmlBody: htmlBody,
+          name: "Central 1410 — Peña Seguro",
+          replyTo: "central1410@penaflor.cl"
+        });
+        sentFrom = Session.getActiveUser().getEmail() || "Respaldo Apps Script (reply-to central1410@penaflor.cl)";
+      }
+
+      // Registrar en el historial del folio en CENCO_Bitacora_CAD
+      const shBit = ss.getSheetByName(SHEETS.CENCO_BITACORA);
+      if (shBit && folioId && shBit.getLastRow() > 1) {
+        const ids = shBit.getRange(2, 1, shBit.getLastRow() - 1, 1).getValues();
+        for (let i = ids.length - 1; i >= 0; i--) {
+          if (String(ids[i][0]).trim() === folioId) {
+            let hArr = [];
+            try { hArr = JSON.parse(String(shBit.getRange(i + 2, 24).getValue() || "[]")); if (!Array.isArray(hArr)) hArr = []; } catch (ignore) { hArr = []; }
+            hArr.push({
+              fecha: nowFormatted,
+              rol: "CORREO_OFICIAL",
+              usuario: enviadoPor,
+              accion: "📧 Copia enviada por correo a: " + recipients.join(", ") + (notaExtra ? (" | Nota: " + notaExtra) : "")
+            });
+            shBit.getRange(i + 2, 24).setValue(JSON.stringify(hArr));
+            break;
+          }
+        }
+      }
+
+      return { ok: true, action: action, folioId: folioId, recipients: recipients, sentFrom: sentFrom, usedBridge: usedBridge };
     }
 
     if (action === "ADMIN_SAVE_TASK") {
