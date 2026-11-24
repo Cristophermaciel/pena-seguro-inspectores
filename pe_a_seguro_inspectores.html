@@ -2676,7 +2676,7 @@
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h2 class="text-lg font-bold cad-text flex items-center gap-2"><i class="fa-solid fa-gauge-high text-emerald-400"></i> Mapa Macro de Sensación de Seguridad — Peñaflor</h2>
-                                <p class="text-xs cad-muted">Índice comunal y por cuadrante (0–100) calculado en tiempo real según robos, asaltos, portonazos, incivilidades, rucos, vehículos abandonados y consumo de drogas/alcohol.</p>
+                                <p class="text-xs cad-muted">Índice comunal y por cuadrante (0–1000, solo procedimientos policiales/municipales, excluye alertas GPS) calculado en tiempo real según robos, asaltos, portonazos, incivilidades, rucos, vehículos abandonados y consumo de drogas/alcohol.</p>
                             </div>
                             <button type="button" onclick="renderMacroSecurityModule()" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5">
                                 <i class="fa-solid fa-rotate"></i> Recalcular Índice
@@ -2687,11 +2687,11 @@
                             <div class="lg:col-span-7 cad-surface border cad-border rounded-xl overflow-hidden relative min-h-[440px]">
                                 <div id="macro-security-map" class="w-full h-[460px] z-10"></div>
                                 <div class="absolute bottom-3 left-3 z-[400] bg-slate-950/90 border border-slate-700 rounded-lg p-2.5 text-[10px] text-slate-200 space-y-1 shadow-lg">
-                                    <div class="font-black uppercase text-slate-400 mb-1">Semáforo Sensación Vecino</div>
-                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-emerald-500 inline-block"></span> 75–100: Alta Seguridad</div>
-                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-yellow-400 inline-block"></span> 50–74: Seguridad Moderada</div>
-                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-orange-500 inline-block"></span> 25–49: Alerta Preventiva</div>
-                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-red-600 inline-block"></span> 0–24: Foco Crítico</div>
+                                    <div class="font-black uppercase text-slate-400 mb-1">Semáforo Sensación Vecino (Base 1000)</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-emerald-500 inline-block"></span> 750–1000: Alta Seguridad</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-yellow-400 inline-block"></span> 500–749: Seguridad Moderada</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-orange-500 inline-block"></span> 250–499: Alerta Preventiva</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-xs bg-red-600 inline-block"></span> 0–249: Foco Crítico</div>
                                 </div>
                             </div>
                             <div class="lg:col-span-5 space-y-2.5 max-h-[460px] overflow-y-auto pr-1" id="macro-security-quadrants-list"></div>
@@ -12022,10 +12022,24 @@
         }
 
         // ========================================================================
-        // MAPA DE CALOR (LEAFLET.HEAT) + MAPA MACRO SENSACIÓN DE SEGURIDAD (0–100)
+        // MAPA DE CALOR (LEAFLET.HEAT) + MAPA MACRO SENSACIÓN DE SEGURIDAD (0–1000)
+        // Solo contabiliza procedimientos reales (excluye alertas GPS y autorizaciones de cuadrante)
         // ========================================================================
+        function isGpsOrControlIncident(inc) {
+            if (!inc) return true;
+            const folio = String(inc.folioId || '').trim().toUpperCase();
+            const origen = String(inc.origen || '').trim().toUpperCase();
+            const cat = String(inc.categoria || '').trim().toUpperCase();
+            const est = String(inc.estado || '').trim().toUpperCase();
+            if (est === 'DESCARTADA' || est === 'CANCELADO') return true;
+            if (folio.startsWith('CAD-GPS-') || folio.startsWith('CAD-AUT-')) return true;
+            if (origen.includes('GPS') || origen.includes('GEOCERCA') || origen.includes('AUTORIZACI')) return true;
+            if (cat.includes('GEOCERCA') || cat.includes('FUERA DE CUADRANTE')) return true;
+            return false;
+        }
+
         function computeSecurityPerceptionByQuadrant() {
-            const incidents = getCencoIncidentsDB();
+            const incidents = getCencoIncidentsDB().filter(inc => !isGpsOrControlIncident(inc));
             const heatPts = getIntelCalorDB().filter(p => String(p.estado || '').toUpperCase() === 'ACTIVO');
             const robados = getIntelRobadosDB().filter(v => String(v.estado || '').toUpperCase() !== 'RECUPERADO');
 
@@ -12052,13 +12066,13 @@
                     if (String(r.cuadrante || '').trim().toUpperCase() === qid) delitosGraves++;
                 });
 
-                // Puntaje ponderado de riesgo -> Sensación de Seguridad hacia el Vecino (100 = óptima, 0 = crítica)
+                // Puntaje ponderado de riesgo -> Sensación de Seguridad hacia el Vecino (Base 1000 = óptima, 0 = crítica)
                 const penalty = (delitosGraves * 12) + (drogasAlcohol * 7) + (incivilidadesRucos * 5) + (otrosProc * 2);
-                const score = Math.max(5, Math.min(100, Math.round(100 - penalty)));
+                const score = Math.max(0, Math.min(1000, Math.round(1000 - penalty)));
                 let level = 'ALTA SEGURIDAD', fill = '#10b981', badgeCls = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-                if (score < 25) { level = 'FOCO CRÍTICO'; fill = '#dc2626'; badgeCls = 'bg-red-500/20 text-red-300 border-red-500/40'; }
-                else if (score < 50) { level = 'ALERTA PREVENTIVA'; fill = '#f97316'; badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; }
-                else if (score < 75) { level = 'SEGURIDAD MODERADA'; fill = '#eab308'; badgeCls = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; }
+                if (score < 250) { level = 'FOCO CRÍTICO'; fill = '#dc2626'; badgeCls = 'bg-red-500/20 text-red-300 border-red-500/40'; }
+                else if (score < 500) { level = 'ALERTA PREVENTIVA'; fill = '#f97316'; badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; }
+                else if (score < 750) { level = 'SEGURIDAD MODERADA'; fill = '#eab308'; badgeCls = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; }
 
                 return {
                     id: qid, desc: q.desc, coords: q.coords, center: q.center,
@@ -12077,7 +12091,7 @@
                 const w = p.tipo === 'CONSUMO_ALCOHOL_DROGAS' ? 0.95 : (p.tipo === 'RUCO' ? 0.85 : 0.75);
                 pts.push([c[0], c[1], w]);
             });
-            getCencoIncidentsDB().forEach((inc, idx) => {
+            getCencoIncidentsDB().filter(inc => !isGpsOrControlIncident(inc)).forEach((inc, idx) => {
                 const c = parseGpsOrQuadrantCoords(inc.direccion, inc.cuadrante, idx + 3);
                 const w = inc.prioridad === 'CRITICA' ? 1.0 : (inc.prioridad === 'ALTA' ? 0.8 : 0.55);
                 pts.push([c[0], c[1], w]);
@@ -12107,7 +12121,7 @@
                             color: q.fill, weight: 2.5, fillColor: q.fill, fillOpacity: 0.42
                         }).bindPopup(`
                             <div class="text-xs font-sans space-y-1">
-                                <div class="font-black text-sm">Cuadrante ${q.id} — ${q.score}/100</div>
+                                <div class="font-black text-sm">Cuadrante ${q.id} — ${q.score}/1000</div>
                                 <div class="font-bold" style="color:${q.fill}">${q.level}</div>
                                 <div>Robos / Asaltos / Portonazos: <strong>${q.delitosGraves}</strong></div>
                                 <div>Drogas y Alcohol: <strong>${q.drogasAlcohol}</strong></div>
@@ -12121,7 +12135,7 @@
 
         function renderMacroSecurityModule() {
             const data = computeSecurityPerceptionByQuadrant();
-            const avgScore = data.length ? Math.round(data.reduce((a, b) => a + b.score, 0) / data.length) : 100;
+            const avgScore = data.length ? Math.round(data.reduce((a, b) => a + b.score, 0) / data.length) : 1000;
             const totDelitos = data.reduce((a, b) => a + b.delitosGraves, 0);
             const totDrogas = data.reduce((a, b) => a + b.drogasAlcohol, 0);
             const totInciv = data.reduce((a, b) => a + b.incivilidadesRucos, 0);
@@ -12129,7 +12143,7 @@
             const sumEl = document.getElementById('macro-security-summary');
             if (sumEl) {
                 sumEl.innerHTML = `
-                    <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Índice Comunal Vecino</div><div class="text-2xl font-black ${avgScore >= 75 ? 'text-emerald-400' : (avgScore >= 50 ? 'text-yellow-400' : 'text-red-400')} mt-1">${avgScore} / 100</div></div>
+                    <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Índice Comunal Vecino</div><div class="text-2xl font-black ${avgScore >= 750 ? 'text-emerald-400' : (avgScore >= 500 ? 'text-yellow-400' : 'text-red-400')} mt-1">${avgScore} / 1000</div></div>
                     <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Robos / Asaltos / Portonazos</div><div class="text-2xl font-black text-red-400 mt-1">${totDelitos}</div></div>
                     <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Consumo Drogas / Alcohol</div><div class="text-2xl font-black text-amber-400 mt-1">${totDrogas}</div></div>
                     <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Incivilidades / Rucos / Aband.</div><div class="text-2xl font-black text-orange-400 mt-1">${totInciv}</div></div>
@@ -12146,9 +12160,9 @@
                                 <span class="font-black cad-text text-sm">Cuadrante ${q.id}</span>
                                 <span class="text-[10px] cad-muted ml-1.5">${q.desc}</span>
                             </div>
-                            <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${q.badgeCls}">${q.score}/100 • ${q.level}</span>
+                            <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${q.badgeCls}">${q.score}/1000 • ${q.level}</span>
                         </div>
-                        <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full" style="width:${q.score}%;background:${q.fill}"></div></div>
+                        <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round((q.score / 1000) * 100)}%;background:${q.fill}"></div></div>
                         <div class="grid grid-cols-3 gap-1 text-[10px] cad-muted pt-0.5">
                             <span>🚨 Delitos: <strong class="cad-text">${q.delitosGraves}</strong></span>
                             <span>🍷 Drogas/Alc: <strong class="cad-text">${q.drogasAlcohol}</strong></span>
@@ -12174,7 +12188,7 @@
             data.forEach(q => {
                 L.polygon(q.coords, { color: q.fill, weight: 2.5, fillColor: q.fill, fillOpacity: 0.45 }).bindPopup(`
                     <div class="text-xs font-sans space-y-1">
-                        <div class="font-black text-sm">Cuadrante ${q.id} — ${q.score}/100</div>
+                        <div class="font-black text-sm">Cuadrante ${q.id} — ${q.score}/1000</div>
                         <div class="font-bold" style="color:${q.fill}">${q.level}</div>
                         <div>Robos/Asaltos/Portonazos: <strong>${q.delitosGraves}</strong></div>
                         <div>Drogas y Alcohol: <strong>${q.drogasAlcohol}</strong></div>
@@ -12184,7 +12198,7 @@
                 const lbl = L.divIcon({
                     className: '',
                     html: `<div style="background:${q.fill};color:#fff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:900;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.5);white-space:nowrap;">${q.id}: ${q.score}</div>`,
-                    iconSize: [68, 22], iconAnchor: [34, 11]
+                    iconSize: [78, 22], iconAnchor: [39, 11]
                 });
                 L.marker(q.center, { icon: lbl, interactive: false }).addTo(IntelState.macroLayers);
             });
