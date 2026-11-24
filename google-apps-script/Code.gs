@@ -1620,7 +1620,7 @@ function apiHandleAction(payload) {
         ]);
       }
 
-      // Registrar en Turnos_y_Checklist los móviles y motoristas agregados manualmente por el despachador
+      // Registrar o actualizar en Turnos_y_Checklist los móviles y motoristas agregados manualmente por el despachador
       if (payload.conformacion) {
         const shInspTurnos = ss.getSheetByName(SHEETS.TURNOS);
         const manualUnits = [].concat(
@@ -1628,13 +1628,22 @@ function apiHandleAction(payload) {
           Array.isArray(payload.conformacion.motoristas) ? payload.conformacion.motoristas : []
         );
         if (shInspTurnos && manualUnits.length > 0) {
-          manualUnits.forEach(u => {
+          const existingIdsMap = {};
+          const lastInspRow = shInspTurnos.getLastRow();
+          if (lastInspRow > 1) {
+            const idsCol = shInspTurnos.getRange(2, 1, lastInspRow - 1, 1).getValues();
+            for (let i = 0; i < idsCol.length; i++) {
+              const kId = String(idsCol[i][0] || "").trim();
+              if (kId) existingIdsMap[kId] = i + 2;
+            }
+          }
+          manualUnits.forEach((u, idx) => {
             if (!u || !u.movil || u.origen === "AUTO_CHECKLIST") return;
-            const mTid = u.turnoId || ("MAN-" + Date.now() + "-" + Math.floor(Math.random() * 100));
+            const mTid = String(u.turnoId || ("MAN-" + Date.now() + "-" + idx)).trim();
             const obsStr = "Radio: " + (u.radio || "-") + " | Pila: " + (u.pila || "-") + " | Cám. Corporal: " + (u.camaraCorporal || "NO");
-            shInspTurnos.appendRow([
+            const rowData = [
               mTid,
-              payload.fechaInicio || nowFormatted,
+              nowFormatted,
               u.nombre || "Inspector",
               (payload.rangoHorario || "MANANA").toUpperCase(),
               u.movil,
@@ -1650,12 +1659,18 @@ function apiHandleAction(payload) {
               "",
               "",
               ""
-            ]);
+            ];
+            if (existingIdsMap[mTid]) {
+              shInspTurnos.getRange(existingIdsMap[mTid], 1, 1, 17).setValues([rowData]);
+            } else {
+              shInspTurnos.appendRow(rowData);
+              existingIdsMap[mTid] = shInspTurnos.getLastRow();
+            }
             if (Number(u.kmInicio || 0) > 0) actualizarKmFlota(ss, u.movil, Number(u.kmInicio));
           });
         }
 
-        // Enviar Conformación Oficial del Turno como respaldo automático a Telegram
+        // Enviar Conformación Oficial del Turno completa como respaldo automático a Telegram
         if (payload.conformacionResumen) {
           enviarRespaldoTelegram({
             titulo: "CONFORMACIÓN DE TURNO " + (payload.rangoHorario || ""),
@@ -2516,6 +2531,7 @@ function enviarRespaldoTelegram(datos, isTest) {
     if (!token || !chatId) return { ok: false, error: "Telegram no configurado" };
 
     const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const fullDetalle = String(datos.detalle || "-");
     const lines = [
       "🛡️ <b>PEÑA SEGURO 1410 — " + esc(datos.titulo || "RESPALDO OPERATIVO") + "</b>",
       "🆔 <b>Folio:</b> <code>" + esc(datos.folio || "-") + "</code>",
@@ -2523,7 +2539,7 @@ function enviarRespaldoTelegram(datos, isTest) {
       "📌 <b>Categoría / Tipo:</b> " + esc(datos.tipo || "-"),
       "📍 <b>Cuadrante / Lugar:</b> [" + esc(datos.cuadrante || "-") + "] " + esc(datos.lugar || "-"),
       "🚓 <b>Móvil:</b> " + esc(datos.movil || "-") + "  |  👤 <b>Resp.:</b> " + esc(datos.responsable || "-"),
-      "📝 <b>Detalle:</b> " + esc(String(datos.detalle || "-").slice(0, 480))
+      "📝 <b>Detalle:</b>\n" + esc(fullDetalle)
     ];
     if (datos.urlFotoDrive && datos.urlFotoDrive !== "Sin foto" && String(datos.urlFotoDrive).indexOf("http") === 0) {
       lines.push("🔗 <a href=\"" + datos.urlFotoDrive + "\">Ver evidencia en Google Drive</a>");
@@ -2531,26 +2547,63 @@ function enviarRespaldoTelegram(datos, isTest) {
     const textMsg = lines.join("\n");
     const apiBase = "https://api.telegram.org/bot" + encodeURIComponent(token);
 
+    // Helper para dividir mensajes largos (>3900 chars) sin cortar líneas ni etiquetas
+    const sendTextChunks = (fullText) => {
+      const MAX_LEN = 3900;
+      const chunks = [];
+      let remaining = String(fullText || "");
+      while (remaining.length > MAX_LEN) {
+        let cut = remaining.lastIndexOf("\n", MAX_LEN);
+        if (cut < MAX_LEN * 0.5) cut = MAX_LEN;
+        chunks.push(remaining.slice(0, cut));
+        remaining = remaining.slice(cut).replace(/^\n+/, "");
+      }
+      if (remaining) chunks.push(remaining);
+      let lastJson = { ok: false };
+      chunks.forEach((chunk, idx) => {
+        const prefix = chunks.length > 1 ? ("📄 <i>Parte " + (idx + 1) + "/" + chunks.length + "</i>\n") : "";
+        const resp = UrlFetchApp.fetch(apiBase + "/sendMessage", {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify({
+            chat_id: chatId,
+            text: prefix + chunk,
+            parse_mode: "HTML",
+            disable_web_page_preview: true
+          }),
+          muteHttpExceptions: true
+        });
+        lastJson = JSON.parse(resp.getContentText() || "{}");
+      });
+      return lastJson;
+    };
+
     // Extraer imágenes base64 válidas
     const validImgs = (Array.isArray(datos.imagenesBase64) ? datos.imagenesBase64 : [])
       .filter(b => b && String(b).indexOf("data:image/") === 0);
 
     if (validImgs.length > 0) {
-      // Enviar primera imagen con el reporte completo como caption (máx 1024 chars en Telegram)
+      // Enviar primera imagen con caption seguro (máx 1024 chars en Telegram)
       const firstParts = validImgs[0].split(",");
       const firstMime = (firstParts[0].match(/data:(.*?);/) || [null, "image/jpeg"])[1];
       const firstBlob = Utilities.newBlob(Utilities.base64Decode(firstParts[1]), firstMime, (datos.folio || "evidencia") + "_1.jpg");
+      const shortCaption = textMsg.length <= 1020
+        ? textMsg
+        : (lines.slice(0, 6).join("\n") + "\n📝 <i>Ver detalle completo en el mensaje siguiente...</i>").slice(0, 1020);
       const resp1 = UrlFetchApp.fetch(apiBase + "/sendPhoto", {
         method: "post",
         payload: {
           chat_id: chatId,
-          caption: textMsg.slice(0, 1020),
+          caption: shortCaption,
           parse_mode: "HTML",
           photo: firstBlob
         },
         muteHttpExceptions: true
       });
       const json1 = JSON.parse(resp1.getContentText() || "{}");
+      if (textMsg.length > 1020) {
+        sendTextChunks(textMsg);
+      }
 
       // Si hay más imágenes (2da, 3ra, 4ta), enviarlas inmediatamente debajo
       for (let i = 1; i < Math.min(validImgs.length, 4); i++) {
@@ -2571,18 +2624,7 @@ function enviarRespaldoTelegram(datos, isTest) {
       }
       return { ok: Boolean(json1.ok), error: json1.description || "" };
     } else {
-      const resp = UrlFetchApp.fetch(apiBase + "/sendMessage", {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify({
-          chat_id: chatId,
-          text: textMsg,
-          parse_mode: "HTML",
-          disable_web_page_preview: true
-        }),
-        muteHttpExceptions: true
-      });
-      const json = JSON.parse(resp.getContentText() || "{}");
+      const json = sendTextChunks(textMsg);
       return { ok: Boolean(json.ok), error: json.description || "" };
     }
   } catch (err) {
