@@ -137,7 +137,8 @@ function inicializarHojas() {
         "ID Turno CENCO", "Fecha/Hora Inicio", "RUT / Usuario", "Nombre Operador",
         "Rol CENCO", "Puesto / Consola", "Rango Horario", "Novedades Inicio Turno",
         "Estado Turno", "Fecha/Hora Cierre", "Total Ingresados", "Total Despachados",
-        "Total Finalizados", "Resumen Cierre Turno", "URL PDF Acta Turno (Drive)"
+        "Total Finalizados", "Resumen Cierre Turno", "URL PDF Acta Turno (Drive)",
+        "Conformación Completa (JSON)"
       ]
     },
     {
@@ -653,9 +654,12 @@ function apiGetBootstrapData() {
   if (shCencoTurnos && shCencoTurnos.getLastRow() > 1) {
     const count = Math.min(60, shCencoTurnos.getLastRow() - 1);
     const startRow = shCencoTurnos.getLastRow() - count + 1;
-    const rows = shCencoTurnos.getRange(startRow, 1, count, 15).getValues();
+    const numColsT = Math.min(16, Math.max(15, shCencoTurnos.getLastColumn()));
+    const rows = shCencoTurnos.getRange(startRow, 1, count, numColsT).getValues();
     rows.reverse().forEach(r => {
       if (String(r[0]).trim()) {
+        let conformacionObj = null;
+        try { conformacionObj = r[15] ? JSON.parse(String(r[15])) : null; } catch (ignore) { conformacionObj = null; }
         cencoShifts.push({
           turnoCencoId: String(r[0]).trim(),
           fechaInicio: String(r[1]).trim(),
@@ -671,7 +675,8 @@ function apiGetBootstrapData() {
           totalDespachados: Number(r[11] || 0),
           totalFinalizados: Number(r[12] || 0),
           resumenCierre: String(r[13]).trim(),
-          pdfUrl: String(r[14]).trim()
+          pdfUrl: String(r[14]).trim(),
+          conformacion: conformacionObj
         });
       }
     });
@@ -1412,26 +1417,99 @@ function apiHandleAction(payload) {
     // ========================================================================
     // ACCIONES SISTEMA CAD CENCO 1410 (TELEFONISTA -> DESPACHADOR <-> CCTV)
     // ========================================================================
-    if (action === "CENCO_INICIO_TURNO") {
+    if (action === "CENCO_INICIO_TURNO" || action === "CENCO_GUARDAR_CONFORMACION") {
       const shTurnos = ss.getSheetByName(SHEETS.CENCO_TURNOS);
       const turnoCencoId = payload.turnoCencoId || ("CENCO-T-" + Date.now());
-      shTurnos.appendRow([
-        turnoCencoId,
-        payload.fechaInicio || nowFormatted,
-        payload.rut || "",
-        payload.operador || "",
-        (payload.rolCenco || "CENCO_TELEFONISTA").toUpperCase(),
-        payload.puesto || "Consola 1",
-        (payload.rangoHorario || "MANANA").toUpperCase(),
-        payload.novedadesInicio || "Sin novedades al recibir turno",
-        "ACTIVO",
-        "",
-        0,
-        0,
-        0,
-        "",
-        ""
-      ]);
+      const confJson = payload.conformacion ? JSON.stringify(payload.conformacion) : "";
+      let updatedRow = -1;
+      if (shTurnos.getLastRow() > 1) {
+        const ids = shTurnos.getRange(2, 1, shTurnos.getLastRow() - 1, 1).getValues();
+        for (let i = ids.length - 1; i >= 0; i--) {
+          if (String(ids[i][0] || "").trim() === String(turnoCencoId)) {
+            updatedRow = i + 2;
+            break;
+          }
+        }
+      }
+      if (updatedRow > 0) {
+        shTurnos.getRange(updatedRow, 7, 1, 2).setValues([[
+          (payload.rangoHorario || "MANANA").toUpperCase(),
+          payload.novedadesInicio || "Conformación de turno actualizada"
+        ]]);
+        if (confJson) shTurnos.getRange(updatedRow, 16).setValue(confJson);
+      } else {
+        shTurnos.appendRow([
+          turnoCencoId,
+          payload.fechaInicio || nowFormatted,
+          payload.rut || "",
+          payload.operador || "",
+          (payload.rolCenco || "CENCO_DESPACHADOR").toUpperCase(),
+          payload.puesto || "Central Peña Seguro — Despacho Radial",
+          (payload.rangoHorario || "MANANA").toUpperCase(),
+          payload.novedadesInicio || "Conformación de turno CENCO",
+          "ACTIVO",
+          "",
+          0,
+          0,
+          0,
+          "",
+          "",
+          confJson
+        ]);
+      }
+
+      // Registrar en Turnos_y_Checklist los móviles y motoristas agregados manualmente por el despachador
+      if (payload.conformacion) {
+        const shInspTurnos = ss.getSheetByName(SHEETS.TURNOS);
+        const manualUnits = [].concat(
+          Array.isArray(payload.conformacion.moviles) ? payload.conformacion.moviles : [],
+          Array.isArray(payload.conformacion.motoristas) ? payload.conformacion.motoristas : []
+        );
+        if (shInspTurnos && manualUnits.length > 0) {
+          manualUnits.forEach(u => {
+            if (!u || !u.movil || u.origen === "AUTO_CHECKLIST") return;
+            const mTid = u.turnoId || ("MAN-" + Date.now() + "-" + Math.floor(Math.random() * 100));
+            const obsStr = "Radio: " + (u.radio || "-") + " | Pila: " + (u.pila || "-") + " | Cám. Corporal: " + (u.camaraCorporal || "NO");
+            shInspTurnos.appendRow([
+              mTid,
+              payload.fechaInicio || nowFormatted,
+              u.nombre || "Inspector",
+              (payload.rangoHorario || "MANANA").toUpperCase(),
+              u.movil,
+              u.cuadrante || "252A",
+              Number(u.kmInicio || 0),
+              "Conformado Manual CENCO",
+              "Ninguno",
+              obsStr,
+              "Conformación CENCO",
+              "Sin desperfectos",
+              JSON.stringify({ manualCenco: true, radio: u.radio || "", pila: u.pila || "", camaraCorporal: u.camaraCorporal || "NO" }),
+              "ACTIVO",
+              "",
+              "",
+              ""
+            ]);
+            if (Number(u.kmInicio || 0) > 0) actualizarKmFlota(ss, u.movil, Number(u.kmInicio));
+          });
+        }
+
+        // Enviar Conformación Oficial del Turno como respaldo automático a Telegram
+        if (payload.conformacionResumen) {
+          enviarRespaldoTelegram({
+            titulo: "CONFORMACIÓN DE TURNO " + (payload.rangoHorario || ""),
+            folio: turnoCencoId,
+            fecha: payload.fechaInicio || nowFormatted,
+            tipo: "Inicio y Conformación de Turno CENCO 1410",
+            cuadrante: "TODA LA COMUNA",
+            lugar: "Central CENCO 1410 Peñaflor",
+            movil: manualUnits.length + " unidad(es) en terreno",
+            responsable: payload.operador || "Despachador CENCO",
+            detalle: payload.conformacionResumen,
+            imagenesBase64: []
+          });
+        }
+      }
+
       return { ok: true, action: action, turnoCencoId: turnoCencoId };
     }
 
