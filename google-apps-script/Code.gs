@@ -982,6 +982,7 @@ function apiGetBootstrapData() {
     cencoCctvAlerts: cencoCctvAlerts,
     cencoCameras: cencoCameras,
     cencoDispatches: cencoDispatches,
+    cencoGeofenceAuths: getCloudGeofenceAuths(),
     intelMecheros: intelMecheros,
     intelRobados: intelRobados,
     intelCalle: intelCalle,
@@ -1744,6 +1745,25 @@ function apiHandleAction(payload) {
     if (action === "CENCO_CREAR_INCIDENTE") {
       const shBit = ss.getSheetByName(SHEETS.CENCO_BITACORA);
       const folioId = payload.folioId || ("CAD-" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd") + "-" + String(Date.now()).slice(-4));
+      const movilesStrPre = String(payload.movilesAsignados || "").trim();
+      const origenUp = String(payload.origen || "").trim().toUpperCase();
+      const isGpsGeoAlert = origenUp === "ALERTA GPS GEOCERCA" || String(folioId).indexOf("CAD-GPS-") === 0;
+
+      // Bloqueo en servidor para alertas GPS: respetar autorizaciones vigentes y evitar duplicados entre múltiples pantallas CENCO
+      if (isGpsGeoAlert && movilesStrPre) {
+        const nowCheckMs = Date.now();
+        if (hasActiveCloudGeofenceAuth(movilesStrPre, nowCheckMs)) {
+          return { ok: true, action: action, folioId: folioId, skipped: true, reason: "MOVIL_AUTORIZADO" };
+        }
+        const normMovKey = movilesStrPre.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+        const gpsCache = CacheService.getScriptCache();
+        const lockKey = "GPS_GEO_CD_" + normMovKey;
+        if (gpsCache.get(lockKey)) {
+          return { ok: true, action: action, folioId: folioId, skipped: true, reason: "COOLDOWN_ACTIVO" };
+        }
+        gpsCache.put(lockKey, folioId, 2700); // 45 minutos anti-saturación en servidor
+      }
+
       const urlsFotos = [];
       if (Array.isArray(payload.imagenesBase64)) {
         payload.imagenesBase64.forEach((b64, idx) => {
@@ -1847,6 +1867,40 @@ function apiHandleAction(payload) {
       const vigenciaTexto = String(payload.vigenciaTexto || "TODO EL TURNO").trim();
       const obs = String(payload.observaciones || "").trim();
       const turnoId = obtenerTurnoCencoActivoId(ss, payload.turnoCencoId);
+      const modo = String(payload.modo || (vigenciaTexto.toUpperCase().indexOf("TODO") >= 0 ? "TODO_TURNO" : "RANGO")).toUpperCase();
+      const nowMsAuth = Date.now();
+      const startMsAuth = Number(payload.startMs || nowMsAuth);
+      const endMsAuth = modo === "TODO_TURNO"
+        ? Math.max(Number(payload.endMs || 0), nowMsAuth + 12 * 60 * 60 * 1000)
+        : Number(payload.endMs || (nowMsAuth + 60 * 60 * 1000));
+      const authId = String(payload.authId || ("AUT-" + nowMsAuth)).trim();
+
+      // Persistir autorización en nube (ScriptProperties) para que TODOS los equipos CENCO la respeten y no generen alertas repetidas
+      if (movil) {
+        const normKey = movil.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+        const existingAuths = getCloudGeofenceAuths().filter(a =>
+          !(String(a.movil || "").replace(/[^A-Z0-9]/gi, "").toUpperCase() === normKey && !a.revocada)
+        );
+        existingAuths.unshift({
+          id: authId,
+          movil: movil,
+          conductor: conductor,
+          cuadranteAsignado: cuadAsig,
+          cuadranteDetectado: cuadDet,
+          tipoAutorizacion: tipoAut,
+          despachador: despachador,
+          jefeTurno: jefeTurno,
+          modo: modo,
+          startMs: startMsAuth,
+          endMs: endMsAuth,
+          vigenciaTexto: vigenciaTexto,
+          observaciones: obs,
+          turnoCencoId: turnoId,
+          createdMs: nowMsAuth,
+          revocada: false
+        });
+        saveCloudGeofenceAuths(existingAuths);
+      }
 
       const detalleLines = [
         "✅ AUTORIZACIÓN / JUSTIFICACIÓN DE SALIDA DE CUADRANTE",
@@ -1949,7 +2003,21 @@ function apiHandleAction(payload) {
         imagenesBase64: []
       });
 
-      return { ok: true, action: action, folioId: folioId };
+      return { ok: true, action: action, folioId: folioId, authId: authId };
+    }
+
+    if (action === "CENCO_REVOCAR_AUTORIZACION") {
+      const authId = String(payload.authId || "").trim();
+      const movil = String(payload.movil || "").trim();
+      const normKey = movil.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+      const updated = getCloudGeofenceAuths().map(a => {
+        if ((authId && a.id === authId) || (normKey && String(a.movil || "").replace(/[^A-Z0-9]/gi, "").toUpperCase() === normKey)) {
+          a.revocada = true;
+        }
+        return a;
+      });
+      saveCloudGeofenceAuths(updated);
+      return { ok: true, action: action, authId: authId };
     }
 
     if (action === "CENCO_ACTUALIZAR_INCIDENTE") {
@@ -2748,4 +2816,52 @@ function enviarRespaldoTelegram(datos, isTest) {
     if (isTest) return { ok: false, error: err.toString() };
     return { ok: false };
   }
+}
+
+/**
+ * Persistencia en nube de Autorizaciones de Salida de Cuadrante (sincronizada a todos los puestos CENCO).
+ */
+function getCloudGeofenceAuths() {
+  try {
+    const raw = PropertiesService.getScriptProperties().getProperty("CENCO_GEOFENCE_AUTHS_JSON");
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list)) return [];
+    const cutoff = Date.now() - 36 * 60 * 60 * 1000;
+    return list.filter(a => a && Number(a.createdMs || 0) >= cutoff);
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveCloudGeofenceAuths(list) {
+  try {
+    const cutoff = Date.now() - 36 * 60 * 60 * 1000;
+    const pruned = (Array.isArray(list) ? list : [])
+      .filter(a => a && Number(a.createdMs || 0) >= cutoff)
+      .slice(0, 80);
+    PropertiesService.getScriptProperties().setProperty("CENCO_GEOFENCE_AUTHS_JSON", JSON.stringify(pruned));
+  } catch (e) {}
+}
+
+function hasActiveCloudGeofenceAuth(movil, nowMs) {
+  const key = String(movil || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  if (!key) return false;
+  const now = nowMs || Date.now();
+  const list = getCloudGeofenceAuths();
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i];
+    if (!a || a.revocada) continue;
+    const aKey = String(a.movil || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    if (aKey !== key) continue;
+    if (String(a.modo || "").toUpperCase() === "TODO_TURNO") {
+      const endT = Number(a.endMs || (Number(a.createdMs || 0) + 12 * 60 * 60 * 1000));
+      if (now <= endT) return true;
+    } else {
+      const sMs = Number(a.startMs || 0);
+      const eMs = Number(a.endMs || 0);
+      if (sMs && eMs && now >= (sMs - 120000) && now <= eMs) return true;
+    }
+  }
+  return false;
 }
