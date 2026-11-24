@@ -1835,6 +1835,123 @@ function apiHandleAction(payload) {
       return { ok: true, action: action, folioId: folioId, imagenes: urlsFotos };
     }
 
+    if (action === "CENCO_AUTORIZAR_CUADRANTE") {
+      const shBit = ss.getSheetByName(SHEETS.CENCO_BITACORA);
+      const movil = String(payload.movil || "").trim();
+      const conductor = String(payload.conductor || "Inspector en Turno").trim();
+      const cuadAsig = String(payload.cuadranteAsignado || "-").trim();
+      const cuadDet = String(payload.cuadranteDetectado || "-").trim();
+      const tipoAut = String(payload.tipoAutorizacion || "").trim();
+      const despachador = String(payload.despachador || "Despachador CENCO").trim();
+      const jefeTurno = String(payload.jefeTurno || "Jefe de Turno").trim();
+      const vigenciaTexto = String(payload.vigenciaTexto || "TODO EL TURNO").trim();
+      const obs = String(payload.observaciones || "").trim();
+      const turnoId = obtenerTurnoCencoActivoId(ss, payload.turnoCencoId);
+
+      const detalleLines = [
+        "✅ AUTORIZACIÓN / JUSTIFICACIÓN DE SALIDA DE CUADRANTE",
+        "🚓 Móvil: " + movil + " (Conductor: " + conductor + ")",
+        "📍 Cuadrante Asignado: " + cuadAsig + " → Ubicación Actual: " + cuadDet,
+        "📌 Tipo de Autorización: " + tipoAut,
+        "🎧 Despachador CENCO: " + despachador,
+        "👮 Jefe de Turno: " + jefeTurno,
+        "⏱️ Vigencia / Rango Horario: " + vigenciaTexto
+      ];
+      if (obs) detalleLines.push("📝 Observaciones: " + obs);
+      const resumenTexto = detalleLines.join("\n");
+
+      let folioId = String(payload.folioId || "").trim();
+      let updatedExisting = false;
+
+      // Buscar la última alerta GPS abierta de este móvil para justificarla y cerrarla como AUTORIZADO
+      if (shBit && shBit.getLastRow() > 1 && movil) {
+        const lastRow = shBit.getLastRow();
+        const scanCount = Math.min(80, lastRow - 1);
+        const startRow = lastRow - scanCount + 1;
+        const rows = shBit.getRange(startRow, 1, scanCount, 24).getValues();
+        const movUp = movil.toUpperCase();
+        for (let i = rows.length - 1; i >= 0; i--) {
+          const r = rows[i];
+          const rFolio = String(r[0] || "").trim();
+          const rEstado = String(r[3] || "").trim().toUpperCase();
+          const rMovil = String(r[15] || "").trim().toUpperCase();
+          const isMatch = (folioId && rFolio === folioId) ||
+            (rFolio.indexOf("CAD-GPS-") === 0 && rMovil.indexOf(movUp) >= 0 && rEstado !== "FINALIZADO" && rEstado !== "AUTORIZADO");
+          if (isMatch) {
+            folioId = rFolio;
+            let hist = [];
+            try { hist = JSON.parse(String(r[23] || "[]")); if (!Array.isArray(hist)) hist = []; } catch (ignore) { hist = []; }
+            hist.push({
+              fecha: nowFormatted,
+              rol: "CENCO_DESPACHADOR",
+              usuario: despachador,
+              accion: resumenTexto
+            });
+            const targetRow = startRow + i;
+            shBit.getRange(targetRow, 4).setValue("AUTORIZADO");
+            shBit.getRange(targetRow, 15).setValue(despachador);
+            shBit.getRange(targetRow, 19).setValue(nowFormatted);
+            shBit.getRange(targetRow, 20).setValue(resumenTexto);
+            shBit.getRange(targetRow, 24).setValue(JSON.stringify(hist));
+            updatedExisting = true;
+            break;
+          }
+        }
+      }
+
+      if (!updatedExisting && shBit) {
+        folioId = folioId || ("CAD-AUT-" + String(Date.now()).slice(-5));
+        const hist = [{
+          fecha: nowFormatted,
+          rol: "CENCO_DESPACHADOR",
+          usuario: despachador,
+          accion: resumenTexto
+        }];
+        shBit.appendRow([
+          folioId,
+          nowFormatted,
+          "AUTORIZACIÓN CUADRANTE CENCO",
+          "AUTORIZADO",
+          "MEDIA",
+          "Autorización Fuera de Cuadrante",
+          tipoAut,
+          cuadAsig,
+          "Cuadrante " + cuadAsig + " → " + cuadDet,
+          "",
+          "Jefe de Turno: " + jefeTurno,
+          "",
+          resumenTexto,
+          despachador,
+          despachador,
+          movil,
+          nowFormatted,
+          nowFormatted,
+          nowFormatted,
+          resumenTexto,
+          "",
+          turnoId,
+          "",
+          JSON.stringify(hist)
+        ]);
+      }
+
+      // Enviar respuesta / autorización automáticamente a Telegram
+      enviarRespaldoTelegram({
+        titulo: "AUTORIZACIÓN SALIDA DE CUADRANTE",
+        folio: folioId || ("CAD-AUT-" + String(Date.now()).slice(-5)),
+        fecha: nowFormatted,
+        tipo: tipoAut,
+        cuadrante: cuadAsig + " → " + cuadDet,
+        lugar: "Central CENCO 1410 Peñaflor",
+        movil: movil,
+        responsable: despachador + " / Jefe Turno: " + jefeTurno,
+        detalle: resumenTexto,
+        imagenesBase64: []
+      });
+
+      return { ok: true, action: action, folioId: folioId };
+    }
+
     if (action === "CENCO_ACTUALIZAR_INCIDENTE") {
       const shBit = ss.getSheetByName(SHEETS.CENCO_BITACORA);
       const folioId = String(payload.folioId || "").trim();
