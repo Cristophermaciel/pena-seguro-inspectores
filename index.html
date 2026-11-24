@@ -1100,9 +1100,12 @@
                 <div id="admin-maintenance-alert-banner" class="hidden mb-4 rounded-2xl border-2 p-4 shadow-sm"></div>
 
                 <!-- Admin Navigation Tabs -->
-                <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 mb-4">
+                <div class="grid grid-cols-2 sm:grid-cols-7 gap-2 mb-4">
                     <button type="button" onclick="switchAdminTab('users')" id="admin-tab-btn-users" class="admin-tab-btn bg-[#1e3a8a] text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-users-gear text-yellow-400"></i> Usuarios
+                    </button>
+                    <button type="button" onclick="switchAdminTab('staff')" id="admin-tab-btn-staff" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-id-card-clip text-cyan-600"></i> Dotación
                     </button>
                     <button type="button" onclick="switchAdminTab('tasks')" id="admin-tab-btn-tasks" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-list-check text-blue-700"></i> Tareas
@@ -1186,6 +1189,84 @@
                                 <input type="text" id="adm-user-search" oninput="renderAdminUsersList()" class="p-2 rounded-lg border border-slate-300 text-xs" placeholder="Buscar por RUT o nombre...">
                             </div>
                             <div id="admin-users-list" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 1B: DOTACIÓN OFICIAL DE FUNCIONARIOS (DESPLEGABLES DE TURNO) -->
+                <div id="admin-panel-staff" class="admin-panel-section hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Formulario Crear / Editar Funcionario -->
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <h3 class="text-sm font-extrabold text-[#1e3a8a] border-b border-slate-100 pb-2 mb-3 flex items-center justify-between">
+                                <span id="staff-form-title"><i class="fa-solid fa-user-plus text-cyan-600 mr-1"></i> Agregar / Editar Funcionario</span>
+                                <button type="button" onclick="resetAdminStaffForm()" class="text-[10px] text-blue-700 underline">Limpiar</button>
+                            </h3>
+                            <form id="form-admin-staff" onsubmit="saveAdminStaff(event)" class="space-y-3 text-xs">
+                                <input type="hidden" id="adm-staff-id" value="">
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Nombre Completo <span class="text-red-500">*</span></label>
+                                    <input type="text" id="adm-staff-nombre" class="w-full p-2.5 rounded-xl border border-slate-300 font-semibold uppercase" placeholder="Ej: JUAN PEREZ SOTO" required>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">N° Funcionario</label>
+                                        <input type="text" id="adm-staff-numero" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Ej: 725 o H">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">RUT</label>
+                                        <input type="text" id="adm-staff-rut" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Ej: 14.244.841-6">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Cargo Actual <span class="text-red-500">*</span></label>
+                                    <select id="adm-staff-cargo" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white" required>
+                                        <option value="INSPECTOR">INSPECTOR</option>
+                                        <option value="MOTORISTA">MOTORISTA</option>
+                                        <option value="INSPECTOR DESPACHADOR">INSPECTOR DESPACHADOR</option>
+                                        <option value="INSPECTOR CALLCENTER">INSPECTOR CALLCENTER</option>
+                                        <option value="INSPECTOR CCTV">INSPECTOR CCTV</option>
+                                        <option value="PORTERO">PORTERO</option>
+                                        <option value="SUPERVISOR">SUPERVISOR</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 mb-1">Estado</label>
+                                    <select id="adm-staff-estado" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                                        <option value="ACTIVO">ACTIVO (Visible en desplegables)</option>
+                                        <option value="INACTIVO">INACTIVO (Oculto)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" id="btn-save-admin-staff" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-extrabold py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-floppy-disk text-yellow-400"></i> GUARDAR FUNCIONARIO EN EXCEL
+                                </button>
+                            </form>
+                            <p class="mt-3 text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                                <i class="fa-solid fa-circle-info text-blue-600 mr-1"></i> Esta nómina alimenta todos los menús desplegables de la <strong>Conformación Oficial de Turno</strong> en CENCO 1410.
+                            </p>
+                        </div>
+
+                        <!-- Tabla / Listado Editable de Dotación -->
+                        <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-3">
+                                <h3 class="text-sm font-extrabold text-[#1e3a8a]">
+                                    <i class="fa-solid fa-id-card-clip text-cyan-600 mr-1"></i> Dotación Oficial (<span id="admin-staff-count">0</span>)
+                                </h3>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <select id="adm-staff-cargo-filter" onchange="renderAdminStaffList()" class="p-2 rounded-lg border border-slate-300 text-xs font-bold bg-white">
+                                        <option value="">Todos los cargos</option>
+                                        <option value="INSPECTOR">INSPECTOR</option>
+                                        <option value="MOTORISTA">MOTORISTA</option>
+                                        <option value="INSPECTOR DESPACHADOR">INSPECTOR DESPACHADOR</option>
+                                        <option value="INSPECTOR CALLCENTER">INSPECTOR CALLCENTER</option>
+                                        <option value="INSPECTOR CCTV">INSPECTOR CCTV</option>
+                                        <option value="PORTERO">PORTERO</option>
+                                        <option value="SUPERVISOR">SUPERVISOR</option>
+                                    </select>
+                                    <input type="text" id="adm-staff-search" oninput="renderAdminStaffList()" class="p-2 rounded-lg border border-slate-300 text-xs" placeholder="Buscar nombre, RUT o N°...">
+                                </div>
+                            </div>
+                            <div id="admin-staff-list" class="space-y-2 max-h-[480px] overflow-y-auto pr-1"></div>
                         </div>
                     </div>
                 </div>
@@ -1986,8 +2067,6 @@
                                 <button type="button" onclick="closeCencoConformacionModal()" class="text-slate-300 hover:text-white text-xl px-2">&times;</button>
                             </div>
 
-                            <datalist id="cenco-funcionarios-datalist"></datalist>
-
                             <form id="form-cenco-conformacion" onsubmit="submitCencoConformacion(event)" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
                                 <!-- Horario y Fecha Automática -->
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 bg-slate-800/70 border border-slate-700 rounded-xl p-3">
@@ -2013,26 +2092,26 @@
                                 <div class="bg-slate-800/50 border border-blue-500/30 rounded-xl p-3 space-y-2">
                                     <h4 class="font-black text-blue-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-headset"></i> 1. CENCO 1410 Peñaflor</h4>
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Despachador</label><input type="text" id="conf-cenco-despachador" list="cenco-funcionarios-datalist" placeholder="Nombre Despachador..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
-                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Telefonista 1410</label><input type="text" id="conf-cenco-telefonista" list="cenco-funcionarios-datalist" placeholder="Nombre Telefonista..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
-                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV Central</label><input type="text" id="conf-cenco-cctv" list="cenco-funcionarios-datalist" placeholder="Nombre CCTV Central..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Despachador</label><select id="conf-cenco-despachador" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Telefonista 1410</label><select id="conf-cenco-telefonista" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV Central</label><select id="conf-cenco-cctv" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
                                     </div>
                                 </div>
 
-                                <!-- 2 y 3. CENTROS COMUNITARIOS (MALLOQUITO Y LAS PRADERAS) -->
+                                <!-- 2 y 3. CENTROS COMUNITARIOS (MALLOQUITO Y PAJARITOS) -->
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div class="bg-slate-800/50 border border-cyan-500/30 rounded-xl p-3 space-y-2">
                                         <h4 class="font-black text-cyan-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-video"></i> 2. Centro Comunitario Malloquito</h4>
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 1</label><input type="text" id="conf-mall-cctv1" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 1..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
-                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 2</label><input type="text" id="conf-mall-cctv2" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 2..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 1</label><select id="conf-mall-cctv1" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 2</label><select id="conf-mall-cctv2" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
                                         </div>
                                     </div>
                                     <div class="bg-slate-800/50 border border-cyan-500/30 rounded-xl p-3 space-y-2">
                                         <h4 class="font-black text-cyan-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-video"></i> 3. Centro Comunitario Pajaritos</h4>
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 1</label><input type="text" id="conf-prad-cctv1" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 1..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
-                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 2</label><input type="text" id="conf-prad-cctv2" list="cenco-funcionarios-datalist" placeholder="Operador CCTV 2..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 1</label><select id="conf-prad-cctv1" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
+                                            <div><label class="block text-[10px] text-slate-400 mb-0.5">Operador CCTV 2</label><select id="conf-prad-cctv2" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
                                         </div>
                                     </div>
                                 </div>
@@ -2041,10 +2120,10 @@
                                 <div class="bg-slate-800/50 border border-amber-500/30 rounded-xl p-3 space-y-2">
                                     <h4 class="font-black text-amber-300 uppercase text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-door-open"></i> 4. Porterías Municipales</h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Municipalidad</label><input type="text" id="conf-port-muni" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
-                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Bodega Municipal</label><input type="text" id="conf-port-bodega" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
-                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Parque El Trapiche</label><input type="text" id="conf-port-trapiche" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
-                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Espacio Peñaflor</label><input type="text" id="conf-port-espacio" list="cenco-funcionarios-datalist" placeholder="Nombre guardia..." class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Municipalidad</label><select id="conf-port-muni" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Bodega Municipal</label><select id="conf-port-bodega" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Parque El Trapiche</label><select id="conf-port-trapiche" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
+                                        <div><label class="block text-[10px] text-slate-400 mb-0.5">Portería Espacio Peñaflor</label><select id="conf-port-espacio" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white"></select></div>
                                     </div>
                                 </div>
 
@@ -2846,7 +2925,8 @@
             INTEL_CALLE: 'pena_seguro_intel_calle_v1',
             INTEL_CALOR: 'pena_seguro_intel_calor_v1',
             CENCO_DISPATCHES: 'pena_seguro_cenco_dispatches_v1',
-            CENCO_ACTIVE_SHIFT: 'pena_seguro_cenco_active_shift_v1'
+            CENCO_ACTIVE_SHIFT: 'pena_seguro_cenco_active_shift_v1',
+            STAFF_DIRECTORY: 'pena_seguro_staff_directory_v1'
         };
 
         // --- Central State Object Declaration ---
@@ -3365,6 +3445,86 @@
         }
         function saveUsersDB(list) {
             localStorage.setItem(STORAGE_KEYS.USERS_DB, JSON.stringify(list));
+        }
+
+        const STAFF_CARGOS_LIST = [
+            'INSPECTOR',
+            'MOTORISTA',
+            'INSPECTOR DESPACHADOR',
+            'INSPECTOR CALLCENTER',
+            'INSPECTOR CCTV',
+            'PORTERO',
+            'SUPERVISOR'
+        ];
+
+        const DEFAULT_STAFF_DIRECTORY = [{"id":"STF-001","numero":"725","nombre":"ERWIN ORLANDO RODRIGUEZ ERICES","rut":"14244841-6","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-002","numero":"726","nombre":"PLUTARCO ABURTO CERNA","rut":"09274315-2","cargo":"PORTERO","estado":"ACTIVO"},{"id":"STF-003","numero":"727","nombre":"HECTOR ANDRES ALEGRIA CERECEDA","rut":"16561498-4","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-004","numero":"755","nombre":"FELIPE GABRIEL GALLARDO CHACON","rut":"17852292-2","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-005","numero":"762","nombre":"LUIS ALEJANDRO YAÑEZ MAULEN","rut":"16609509-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-006","numero":"788","nombre":"RODRIGO ALEXIS DEL RIO URRA","rut":"11708551-1","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-007","numero":"827","nombre":"LUIS RICARDO TORO CONTRERAS","rut":"19071479-9","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-008","numero":"899","nombre":"HECTOR FELIPE GOMEZ ROMERO","rut":"14383154-K","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-009","numero":"900","nombre":"HECTOR ANTONIO VALENZUELA ZUÑIGA","rut":"14343442-7","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-010","numero":"902","nombre":"MICHAEL ANDRES COPELLI LECAROS","rut":"18157270-1","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-011","numero":"911","nombre":"VANESSA VIRGINIA MERINO RAMIREZ","rut":"16644249-4","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-012","numero":"913","nombre":"MANUEL ESTEBAN AGUSTO CABRERA","rut":"10025056-K","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-013","numero":"914","nombre":"LUIS ALBERTO GONZALEZ ESPINOSA","rut":"09757919-9","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-014","numero":"915","nombre":"MANUEL ALEJANDRO CARREÑO RODRIGUEZ","rut":"18623363-8","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-015","numero":"916","nombre":"JUAN DEL TRANSITO HERNANDEZ CISTERNA","rut":"10564788-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-016","numero":"919","nombre":"JUAN MANUEL URBINA RIVAS","rut":"11332496-1","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-017","numero":"922","nombre":"PATRICIO EDUARDO URRA TORRES","rut":"11645831-4","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-018","numero":"925","nombre":"JOSE ARSENIO CASTILLO HIDALGO","rut":"17661284-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-019","numero":"926","nombre":"CARLOS MAURICIO ATENAS NAVARRO","rut":"15649947-1","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-020","numero":"927","nombre":"ALEJANDRO JESUS MARAMBIO HERNANDEZ","rut":"21726114-7","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-021","numero":"929","nombre":"PATRICIO RAUL FUENTEALBA BARRIA","rut":"12995904-5","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-022","numero":"930","nombre":"JERSON ANDRES ARANEDA ZAPATA","rut":"13756174-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-023","numero":"932","nombre":"ADRIAN ANTONIO CIFUENTES MUÑOZ","rut":"14568998-8","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-024","numero":"933","nombre":"IVAN JONATHAN MICHEL VILLARROEL MADRID","rut":"18959871-8","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-025","numero":"944","nombre":"LUIS ALEJANDRO BENITEZ BENITEZ","rut":"16352853-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-026","numero":"958","nombre":"CESAR ANTONIO CASTILLO MIRANDA","rut":"17802628-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-027","numero":"959","nombre":"EDUARDO ANDRES VILLAGAS SALAZAR","rut":"16713389-4","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-028","numero":"961","nombre":"FRANCISCO JAVIER SOLIS GALAZ","rut":"20580191-K","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-029","numero":"962","nombre":"HECTOR EDUARDO VIDAL ORELLANA","rut":"10062276-9","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-030","numero":"963","nombre":"IGNACIO ALEJANDRO ARRIAGADA LOBOS","rut":"20136357-8","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-031","numero":"964","nombre":"JAYSON ELIAS ALISTE URTUBIA","rut":"19063906-1","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-032","numero":"965","nombre":"JOSE LUIS ROJAS CALDERON","rut":"12223257-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-033","numero":"966","nombre":"LUIS ALBERTO CONTRERAS RICHARD","rut":"10029751-5","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-034","numero":"967","nombre":"LUIS FELIPE LEIVA PAREJA","rut":"18555957-2","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-035","numero":"968","nombre":"MAURICIO ANTONIO AYALA TORO","rut":"14500745-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-036","numero":"969","nombre":"MAURICIO ALVARO PAILLAQUEO CARILAO","rut":"11488504-5","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-037","numero":"970","nombre":"RODRIGO HERNAN GONZALEZ REBOLLEDO","rut":"19650331-5","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-038","numero":"971","nombre":"VICTOR ALONSO GARCIA DIAZ","rut":"18186814-7","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-039","numero":"972","nombre":"YENNIFER CAROLINA RIOS LARA","rut":"16872698-8","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-040","numero":"973","nombre":"CLAUDIO HERNAN SALINAS ESPINOZA","rut":"13557190-3","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-041","numero":"742","nombre":"YONATHAN SEBASTIAN CATRICHEO ABURTO","rut":"18589636-6","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-042","numero":"H","nombre":"MANUEL VERA DUARTE","rut":"20.537.044-7","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-043","numero":"352","nombre":"PAUL BERENGUELA ARAVENA","rut":"6605297-4","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-044","numero":"670","nombre":"CARLA JONES MENA","rut":"13026661-4","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-045","numero":"531","nombre":"RAUL SOTO QUIROGA","rut":"18326298-K","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-046","numero":"864","nombre":"YESSICA ZUÑIGA ACEVEDO","rut":"9752391-6","cargo":"INSPECTOR DESPACHADOR","estado":"ACTIVO"},{"id":"STF-047","numero":"862","nombre":"FELIPE MILLAN FLORES","rut":"15339144-0","cargo":"INSPECTOR DESPACHADOR","estado":"ACTIVO"},{"id":"STF-048","numero":"865","nombre":"LETICIA CABRERA CARREÑO","rut":"9106120-1","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-049","numero":"H","nombre":"CLAUDIA GONZALEZ JEREZ","rut":"11.811.919-3","cargo":"INSPECTOR CALLCENTER","estado":"ACTIVO"},{"id":"STF-050","numero":"H","nombre":"MILVA CARCAMO DIAZ","rut":"13.610.243-5","cargo":"INSPECTOR CALLCENTER","estado":"ACTIVO"},{"id":"STF-051","numero":"H","nombre":"DANIEL MONTECINO EDWARD","rut":"17.933.483-6","cargo":"INSPECTOR DESPACHADOR","estado":"ACTIVO"},{"id":"STF-052","numero":"H","nombre":"BALDRA GALAZ PÉREZ","rut":"12.314.014-1","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-053","numero":"H","nombre":"JORGE SOTO BRANTE","rut":"11.656.428-9","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-054","numero":"H","nombre":"JOSHUA IBARRA DIAZ","rut":"21.729.845-8","cargo":"INSPECTOR CALLCENTER","estado":"ACTIVO"},{"id":"STF-055","numero":"H","nombre":"YASNA AGUILA ROBLES","rut":"13673508-K","cargo":"INSPECTOR DESPACHADOR","estado":"ACTIVO"},{"id":"STF-056","numero":"H","nombre":"MARCELA MASSONE GABLER","rut":"14.525.223-7","cargo":"INSPECTOR DESPACHADOR","estado":"ACTIVO"},{"id":"STF-057","numero":"H","nombre":"ROSA MADRID GONZALEZ","rut":"14.307.743-8","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-058","numero":"H","nombre":"SOFIA CABRERA BERMÚDEZ","rut":"22.266.795-K","cargo":"INSPECTOR CCTV","estado":"ACTIVO"},{"id":"STF-059","numero":"416","nombre":"NICOLAS ANDRES VALENZUELA BERRIOS","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-060","numero":"533","nombre":"DIEGO ANDRES GONZALEZ ATENAS","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-061","numero":"417","nombre":"JORGE DEL CARMEN GUZMAN OYARZUN","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-062","numero":"363","nombre":"LUIS FRANCISCO RIOS PALMA","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-063","numero":"540","nombre":"LUIS FELIPE PUEBLA CARCAMO","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-064","numero":"662","nombre":"ALDO GIORGIO SOTO LLORENTE","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-065","numero":"270","nombre":"HERIBERTO ANTONIO CANCINO VASQUEZ","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-066","numero":"632","nombre":"LUIS MALLEA CONTRERAS","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-067","numero":"671","nombre":"ORLANDO POBLETE VERGARA","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-068","numero":"431","nombre":"VICTOR FABIAN FERNANDEZ ARAVENA","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-069","numero":"600","nombre":"LUIS EDUARDO MORALES OSORIO","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-070","numero":"379","nombre":"JUAN MARCELO HERNANDEZ MELLADO","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-071","numero":"660","nombre":"AARON NATANAEL CACERES MORALES","rut":"","cargo":"INSPECTOR","estado":"ACTIVO"},{"id":"STF-072","numero":"484","nombre":"VICTOR RETAMALES MADARIAGA","rut":"","cargo":"PORTERO","estado":"ACTIVO"},{"id":"STF-073","numero":"659","nombre":"SERGIO FARIAS FLORES","rut":"","cargo":"PORTERO","estado":"ACTIVO"},{"id":"STF-074","numero":"467","nombre":"MARIO MUÑOZ ESCOBAR","rut":"","cargo":"PORTERO","estado":"ACTIVO"},{"id":"STF-075","numero":"628","nombre":"FERNANDO AMIGO ALLENDE","rut":"","cargo":"PORTERO","estado":"ACTIVO"},{"id":"STF-076","numero":"204","nombre":"LUIS OMAR FUENTES DIAZ","rut":"","cargo":"PORTERO","estado":"ACTIVO"},{"id":"STF-077","numero":"464","nombre":"JOSE VIELMA DIAZ","rut":"","cargo":"PORTERO","estado":"ACTIVO"},{"id":"STF-078","numero":"510","nombre":"JUAN IGNACIO CESPEDES AZOCAR","rut":"","cargo":"PORTERO","estado":"ACTIVO"}];
+
+        function getStaffDB() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.STAFF_DIRECTORY));
+                if (Array.isArray(stored) && stored.length > 0) return stored;
+                return DEFAULT_STAFF_DIRECTORY;
+            } catch (e) {
+                return DEFAULT_STAFF_DIRECTORY;
+            }
+        }
+        function saveStaffDB(list) {
+            localStorage.setItem(STORAGE_KEYS.STAFF_DIRECTORY, JSON.stringify(Array.isArray(list) ? list : []));
+        }
+
+        function resolveStaffNameFromIdentifier(val) {
+            const raw = String(val || '').trim();
+            if (!raw) return '';
+            const norm = raw.replace(/\./g, '').replace(/\s+/g, '').toUpperCase();
+            const staff = getStaffDB();
+            const byRut = staff.find(s => s.rut && String(s.rut).replace(/\./g, '').replace(/\s+/g, '').toUpperCase() === norm);
+            if (byRut) return byRut.nombre;
+            const byName = staff.find(s => String(s.nombre || '').trim().toUpperCase() === raw.toUpperCase());
+            if (byName) return byName.nombre;
+            const userMatch = getUsersDB().find(u => u.rut && String(u.rut).replace(/\./g, '').replace(/\s+/g, '').toUpperCase() === norm);
+            if (userMatch && userMatch.nombre) return userMatch.nombre;
+            return raw;
+        }
+
+        function buildStaffSelectOptions(preferredCargos = [], selectedValue = '', placeholder = '-- Seleccionar funcionario --') {
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const sel = String(selectedValue || '').trim();
+            const selUp = sel.toUpperCase();
+            const prefSet = new Set((preferredCargos || []).map(c => String(c).toUpperCase()));
+            const activeStaff = getStaffDB()
+                .filter(s => String(s.estado || 'ACTIVO').toUpperCase() !== 'INACTIVO')
+                .slice()
+                .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+
+            const primary = [];
+            const others = [];
+            let matched = false;
+            activeStaff.forEach(s => {
+                const isSel = sel && String(s.nombre || '').trim().toUpperCase() === selUp;
+                if (isSel) matched = true;
+                if (prefSet.size > 0 && prefSet.has(String(s.cargo || '').toUpperCase())) {
+                    primary.push({ s, isSel });
+                } else {
+                    others.push({ s, isSel });
+                }
+            });
+
+            let html = `<option value="">${esc(placeholder)}</option>`;
+            if (sel && !matched) {
+                html += `<option value="${esc(sel)}" selected>${esc(sel)}</option>`;
+            }
+            if (primary.length > 0) {
+                html += `<optgroup label="★ ${esc(preferredCargos.join(' / '))}">` +
+                    primary.map(({ s, isSel }) => `<option value="${esc(s.nombre)}" ${isSel ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('') +
+                    `</optgroup>`;
+            }
+            if (others.length > 0) {
+                const label = primary.length > 0 ? 'Otros Funcionarios' : 'Nómina de Funcionarios';
+                html += `<optgroup label="${esc(label)}">` +
+                    others.map(({ s, isSel }) => `<option value="${esc(s.nombre)}" ${isSel ? 'selected' : ''}>${esc(s.nombre)} (${esc(s.cargo || 'SIN CARGO')})</option>`).join('') +
+                    `</optgroup>`;
+            }
+            return html;
         }
 
         function getTasksCatalogDB() {
@@ -4325,7 +4485,7 @@
         // ADMINISTRATOR PANEL FUNCTIONS (USUARIOS, TAREAS, FLOTA, MONITOR)
         // ========================================================================
         function switchAdminTab(tabName) {
-            ['users', 'tasks', 'fleet', 'maintenance', 'alerts', 'monitor'].forEach(t => {
+            ['users', 'staff', 'tasks', 'fleet', 'maintenance', 'alerts', 'monitor'].forEach(t => {
                 const panel = document.getElementById(`admin-panel-${t}`);
                 const btn = document.getElementById(`admin-tab-btn-${t}`);
                 if (panel) panel.classList.toggle('hidden', t !== tabName);
@@ -4340,12 +4500,151 @@
 
         function renderAllAdminPanels() {
             renderAdminUsersList();
+            renderAdminStaffList();
             renderAdminTasksList();
             renderAdminFleetList();
             renderAdminMaintenanceBanner();
             renderAdminMaintenancePanel();
             renderAdminFleetAlertsPanel();
             renderAdminMonitor();
+        }
+
+        function renderAdminStaffList() {
+            const container = document.getElementById('admin-staff-list');
+            const countEl = document.getElementById('admin-staff-count');
+            const search = (document.getElementById('adm-staff-search')?.value || '').trim().toLowerCase();
+            const cargoFilter = (document.getElementById('adm-staff-cargo-filter')?.value || '').trim().toUpperCase();
+            if (!container) return;
+
+            const list = getStaffDB().slice().sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+            const filtered = list.filter(s => {
+                if (cargoFilter && String(s.cargo || '').toUpperCase() !== cargoFilter) return false;
+                if (!search) return true;
+                return String(s.nombre || '').toLowerCase().includes(search) ||
+                    String(s.rut || '').toLowerCase().includes(search) ||
+                    String(s.numero || '').toLowerCase().includes(search) ||
+                    String(s.cargo || '').toLowerCase().includes(search);
+            });
+
+            if (countEl) countEl.innerText = `${filtered.length} / ${list.length}`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No hay funcionarios que coincidan con el filtro.</p>`;
+                return;
+            }
+
+            const cargoBadge = (c) => {
+                const up = String(c || '').toUpperCase();
+                if (up.includes('DESPACHADOR')) return 'bg-blue-100 text-blue-800 border-blue-200';
+                if (up.includes('CALLCENTER')) return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                if (up.includes('CCTV')) return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+                if (up.includes('PORTERO')) return 'bg-amber-100 text-amber-800 border-amber-200';
+                if (up.includes('MOTORISTA')) return 'bg-orange-100 text-orange-800 border-orange-200';
+                if (up.includes('SUPERVISOR')) return 'bg-purple-100 text-purple-800 border-purple-200';
+                return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+            };
+
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+            container.innerHTML = filtered.map(s => `
+                <div class="p-3 rounded-xl border ${s.estado === 'INACTIVO' ? 'border-slate-200 bg-slate-100 opacity-70' : 'border-slate-200 bg-slate-50'} flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="font-extrabold text-slate-800">${esc(s.nombre)}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${cargoBadge(s.cargo)}">${esc(s.cargo || 'INSPECTOR')}</span>
+                            ${s.estado === 'INACTIVO' ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-100 text-red-700">INACTIVO</span>' : ''}
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-0.5">
+                            ${s.numero ? `N° <strong>${esc(s.numero)}</strong>` : 'Sin N°'} • ${s.rut ? `RUT: <span class="font-mono">${esc(s.rut)}</span>` : 'Sin RUT registrado'}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" onclick="editAdminStaff('${esc(s.id)}')" class="px-2.5 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[11px]">
+                            <i class="fa-solid fa-pen"></i> Editar
+                        </button>
+                        <button type="button" onclick="deleteAdminStaff('${esc(s.id)}')" class="px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-bold text-[11px]">
+                            <i class="fa-solid fa-trash"></i> Borrar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function resetAdminStaffForm() {
+            document.getElementById('adm-staff-id').value = '';
+            document.getElementById('adm-staff-nombre').value = '';
+            document.getElementById('adm-staff-numero').value = '';
+            document.getElementById('adm-staff-rut').value = '';
+            document.getElementById('adm-staff-cargo').value = 'INSPECTOR';
+            document.getElementById('adm-staff-estado').value = 'ACTIVO';
+            const titleEl = document.getElementById('staff-form-title');
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-user-plus text-cyan-600 mr-1"></i> Agregar / Editar Funcionario';
+        }
+
+        function editAdminStaff(id) {
+            const s = getStaffDB().find(x => x.id === id);
+            if (!s) return;
+            document.getElementById('adm-staff-id').value = s.id;
+            document.getElementById('adm-staff-nombre').value = s.nombre || '';
+            document.getElementById('adm-staff-numero').value = s.numero || '';
+            document.getElementById('adm-staff-rut').value = s.rut || '';
+            const cargoSel = document.getElementById('adm-staff-cargo');
+            const cargoVal = String(s.cargo || 'INSPECTOR').toUpperCase();
+            if (cargoSel && !Array.from(cargoSel.options).some(o => o.value === cargoVal)) {
+                const opt = document.createElement('option');
+                opt.value = cargoVal;
+                opt.textContent = cargoVal;
+                cargoSel.appendChild(opt);
+            }
+            if (cargoSel) cargoSel.value = cargoVal;
+            document.getElementById('adm-staff-estado').value = String(s.estado || 'ACTIVO').toUpperCase();
+            const titleEl = document.getElementById('staff-form-title');
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-user-pen text-amber-500 mr-1"></i> Editando Funcionario';
+            document.getElementById('adm-staff-nombre')?.focus();
+        }
+
+        async function saveAdminStaff(e) {
+            e.preventDefault();
+            const id = (document.getElementById('adm-staff-id').value || '').trim() || ('STF-' + Date.now());
+            const nombre = (document.getElementById('adm-staff-nombre').value || '').trim().toUpperCase();
+            const numero = (document.getElementById('adm-staff-numero').value || '').trim();
+            const rut = (document.getElementById('adm-staff-rut').value || '').trim();
+            const cargo = (document.getElementById('adm-staff-cargo').value || 'INSPECTOR').trim().toUpperCase();
+            const estado = (document.getElementById('adm-staff-estado').value || 'ACTIVO').trim().toUpperCase();
+            if (!nombre) return;
+
+            const record = { id, numero, nombre, rut, cargo, estado };
+            const list = getStaffDB().slice();
+            const idx = list.findIndex(x => x.id === id);
+            if (idx >= 0) list[idx] = record;
+            else list.push(record);
+            saveStaffDB(list);
+
+            renderAdminStaffList();
+            resetAdminStaffForm();
+            showToast(`✅ Funcionario "${nombre}" (${cargo}) guardado.`, 'success');
+
+            await sendToGoogleSheets({
+                action: 'ADMIN_SAVE_STAFF',
+                ...record
+            });
+        }
+
+        async function deleteAdminStaff(id) {
+            const list = getStaffDB().slice();
+            const target = list.find(x => x.id === id);
+            if (!target) return;
+            if (!confirm(`¿Seguro que deseas eliminar a "${target.nombre}" (${target.cargo}) de la nómina de desplegables?`)) return;
+
+            const updated = list.filter(x => x.id !== id);
+            saveStaffDB(updated);
+            renderAdminStaffList();
+            showToast(`🗑️ Funcionario "${target.nombre}" eliminado.`, 'info');
+
+            await sendToGoogleSheets({
+                action: 'ADMIN_DELETE_STAFF',
+                id: id
+            });
         }
 
         function renderAdminUsersList() {
@@ -6042,6 +6341,9 @@
             if (!data || !data.ok) return;
             if (Array.isArray(data.users) && data.users.length > 0) {
                 saveUsersDB(data.users);
+            }
+            if (Array.isArray(data.staffDirectory) && data.staffDirectory.length > 0) {
+                saveStaffDB(data.staffDirectory);
             }
             if (Array.isArray(data.tasksCatalog) && data.tasksCatalog.length > 0) {
                 saveTasksCatalogDB(data.tasksCatalog);
@@ -11271,35 +11573,34 @@
             const h = now.getHours();
             const autoRango = (h >= 7 && h < 15) ? 'MANANA' : ((h >= 15 && h < 23) ? 'TARDE' : 'NOCHE');
 
-            // Poblar datalist de funcionarios para selección rápida
-            const dl = document.getElementById('cenco-funcionarios-datalist');
-            if (dl) {
-                const users = getUsersDB();
-                dl.innerHTML = users.map(u => `<option value="${String(u.nombre || u.rut || '').replace(/"/g, '&quot;')}">${u.rut} • ${u.cargo || u.rol}</option>`).join('');
-            }
-
             const curShift = getActiveCencoShift();
             const conf = curShift?.conformacion || {};
             document.getElementById('conf-fecha-hora').value = curShift?.fechaInicio || now.toLocaleString('es-CL');
             document.getElementById('conf-rango-horario').value = curShift?.rangoHorario || autoRango;
             document.getElementById('conf-novedades').value = curShift?.novedadesInicio || '';
 
+            const fillStaffSelect = (id, preferredCargos, val, placeholder) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = buildStaffSelectOptions(preferredCargos, resolveStaffNameFromIdentifier(val), placeholder);
+            };
+
             // 1. CENCO 1410
-            document.getElementById('conf-cenco-despachador').value = conf.cenco1410?.despachador || AppState.userName || '';
-            document.getElementById('conf-cenco-telefonista').value = conf.cenco1410?.telefonista || '';
-            document.getElementById('conf-cenco-cctv').value = conf.cenco1410?.cctv || '';
+            fillStaffSelect('conf-cenco-despachador', ['INSPECTOR DESPACHADOR', 'SUPERVISOR'], conf.cenco1410?.despachador || AppState.userName || '', '-- Elegir Despachador --');
+            fillStaffSelect('conf-cenco-telefonista', ['INSPECTOR CALLCENTER', 'INSPECTOR DESPACHADOR'], conf.cenco1410?.telefonista || '', '-- Elegir Telefonista --');
+            fillStaffSelect('conf-cenco-cctv', ['INSPECTOR CCTV'], conf.cenco1410?.cctv || '', '-- Elegir Operador CCTV --');
 
             // 2 y 3. Centros Comunitarios
-            document.getElementById('conf-mall-cctv1').value = conf.malloquito?.cctv1 || '';
-            document.getElementById('conf-mall-cctv2').value = conf.malloquito?.cctv2 || '';
-            document.getElementById('conf-prad-cctv1').value = conf.lasPraderas?.cctv1 || '';
-            document.getElementById('conf-prad-cctv2').value = conf.lasPraderas?.cctv2 || '';
+            fillStaffSelect('conf-mall-cctv1', ['INSPECTOR CCTV'], conf.malloquito?.cctv1 || '', '-- Elegir Operador CCTV 1 --');
+            fillStaffSelect('conf-mall-cctv2', ['INSPECTOR CCTV'], conf.malloquito?.cctv2 || '', '-- Elegir Operador CCTV 2 --');
+            fillStaffSelect('conf-prad-cctv1', ['INSPECTOR CCTV'], conf.lasPraderas?.cctv1 || '', '-- Elegir Operador CCTV 1 --');
+            fillStaffSelect('conf-prad-cctv2', ['INSPECTOR CCTV'], conf.lasPraderas?.cctv2 || '', '-- Elegir Operador CCTV 2 --');
 
             // 4. Porterías
-            document.getElementById('conf-port-muni').value = conf.porterias?.municipalidad || '';
-            document.getElementById('conf-port-bodega').value = conf.porterias?.bodegaMunicipal || '';
-            document.getElementById('conf-port-trapiche').value = conf.porterias?.parqueTrapiche || '';
-            document.getElementById('conf-port-espacio').value = conf.porterias?.espacioPenaflor || '';
+            fillStaffSelect('conf-port-muni', ['PORTERO'], conf.porterias?.municipalidad || '', '-- Elegir Portero --');
+            fillStaffSelect('conf-port-bodega', ['PORTERO'], conf.porterias?.bodegaMunicipal || '', '-- Elegir Portero --');
+            fillStaffSelect('conf-port-trapiche', ['PORTERO'], conf.porterias?.parqueTrapiche || '', '-- Elegir Portero --');
+            fillStaffSelect('conf-port-espacio', ['PORTERO'], conf.porterias?.espacioPenaflor || '', '-- Elegir Portero --');
 
             // 5 y 6. Móviles y Motoristas: combinar los guardados + los que iniciaron turno con checklist automáticamente
             const movWrap = document.getElementById('conf-moviles-rows');
@@ -11375,7 +11676,9 @@
                 </div>
                 <div class="col-span-2">
                     <label class="block text-[9px] text-slate-400">Nombre Inspector</label>
-                    <input type="text" list="cenco-funcionarios-datalist" value="${String(data?.nombre || '').replace(/"/g, '&quot;')}" placeholder="Nombre / RUT..." class="conf-u-nombre w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px]">
+                    <select class="conf-u-nombre w-full px-2 py-1.5 rounded bg-slate-900 border border-slate-700 text-white text-[11px]">
+                        ${buildStaffSelectOptions(kind === 'motoristas' ? ['MOTORISTA', 'INSPECTOR'] : ['INSPECTOR', 'MOTORISTA'], resolveStaffNameFromIdentifier(data?.nombre || ''), '-- Seleccionar Inspector --')}
+                    </select>
                 </div>
                 <div>
                     <label class="block text-[9px] text-slate-400">Km Inicio</label>
