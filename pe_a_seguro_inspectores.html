@@ -2962,19 +2962,31 @@
         </div>
 
         <!-- Modal Cierre de Turno CENCO + Generación Documento PDF -->
-        <div id="cenco-close-shift-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4">
-            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-                <div class="bg-gradient-to-r from-[#0a2463] via-red-700 to-red-600 text-white p-4 flex justify-between items-center">
+        <div id="cenco-close-shift-modal" class="hidden fixed inset-0 z-[950] bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-3">
+            <div class="bg-white w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-[#0a2463] via-red-700 to-red-600 text-white p-4 flex justify-between items-center shrink-0">
                     <div>
                         <h3 class="text-sm font-black uppercase"><i class="fa-solid fa-file-pdf mr-1"></i> Cierre de Turno CENCO y Acta PDF</h3>
-                        <p class="text-[11px] text-red-100">Consolida la bitácora del turno, descarga PDF oficial y respalda en Drive</p>
+                        <p class="text-[11px] text-red-100">Registra Km de término, cierra vehículos activos, finaliza geocercas y limpia el mapa</p>
                     </div>
                     <button type="button" onclick="closeCencoCloseShiftModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-                <form id="form-cenco-close-shift" class="p-4 space-y-3 text-xs">
+                <form id="form-cenco-close-shift" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
                     <div id="cenco-close-shift-summary-box" class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1"></div>
+
+                    <!-- Kilometrajes de Término de Vehículos Activos -->
+                    <div id="cenco-close-vehicles-section" class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <h4 class="font-black text-[#0a2463] uppercase text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-gauge-high text-blue-700"></i> Kilometraje de Término — Vehículos Activos (<span id="cenco-close-veh-count">0</span>)
+                            </h4>
+                            <span class="text-[10px] font-bold text-blue-700">Obligatorio antes de cerrar</span>
+                        </div>
+                        <div id="cenco-close-vehicles-list" class="space-y-2"></div>
+                    </div>
+
                     <div>
                         <label class="block font-bold text-slate-700 mb-1">Operador / Turno Entrante (Quien recibe)</label>
                         <input type="text" id="cenco-close-recibe" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Nombre del operador que recibe la consola">
@@ -2983,7 +2995,7 @@
                         <label class="block font-bold text-slate-700 mb-1">Resumen / Novedades de Cierre de Turno <span class="text-red-500">*</span></label>
                         <textarea id="cenco-close-resumen" rows="3" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Detalle pendientes, novedades radiales, estado de cámaras y entrega de turno..." required></textarea>
                     </div>
-                    <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
+                    <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100 sticky bottom-0 bg-white py-2">
                         <button type="button" onclick="closeCencoCloseShiftModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 font-bold text-slate-700">Cancelar</button>
                         <button type="submit" id="btn-cenco-confirm-close-pdf" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black shadow flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-file-pdf"></i> CERRAR TURNO Y GENERAR PDF OFICIAL
@@ -10132,6 +10144,25 @@
         }
 
         // --- Cierre de Turno CENCO + PDF Oficial ---
+        function updateCencoCloseKmDelta(inputEl) {
+            const row = inputEl?.closest('.cenco-close-vehicle-row');
+            if (!row) return;
+            const kmIni = Number(row.dataset.kmInicial || 0);
+            const kmTerm = Number(inputEl.value || 0);
+            const deltaEl = row.querySelector('.cenco-close-km-delta');
+            if (!deltaEl) return;
+            if (!inputEl.value) {
+                deltaEl.innerText = 'Ingrese Km término';
+                deltaEl.className = 'cenco-close-km-delta text-[10px] font-bold text-slate-400';
+            } else if (kmTerm < kmIni) {
+                deltaEl.innerText = `⚠️ Debe ser ≥ ${kmIni}`;
+                deltaEl.className = 'cenco-close-km-delta text-[10px] font-black text-red-600';
+            } else {
+                deltaEl.innerText = `+${(kmTerm - kmIni).toLocaleString('es-CL')} km`;
+                deltaEl.className = 'cenco-close-km-delta text-[10px] font-black text-emerald-700';
+            }
+        }
+
         function openCencoCloseShiftModal() {
             const activeShift = getActiveCencoShift() || {
                 turnoCencoId: `CENCO-T-${Date.now().toString().slice(-6)}`,
@@ -10140,16 +10171,69 @@
                 rolCenco: AppState.userRole, puesto: 'Central Peña Seguro 1410', rangoHorario: AppState.rangoHorario || 'MANANA'
             };
             const incidents = getCencoIncidentsDB();
+            const openGeoCount = incidents.filter(i => {
+                const isGeo = String(i.folioId || '').startsWith('CAD-GPS-') ||
+                    String(i.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA' ||
+                    String(i.categoria || '').toUpperCase().includes('GEOCERCA');
+                return isGeo && !['FINALIZADO', 'CANCELADO', 'DESCARTADA'].includes(String(i.estado || '').toUpperCase());
+            }).length;
+
             document.getElementById('cenco-close-shift-summary-box').innerHTML = `
                 <p><strong>Folio Turno:</strong> <span class="font-mono text-[#0a2463]">${activeShift.turnoCencoId}</span></p>
                 <p><strong>Operador / Rol:</strong> ${activeShift.operador} (${activeShift.rolCenco})</p>
                 <p><strong>Puesto / Horario:</strong> ${activeShift.puesto} • ${activeShift.rangoHorario}</p>
                 <div class="grid grid-cols-3 gap-2 pt-2 mt-2 border-t border-slate-200 text-center">
                     <div class="bg-white rounded-lg p-1.5 border"><div class="text-[10px] text-slate-500">Registrados</div><div class="font-black text-sm text-[#0a2463]">${incidents.filter(i => i.estado !== 'DESCARTADA').length}</div></div>
-                    <div class="bg-white rounded-lg p-1.5 border"><div class="text-[10px] text-slate-500">Descartados</div><div class="font-black text-sm text-amber-600">${incidents.filter(i => i.estado === 'DESCARTADA').length}</div></div>
+                    <div class="bg-white rounded-lg p-1.5 border"><div class="text-[10px] text-slate-500">Geocercas a Cerrar</div><div class="font-black text-sm text-amber-600">${openGeoCount}</div></div>
                     <div class="bg-white rounded-lg p-1.5 border"><div class="text-[10px] text-slate-500">Cerrados</div><div class="font-black text-sm text-emerald-600">${incidents.filter(i => i.estado === 'FINALIZADO').length}</div></div>
                 </div>
+                <p class="text-[10px] text-emerald-700 font-bold pt-1.5">
+                    <i class="fa-solid fa-broom mr-1"></i> Al confirmar: se cerrarán todos los vehículos activos, se finalizarán las ${openGeoCount} alerta(s) de geocerca y se limpiará el mapa.
+                </p>
             `;
+
+            // Poblar lista de vehículos activos para ingreso de Km de Término
+            const activeVehicles = getActiveCheckedInShifts();
+            const vehCountEl = document.getElementById('cenco-close-veh-count');
+            const vehListEl = document.getElementById('cenco-close-vehicles-list');
+            if (vehCountEl) vehCountEl.innerText = activeVehicles.length;
+            if (vehListEl) {
+                if (activeVehicles.length === 0) {
+                    vehListEl.innerHTML = `<p class="text-[11px] text-slate-500 italic py-1">No hay vehículos activos pendientes de cierre.</p>`;
+                } else {
+                    const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    vehListEl.innerHTML = activeVehicles.map(v => {
+                        const kmIni = Number(v.kmInicial || 0);
+                        const isManual = v.origen === 'MANUAL_CENCO' || String(v.estadoChecklist || '').toLowerCase().includes('manual') || String(v.turnoId || '').startsWith('MAN-');
+                        return `
+                            <div class="cenco-close-vehicle-row bg-white border border-blue-200 rounded-xl p-2.5 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center"
+                                 data-turno-id="${esc(v.turnoId || '')}"
+                                 data-movil="${esc(v.movil || '')}"
+                                 data-rut="${esc(v.rut || '')}"
+                                 data-cuadrante="${esc(v.cuadrante || '')}"
+                                 data-rango="${esc(v.rangoHorario || activeShift.rangoHorario || 'MANANA')}"
+                                 data-km-inicial="${kmIni}">
+                                <div class="sm:col-span-6 min-w-0">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="font-black text-[#0a2463] text-xs">${esc(v.movil)}</span>
+                                        <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">${esc(v.cuadrante || '-')}</span>
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black ${isManual ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isManual ? 'Manual CENCO' : 'Checklist'}</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-600 truncate mt-0.5">${esc(v.rut || 'Inspector en turno')} • Km Inicio: <strong class="font-mono text-slate-800">${kmIni.toLocaleString('es-CL')}</strong></p>
+                                </div>
+                                <div class="sm:col-span-4">
+                                    <label class="block text-[9px] font-bold uppercase text-slate-500 mb-0.5">Km Término <span class="text-red-500">*</span></label>
+                                    <input type="number" min="${kmIni}" step="1" required placeholder="${kmIni > 0 ? kmIni : 'Ej: 45210'}" oninput="updateCencoCloseKmDelta(this)" class="cenco-close-km-input w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 text-xs">
+                                </div>
+                                <div class="sm:col-span-2 text-right">
+                                    <span class="cenco-close-km-delta text-[10px] font-bold text-slate-400">Pendiente</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
             document.getElementById('cenco-close-shift-modal')?.classList.remove('hidden');
         }
 
@@ -10774,43 +10858,141 @@
                 showToast(`✓ Móvil ${moviles} despachado a ${folioId}`, 'bg-emerald-600');
             });
 
-            // 7. Cierre de Turno CENCO + PDF
+            // 7. Cierre de Turno CENCO + PDF + Cierre de Vehículos Activos + Limpieza de Geocercas y Mapa
             document.getElementById('form-cenco-close-shift')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                // Validar y recolectar Km de término de todos los vehículos activos
+                const vehRows = Array.from(document.querySelectorAll('#cenco-close-vehicles-list .cenco-close-vehicle-row'));
+                const vehiculosCierre = [];
+                for (let i = 0; i < vehRows.length; i++) {
+                    const row = vehRows[i];
+                    const kmIni = Number(row.dataset.kmInicial || 0);
+                    const inp = row.querySelector('.cenco-close-km-input');
+                    const kmTerm = Number(inp?.value || 0);
+                    if (!inp || !inp.value || isNaN(kmTerm) || kmTerm < kmIni) {
+                        showToast(`⚠️ Ingresa un Km de término válido (≥ ${kmIni}) para ${row.dataset.movil}`, 'bg-red-600');
+                        inp?.focus();
+                        return;
+                    }
+                    vehiculosCierre.push({
+                        turnoId: row.dataset.turnoId || '',
+                        movil: row.dataset.movil || '',
+                        rut: row.dataset.rut || '',
+                        cuadrante: row.dataset.cuadrante || '',
+                        rangoHorario: row.dataset.rango || 'MANANA',
+                        kmInicial: kmIni,
+                        kmTermino: kmTerm,
+                        kmRecorridos: Math.max(0, kmTerm - kmIni)
+                    });
+                }
+
                 const btn = document.getElementById('btn-cenco-confirm-close-pdf');
-                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> GENERANDO PDF...'; }
-                const activeShift = getActiveCencoShift() || {
-                    turnoCencoId: `CENCO-T-${Date.now().toString().slice(-6)}`,
-                    fechaInicio: new Date().toLocaleString('es-CL'), rut: AppState.userRut,
-                    operador: AppState.userName || AppState.userRut, rolCenco: AppState.userRole,
-                    puesto: 'Central Peña Seguro 1410', rangoHorario: AppState.rangoHorario || 'MANANA', novedadesInicio: ''
-                };
-                const incidents = getCencoIncidentsDB();
-                const closedShift = Object.assign({}, activeShift, {
-                    estado: 'FINALIZADO', fechaCierre: new Date().toLocaleString('es-CL'),
-                    recibeTurno: document.getElementById('cenco-close-recibe').value.trim(),
-                    resumenCierre: document.getElementById('cenco-close-resumen').value.trim(),
-                    totalIngresados: incidents.filter(i => i.estado !== 'DESCARTADA').length,
-                    totalDespachados: incidents.filter(i => i.movilesAsignados).length,
-                    totalFinalizados: incidents.filter(i => i.estado === 'FINALIZADO').length
-                });
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> CERRANDO TURNO Y GENERANDO PDF...'; }
+                try {
+                    const fechaCierreStr = new Date().toLocaleString('es-CL');
+                    const activeShift = getActiveCencoShift() || {
+                        turnoCencoId: `CENCO-T-${Date.now().toString().slice(-6)}`,
+                        fechaInicio: fechaCierreStr, rut: AppState.userRut,
+                        operador: AppState.userName || AppState.userRut, rolCenco: AppState.userRole,
+                        puesto: 'Central Peña Seguro 1410', rangoHorario: AppState.rangoHorario || 'MANANA', novedadesInicio: ''
+                    };
 
-                const pdfDataUri = generateCencoShiftPDF(closedShift, true);
-                const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'CENCO_CERRAR_TURNO', pdfBase64: pdfDataUri || '' }, closedShift));
-                if (res && res.pdfUrl) closedShift.pdfUrl = res.pdfUrl;
+                    // 1. Finalizar localmente TODOS los procedimientos de Geocerca GPS abiertos para limpiar mapa y bitácora
+                    const incidents = getCencoIncidentsDB();
+                    let closedGeoLocal = 0;
+                    incidents.forEach(inc => {
+                        const isGeo = String(inc.folioId || '').startsWith('CAD-GPS-') ||
+                            String(inc.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA' ||
+                            String(inc.categoria || '').toUpperCase().includes('GEOCERCA');
+                        if (isGeo && !['FINALIZADO', 'CANCELADO', 'DESCARTADA'].includes(String(inc.estado || '').toUpperCase())) {
+                            inc.estado = 'FINALIZADO';
+                            inc.horaCierre = fechaCierreStr;
+                            inc.resolucion = inc.resolucion
+                                ? `${inc.resolucion} | Finalizado al Cierre de Turno CENCO`
+                                : `Finalizado automáticamente al Cierre de Turno CENCO (${activeShift.turnoCencoId})`;
+                            closedGeoLocal++;
+                        }
+                    });
+                    if (closedGeoLocal > 0) saveCencoIncidentsDB(incidents);
 
-                const shifts = getCencoShiftsDB();
-                const sIdx = shifts.findIndex(s => s.turnoCencoId === closedShift.turnoCencoId);
-                if (sIdx >= 0) shifts[sIdx] = closedShift; else shifts.unshift(closedShift);
-                saveCencoShiftsDB(shifts);
-                saveActiveCencoShift(null);
+                    // 2. Cerrar localmente TODOS los vehículos activos y actualizar Km en flota local
+                    const cierreMap = new Map();
+                    vehiculosCierre.forEach(v => cierreMap.set(normalizeVehicleKey(v.movil), v));
+                    if (Array.isArray(AppState.cloudRecentShifts)) {
+                        AppState.cloudRecentShifts.forEach(s => {
+                            if (String(s.estadoTurno || '').toUpperCase() === 'ACTIVO') {
+                                const m = cierreMap.get(normalizeVehicleKey(s.movil));
+                                s.estadoTurno = 'FINALIZADO';
+                                s.fechaTermino = fechaCierreStr;
+                                if (m) {
+                                    s.kmTermino = m.kmTermino;
+                                    s.kmRecorridos = m.kmRecorridos;
+                                }
+                            }
+                        });
+                    }
+                    if (vehiculosCierre.length > 0) {
+                        const fleet = getFleetDB();
+                        let fleetChanged = false;
+                        vehiculosCierre.forEach(v => {
+                            const fUnit = fleet.find(u => normalizeVehicleKey(u.nombre) === normalizeVehicleKey(v.movil));
+                            if (fUnit && v.kmTermino > Number(fUnit.kmActual || 0)) {
+                                fUnit.kmActual = v.kmTermino;
+                                fleetChanged = true;
+                            }
+                        });
+                        if (fleetChanged) saveFleetDB(fleet);
+                    }
 
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> CERRAR TURNO Y GENERAR PDF OFICIAL'; }
-                closeCencoCloseShiftModal();
-                updateCencoShiftHeaderUI();
-                renderAllCencoPanels();
-                switchCencoModule('turnos');
-                showToast('✓ Turno cerrado, Acta PDF descargada y guardada en Drive', 'bg-emerald-600');
+                    // 3. Limpiar alertas de geocerca en mapa y expirar autorizaciones TODO_TURNO
+                    CencoState.geofenceAlerts = [];
+                    CencoState.geofenceAuthorized = [];
+                    CencoState.geofenceCooldowns = {};
+                    saveGeofenceCooldownsDB({});
+                    const updatedAuths = getGeofenceAuthsDB().map(a => {
+                        if (a && !a.revocada && (String(a.modo || '').toUpperCase() === 'TODO_TURNO' || a.turnoCencoId === activeShift.turnoCencoId)) {
+                            return Object.assign({}, a, { revocada: true });
+                        }
+                        return a;
+                    });
+                    saveGeofenceAuthsDB(updatedAuths);
+
+                    const closedShift = Object.assign({}, activeShift, {
+                        estado: 'FINALIZADO',
+                        fechaCierre: fechaCierreStr,
+                        recibeTurno: document.getElementById('cenco-close-recibe').value.trim(),
+                        resumenCierre: document.getElementById('cenco-close-resumen').value.trim(),
+                        vehiculosCierre: vehiculosCierre,
+                        totalIngresados: incidents.filter(i => i.estado !== 'DESCARTADA').length,
+                        totalDespachados: incidents.filter(i => i.movilesAsignados).length,
+                        totalFinalizados: incidents.filter(i => i.estado === 'FINALIZADO').length
+                    });
+
+                    const pdfDataUri = generateCencoShiftPDF(closedShift, true);
+                    const res = await sendPayloadToGoogleSheets(Object.assign({
+                        action: 'CENCO_CERRAR_TURNO',
+                        pdfBase64: pdfDataUri || '',
+                        vehiculosCierre: vehiculosCierre
+                    }, closedShift));
+                    if (res && res.pdfUrl) closedShift.pdfUrl = res.pdfUrl;
+
+                    const shifts = getCencoShiftsDB();
+                    const sIdx = shifts.findIndex(s => s.turnoCencoId === closedShift.turnoCencoId);
+                    if (sIdx >= 0) shifts[sIdx] = closedShift; else shifts.unshift(closedShift);
+                    saveCencoShiftsDB(shifts);
+                    saveActiveCencoShift(null);
+
+                    closeCencoCloseShiftModal();
+                    updateCencoShiftHeaderUI();
+                    renderConformacionSummaryCard();
+                    renderGpsGeofencePanel();
+                    populateCentralActiveVehiclesSelect();
+                    renderAllCencoPanels();
+                    switchCencoModule('turnos');
+                    showToast(`✓ Turno cerrado: ${vehiculosCierre.length} vehículo(s) cerrado(s), ${closedGeoLocal} geocerca(s) finalizada(s) y mapa limpio`, 'bg-emerald-600');
+                } finally {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> CERRAR TURNO Y GENERAR PDF OFICIAL'; }
+                }
             });
         }
 
