@@ -1100,12 +1100,15 @@
                 <div id="admin-maintenance-alert-banner" class="hidden mb-4 rounded-2xl border-2 p-4 shadow-sm"></div>
 
                 <!-- Admin Navigation Tabs -->
-                <div class="grid grid-cols-2 sm:grid-cols-7 gap-2 mb-4">
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
                     <button type="button" onclick="switchAdminTab('users')" id="admin-tab-btn-users" class="admin-tab-btn bg-[#1e3a8a] text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-users-gear text-yellow-400"></i> Usuarios
                     </button>
                     <button type="button" onclick="switchAdminTab('staff')" id="admin-tab-btn-staff" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-id-card-clip text-cyan-600"></i> Dotación
+                    </button>
+                    <button type="button" onclick="switchAdminTab('emails')" id="admin-tab-btn-emails" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-envelope-open-text text-indigo-600"></i> Correos
                     </button>
                     <button type="button" onclick="switchAdminTab('tasks')" id="admin-tab-btn-tasks" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-list-check text-blue-700"></i> Tareas
@@ -1267,6 +1270,71 @@
                                 </div>
                             </div>
                             <div id="admin-staff-list" class="space-y-2 max-h-[480px] overflow-y-auto pr-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 1C: DIRECTORIO DE CORREOS DESTINATARIOS + PUENTE CENTRAL1410@PENAFLOR.CL -->
+                <div id="admin-panel-emails" class="admin-panel-section hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Formulario Crear / Editar Correo -->
+                        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-4">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-[#1e3a8a] border-b border-slate-100 pb-2 mb-3 flex items-center justify-between">
+                                    <span id="email-form-title"><i class="fa-solid fa-envelope-circle-check text-indigo-600 mr-1"></i> Agregar / Editar Correo</span>
+                                    <button type="button" onclick="resetAdminEmailForm()" class="text-[10px] text-blue-700 underline">Limpiar</button>
+                                </h3>
+                                <form id="form-admin-email" onsubmit="saveAdminEmail(event)" class="space-y-3 text-xs">
+                                    <input type="hidden" id="adm-email-id" value="">
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Nombre / Área Destinataria <span class="text-red-500">*</span></label>
+                                        <input type="text" id="adm-email-nombre" class="w-full p-2.5 rounded-xl border border-slate-300 font-semibold" placeholder="Ej: Dirección de Seguridad Pública" required>
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Cargo / Institución</label>
+                                        <input type="text" id="adm-email-cargo" class="w-full p-2.5 rounded-xl border border-slate-300" placeholder="Ej: Jefatura / Carabineros / Alcaldía">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Correo Electrónico <span class="text-red-500">*</span></label>
+                                        <input type="email" id="adm-email-address" class="w-full p-2.5 rounded-xl border border-slate-300 font-mono" placeholder="Ej: jefatura@penaflor.cl" required>
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-700 mb-1">Estado</label>
+                                        <select id="adm-email-estado" class="w-full p-2.5 rounded-xl border border-slate-300 font-bold bg-white">
+                                            <option value="ACTIVO">ACTIVO (Seleccionable en procedimientos)</option>
+                                            <option value="INACTIVO">INACTIVO (Oculto)</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-extrabold py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-floppy-disk text-yellow-400"></i> GUARDAR CORREO EN EXCEL
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Configuración Puente Oficial central1410@penaflor.cl -->
+                            <div class="pt-3 border-t border-slate-200 space-y-2.5 text-xs">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h4 class="font-extrabold text-[#0a2463] text-xs"><i class="fa-solid fa-paper-plane text-blue-600 mr-1"></i> Puente central1410@penaflor.cl</h4>
+                                    <span id="admin-mail-bridge-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">Pendiente</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500">Pega aquí la URL <code>/exec</code> del mini-script <strong>MailBridge_Central1410.gs</strong> publicado desde la cuenta <strong>central1410@penaflor.cl</strong> (hasta 1.500 correos/día).</p>
+                                <input type="url" id="adm-mail-bridge-url" class="w-full p-2 rounded-xl border border-slate-300 font-mono text-[11px]" placeholder="https://script.google.com/macros/s/.../exec">
+                                <input type="text" id="adm-mail-bridge-secret" class="w-full p-2 rounded-xl border border-slate-300 font-mono text-[11px]" value="PENA1410-MAIL-BRIDGE" placeholder="Clave secreta del puente">
+                                <button type="button" onclick="saveAdminMailBridge()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2.5 rounded-xl shadow text-xs">
+                                    <i class="fa-solid fa-link mr-1"></i> Guardar Puente de Correo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tabla / Listado de Correos Destinatarios -->
+                        <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-3">
+                                <h3 class="text-sm font-extrabold text-[#1e3a8a]">
+                                    <i class="fa-solid fa-address-book text-indigo-600 mr-1"></i> Correos Seleccionables para Copias (<span id="admin-emails-count">0</span>)
+                                </h3>
+                                <input type="text" id="adm-email-search" oninput="renderAdminEmailsList()" class="p-2 rounded-lg border border-slate-300 text-xs" placeholder="Buscar nombre, área o correo...">
+                            </div>
+                            <div id="admin-emails-list" class="space-y-2 max-h-[480px] overflow-y-auto pr-1"></div>
                         </div>
                     </div>
                 </div>
@@ -2714,6 +2782,9 @@
                                     <p id="cad-drawer-address-line" class="text-[11px] cad-muted mt-0.5"></p>
                                 </div>
                                 <div class="flex items-center gap-1.5 shrink-0">
+                                    <button type="button" onclick="openCencoSendEmailModal()" class="px-2.5 py-1.5 rounded-md bg-indigo-500/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-400/40 text-[11px] font-bold" title="Enviar copia oficial por correo electrónico">
+                                        <i class="fa-solid fa-envelope"></i> Correo
+                                    </button>
                                     <button type="button" onclick="exportSingleCencoFolioPDF()" class="px-2.5 py-1.5 rounded-md bg-red-500/15 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-[11px] font-bold" title="Descargar Ficha PDF">
                                         <i class="fa-solid fa-file-pdf"></i> PDF
                                     </button>
@@ -3005,6 +3076,53 @@
             </div>
         </div>
 
+        <!-- Modal Envío de Copia de Procedimiento por Correo Electrónico (central1410@penaflor.cl) -->
+        <div id="cenco-send-email-modal" class="hidden fixed inset-0 z-[960] bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-3">
+            <div class="bg-white w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800">
+                <div class="bg-gradient-to-r from-[#0a2463] via-indigo-700 to-blue-700 text-white p-4 flex justify-between items-center shrink-0">
+                    <div>
+                        <h3 class="text-sm font-black uppercase flex items-center gap-1.5"><i class="fa-solid fa-envelope-open-text text-cyan-300"></i> Enviar Copia de Procedimiento por Correo</h3>
+                        <p class="text-[11px] text-blue-100">Remitente oficial: <strong>central1410@penaflor.cl</strong></p>
+                    </div>
+                    <button type="button" onclick="closeCencoSendEmailModal()" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <form id="form-cenco-send-email" onsubmit="submitCencoSendEmail(event)" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
+                    <div id="cenco-email-folio-summary" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] space-y-0.5"></div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="font-extrabold text-[#0a2463] uppercase text-[11px]">Seleccionar Correos Destinatarios</label>
+                            <div class="flex items-center gap-2 text-[10px]">
+                                <button type="button" onclick="toggleAllCencoEmailCheckboxes(true)" class="text-blue-700 font-bold hover:underline">Marcar todos</button>
+                                <span class="text-slate-300">|</span>
+                                <button type="button" onclick="toggleAllCencoEmailCheckboxes(false)" class="text-slate-500 font-bold hover:underline">Limpiar</button>
+                            </div>
+                        </div>
+                        <div id="cenco-email-recipients-list" class="max-h-48 overflow-y-auto space-y-1.5 border border-slate-200 rounded-xl p-2.5 bg-slate-50/70"></div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Otros correos adicionales (opcional, separados por coma)</label>
+                        <input type="text" id="cenco-email-extra" class="w-full p-2.5 rounded-xl border border-slate-300 font-mono text-xs" placeholder="Ej: director@penaflor.cl, carabineros@ejemplo.cl">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Nota / Mensaje adicional (opcional)</label>
+                        <textarea id="cenco-email-nota" rows="2" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs" placeholder="Ej: Se remite copia oficial del procedimiento para conocimiento y fines pertinentes..."></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button type="button" onclick="closeCencoSendEmailModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 font-bold text-slate-700">Cancelar</button>
+                        <button type="submit" id="btn-cenco-send-email-submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane"></i> ENVIAR COPIA OFICIAL
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Toast Notification -->
         <div id="toast"><span id="toast-message">Acción exitosa</span></div>
     </div>
@@ -3038,7 +3156,8 @@
             CENCO_ACTIVE_SHIFT: 'pena_seguro_cenco_active_shift_v1',
             STAFF_DIRECTORY: 'pena_seguro_staff_directory_v1',
             CENCO_GEOFENCE_AUTHS: 'pena_seguro_cenco_geofence_auths_v1',
-            CENCO_GEOFENCE_COOLDOWNS: 'pena_seguro_cenco_geofence_cooldowns_v1'
+            CENCO_GEOFENCE_COOLDOWNS: 'pena_seguro_cenco_geofence_cooldowns_v1',
+            EMAIL_DIRECTORY: 'pena_seguro_email_directory_v1'
         };
 
         // --- Central State Object Declaration ---
@@ -3582,6 +3701,16 @@
         }
         function saveStaffDB(list) {
             localStorage.setItem(STORAGE_KEYS.STAFF_DIRECTORY, JSON.stringify(Array.isArray(list) ? list : []));
+        }
+
+        function getEmailDirectoryDB() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.EMAIL_DIRECTORY));
+                return Array.isArray(stored) ? stored : [];
+            } catch (e) { return []; }
+        }
+        function saveEmailDirectoryDB(list) {
+            localStorage.setItem(STORAGE_KEYS.EMAIL_DIRECTORY, JSON.stringify(Array.isArray(list) ? list : []));
         }
 
         function resolveStaffNameFromIdentifier(val) {
@@ -4597,7 +4726,7 @@
         // ADMINISTRATOR PANEL FUNCTIONS (USUARIOS, TAREAS, FLOTA, MONITOR)
         // ========================================================================
         function switchAdminTab(tabName) {
-            ['users', 'staff', 'tasks', 'fleet', 'maintenance', 'alerts', 'monitor'].forEach(t => {
+            ['users', 'staff', 'emails', 'tasks', 'fleet', 'maintenance', 'alerts', 'monitor'].forEach(t => {
                 const panel = document.getElementById(`admin-panel-${t}`);
                 const btn = document.getElementById(`admin-tab-btn-${t}`);
                 if (panel) panel.classList.toggle('hidden', t !== tabName);
@@ -4613,12 +4742,132 @@
         function renderAllAdminPanels() {
             renderAdminUsersList();
             renderAdminStaffList();
+            renderAdminEmailsList();
             renderAdminTasksList();
             renderAdminFleetList();
             renderAdminMaintenanceBanner();
             renderAdminMaintenancePanel();
             renderAdminFleetAlertsPanel();
             renderAdminMonitor();
+        }
+
+        function renderAdminEmailsList() {
+            const container = document.getElementById('admin-emails-list');
+            const countEl = document.getElementById('admin-emails-count');
+            const bridgeBadge = document.getElementById('admin-mail-bridge-badge');
+            if (bridgeBadge) {
+                if (AppState.mailBridgeConfigured) {
+                    bridgeBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800';
+                    bridgeBadge.innerText = '✓ Conectado';
+                } else {
+                    bridgeBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800';
+                    bridgeBadge.innerText = 'Sin puente (usa respaldo)';
+                }
+            }
+            if (!container) return;
+            const search = (document.getElementById('adm-email-search')?.value || '').trim().toLowerCase();
+            const list = getEmailDirectoryDB().slice().sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+            const filtered = list.filter(item =>
+                !search ||
+                String(item.nombre || '').toLowerCase().includes(search) ||
+                String(item.cargo || '').toLowerCase().includes(search) ||
+                String(item.email || '').toLowerCase().includes(search)
+            );
+            if (countEl) countEl.innerText = list.length;
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No hay correos registrados aún. Agrega destinatarios desde el formulario izquierdo para que aparezcan como casillas seleccionables en los procedimientos.</p>`;
+                return;
+            }
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            container.innerHTML = filtered.map(item => `
+                <div class="p-3 rounded-xl border ${item.estado === 'INACTIVO' ? 'border-slate-200 bg-slate-100 opacity-70' : 'border-slate-200 bg-slate-50'} flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="font-extrabold text-slate-800">${esc(item.nombre)}</span>
+                            ${item.cargo ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">${esc(item.cargo)}</span>` : ''}
+                            ${item.estado === 'INACTIVO' ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-100 text-red-700">INACTIVO</span>' : ''}
+                        </div>
+                        <p class="text-[11px] text-blue-700 font-mono mt-0.5"><i class="fa-solid fa-envelope mr-1"></i>${esc(item.email)}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" onclick="editAdminEmail('${esc(item.id)}')" class="px-2.5 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> Editar</button>
+                        <button type="button" onclick="deleteAdminEmail('${esc(item.id)}')" class="px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-bold text-[11px]"><i class="fa-solid fa-trash"></i> Borrar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function resetAdminEmailForm() {
+            document.getElementById('adm-email-id').value = '';
+            document.getElementById('adm-email-nombre').value = '';
+            document.getElementById('adm-email-cargo').value = '';
+            document.getElementById('adm-email-address').value = '';
+            document.getElementById('adm-email-estado').value = 'ACTIVO';
+            const titleEl = document.getElementById('email-form-title');
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-envelope-circle-check text-indigo-600 mr-1"></i> Agregar / Editar Correo';
+        }
+
+        function editAdminEmail(id) {
+            const item = getEmailDirectoryDB().find(x => x.id === id);
+            if (!item) return;
+            document.getElementById('adm-email-id').value = item.id;
+            document.getElementById('adm-email-nombre').value = item.nombre || '';
+            document.getElementById('adm-email-cargo').value = item.cargo || '';
+            document.getElementById('adm-email-address').value = item.email || '';
+            document.getElementById('adm-email-estado').value = String(item.estado || 'ACTIVO').toUpperCase();
+            const titleEl = document.getElementById('email-form-title');
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-pen text-amber-500 mr-1"></i> Editando Correo';
+            document.getElementById('adm-email-nombre')?.focus();
+        }
+
+        async function saveAdminEmail(e) {
+            e.preventDefault();
+            const id = (document.getElementById('adm-email-id').value || '').trim() || ('MAIL-' + Date.now());
+            const nombre = (document.getElementById('adm-email-nombre').value || '').trim();
+            const cargo = (document.getElementById('adm-email-cargo').value || '').trim();
+            const email = (document.getElementById('adm-email-address').value || '').trim().toLowerCase();
+            const estado = (document.getElementById('adm-email-estado').value || 'ACTIVO').trim().toUpperCase();
+            if (!nombre || !email) return;
+
+            const record = { id, nombre, cargo, email, estado };
+            const list = getEmailDirectoryDB().slice();
+            const idx = list.findIndex(x => x.id === id);
+            if (idx >= 0) list[idx] = record;
+            else list.push(record);
+            saveEmailDirectoryDB(list);
+
+            renderAdminEmailsList();
+            resetAdminEmailForm();
+            showToast(`✅ Correo "${email}" guardado en el directorio.`, 'bg-emerald-600');
+            await sendPayloadToGoogleSheets({ action: 'ADMIN_SAVE_EMAIL', ...record });
+        }
+
+        async function deleteAdminEmail(id) {
+            const list = getEmailDirectoryDB().slice();
+            const target = list.find(x => x.id === id);
+            if (!target) return;
+            if (!confirm(`¿Eliminar el correo "${target.email}" (${target.nombre}) del directorio?`)) return;
+            saveEmailDirectoryDB(list.filter(x => x.id !== id));
+            renderAdminEmailsList();
+            showToast(`🗑️ Correo "${target.email}" eliminado.`, 'bg-slate-700');
+            await sendPayloadToGoogleSheets({ action: 'ADMIN_DELETE_EMAIL', id });
+        }
+
+        async function saveAdminMailBridge() {
+            const bridgeUrl = (document.getElementById('adm-mail-bridge-url')?.value || '').trim();
+            const bridgeSecret = (document.getElementById('adm-mail-bridge-secret')?.value || 'PENA1410-MAIL-BRIDGE').trim();
+            const res = await sendPayloadToGoogleSheets({
+                action: 'ADMIN_SAVE_MAIL_BRIDGE',
+                bridgeUrl,
+                bridgeSecret
+            });
+            AppState.mailBridgeConfigured = Boolean(bridgeUrl);
+            renderAdminEmailsList();
+            if (res && res.ok) {
+                showToast(bridgeUrl ? '✅ Puente central1410@penaflor.cl guardado y activo.' : 'ℹ️ Puente desconectado (usará respaldo).', 'bg-emerald-600');
+            } else {
+                showToast('⚠️ Puente guardado localmente; verifica la conexión a Apps Script.', 'bg-amber-600');
+            }
         }
 
         function renderAdminStaffList() {
@@ -6456,6 +6705,12 @@
             }
             if (Array.isArray(data.staffDirectory) && data.staffDirectory.length > 0) {
                 saveStaffDB(data.staffDirectory);
+            }
+            if (Array.isArray(data.emailDirectory)) {
+                saveEmailDirectoryDB(data.emailDirectory);
+            }
+            if (typeof data.mailBridgeConfigured === 'boolean') {
+                AppState.mailBridgeConfigured = data.mailBridgeConfigured;
             }
             if (Array.isArray(data.tasksCatalog) && data.tasksCatalog.length > 0) {
                 saveTasksCatalogDB(data.tasksCatalog);
@@ -10514,6 +10769,110 @@
             a.download = `Registros_CENCO_${slug}_${desde || 'inicio'}_a_${hasta || 'hoy'}.csv`;
             a.click();
             showToast(`✓ Excel (.CSV) descargado (${filtered.length} registros)`, 'bg-emerald-600');
+        }
+
+        function openCencoSendEmailModal() {
+            const inc = getCencoIncidentsDB().find(i => i.folioId === CencoState.currentModalFolioId);
+            if (!inc) return;
+            const modal = document.getElementById('cenco-send-email-modal');
+            const sumEl = document.getElementById('cenco-email-folio-summary');
+            const listEl = document.getElementById('cenco-email-recipients-list');
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+            if (sumEl) {
+                sumEl.innerHTML = `
+                    <div class="font-black text-[#0a2463] text-xs">${esc(inc.folioId)} — ${esc(inc.categoria || 'Procedimiento')}</div>
+                    <div class="text-slate-600"><strong>Cuadrante / Lugar:</strong> [${esc(inc.cuadrante || '-')}] ${esc(inc.direccion || '-')}</div>
+                    <div class="text-slate-500"><strong>Estado:</strong> ${esc(inc.estado)} • <strong>Móvil:</strong> ${esc(inc.movilesAsignados || 'Sin móvil')}</div>
+                `;
+            }
+
+            const activeEmails = getEmailDirectoryDB()
+                .filter(e => String(e.estado || 'ACTIVO').toUpperCase() !== 'INACTIVO')
+                .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+
+            if (listEl) {
+                if (activeEmails.length === 0) {
+                    listEl.innerHTML = `<p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5"><i class="fa-solid fa-circle-info mr-1"></i> Aún no hay correos agregados en el Panel Administrador (<strong>Panel Admin → Pestaña Correos</strong>). Puedes escribir uno abajo en "Otros correos adicionales".</p>`;
+                } else {
+                    listEl.innerHTML = activeEmails.map(item => `
+                        <label class="flex items-start gap-2.5 p-2 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 cursor-pointer">
+                            <input type="checkbox" value="${esc(item.email)}" class="cenco-email-chk mt-0.5 accent-indigo-600 w-4 h-4">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold text-slate-800 leading-tight">${esc(item.nombre)} ${item.cargo ? `<span class="text-[10px] font-semibold text-indigo-700">(${esc(item.cargo)})</span>` : ''}</div>
+                                <div class="text-[10px] font-mono text-slate-500 truncate">${esc(item.email)}</div>
+                            </div>
+                        </label>
+                    `).join('');
+                }
+            }
+
+            const extraEl = document.getElementById('cenco-email-extra');
+            const notaEl = document.getElementById('cenco-email-nota');
+            if (extraEl) extraEl.value = '';
+            if (notaEl) notaEl.value = '';
+            modal?.classList.remove('hidden');
+        }
+
+        function closeCencoSendEmailModal() {
+            document.getElementById('cenco-send-email-modal')?.classList.add('hidden');
+        }
+
+        function toggleAllCencoEmailCheckboxes(checked) {
+            document.querySelectorAll('#cenco-email-recipients-list .cenco-email-chk').forEach(cb => { cb.checked = Boolean(checked); });
+        }
+
+        async function submitCencoSendEmail(e) {
+            e.preventDefault();
+            const inc = getCencoIncidentsDB().find(i => i.folioId === CencoState.currentModalFolioId);
+            if (!inc) return;
+
+            const checked = Array.from(document.querySelectorAll('#cenco-email-recipients-list .cenco-email-chk:checked'))
+                .map(cb => String(cb.value || '').trim().toLowerCase());
+            const extras = String(document.getElementById('cenco-email-extra')?.value || '')
+                .split(/[,;\s]+/)
+                .map(s => s.trim().toLowerCase())
+                .filter(s => s.includes('@') && s.includes('.'));
+            const recipients = Array.from(new Set([...checked, ...extras]));
+
+            if (recipients.length === 0) {
+                showToast('⚠️ Selecciona al menos un correo destinatario o ingresa uno adicional.', 'bg-amber-600');
+                return;
+            }
+
+            const notaAdicional = String(document.getElementById('cenco-email-nota')?.value || '').trim();
+            const btn = document.getElementById('btn-cenco-send-email-submit');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ENVIANDO...'; }
+            try {
+                const res = await sendPayloadToGoogleSheets({
+                    action: 'CENCO_ENVIAR_CORREO_PROCEDIMIENTO',
+                    folioId: inc.folioId,
+                    recipients,
+                    notaAdicional,
+                    enviadoPor: AppState.userName || AppState.userRut || 'Central 1410',
+                    incident: inc
+                });
+                if (res && res.ok) {
+                    const nowStr = new Date().toLocaleString('es-CL');
+                    if (!Array.isArray(inc.historial)) inc.historial = [];
+                    inc.historial.push({
+                        fecha: nowStr,
+                        rol: 'CORREO_OFICIAL',
+                        usuario: AppState.userName || AppState.userRut || 'Central 1410',
+                        accion: `📧 Copia enviada por correo a: ${recipients.join(', ')}${notaAdicional ? ' | Nota: ' + notaAdicional : ''}`
+                    });
+                    const allIncs = getCencoIncidentsDB();
+                    const idx = allIncs.findIndex(x => x.folioId === inc.folioId);
+                    if (idx >= 0) { allIncs[idx] = inc; saveCencoIncidentsDB(allIncs); }
+                    closeCencoSendEmailModal();
+                    openCencoFolioModal(inc.folioId);
+                    showToast(`✅ Copia enviada a ${recipients.length} correo(s) desde ${res.sentFrom || 'central1410@penaflor.cl'}`, 'bg-emerald-600');
+                } else {
+                    showToast(`⚠️ Error al enviar correo: ${res?.error || 'Verifica la conexión o permisos de correo en Apps Script'}`, 'bg-red-600');
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ENVIAR COPIA OFICIAL'; }
+            }
         }
 
         function exportSingleCencoFolioPDF() {
