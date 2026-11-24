@@ -3025,7 +3025,8 @@
             CENCO_DISPATCHES: 'pena_seguro_cenco_dispatches_v1',
             CENCO_ACTIVE_SHIFT: 'pena_seguro_cenco_active_shift_v1',
             STAFF_DIRECTORY: 'pena_seguro_staff_directory_v1',
-            CENCO_GEOFENCE_AUTHS: 'pena_seguro_cenco_geofence_auths_v1'
+            CENCO_GEOFENCE_AUTHS: 'pena_seguro_cenco_geofence_auths_v1',
+            CENCO_GEOFENCE_COOLDOWNS: 'pena_seguro_cenco_geofence_cooldowns_v1'
         };
 
         // --- Central State Object Declaration ---
@@ -6514,6 +6515,18 @@
             if (Array.isArray(data.cencoDispatches)) {
                 localStorage.setItem(STORAGE_KEYS.CENCO_DISPATCHES, JSON.stringify(data.cencoDispatches));
             }
+            if (Array.isArray(data.cencoGeofenceAuths)) {
+                const localAuths = getGeofenceAuthsDB();
+                const byId = new Map();
+                data.cencoGeofenceAuths.forEach(a => { if (a && a.id) byId.set(a.id, a); });
+                localAuths.forEach(a => {
+                    if (!a || !a.id) return;
+                    if (!byId.has(a.id)) byId.set(a.id, a);
+                    else if (a.revocada) byId.get(a.id).revocada = true;
+                });
+                const mergedAuths = Array.from(byId.values()).sort((a, b) => Number(b.createdMs || 0) - Number(a.createdMs || 0));
+                saveGeofenceAuthsDB(mergedAuths);
+            }
 
             updateBadgeAndTasks();
             if (document.getElementById('view-admin')?.classList.contains('active')) {
@@ -8414,23 +8427,31 @@
             localStorage.setItem(STORAGE_KEYS.CENCO_GEOFENCE_AUTHS, JSON.stringify((list || []).slice(0, 120)));
         }
 
+        function getGeofenceCooldownsDB() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEYS.CENCO_GEOFENCE_COOLDOWNS)) || {};
+            } catch (e) { return {}; }
+        }
+        function saveGeofenceCooldownsDB(mapObj) {
+            try { localStorage.setItem(STORAGE_KEYS.CENCO_GEOFENCE_COOLDOWNS, JSON.stringify(mapObj || {})); } catch (e) {}
+        }
+
         function getActiveGeofenceAuthForMovil(movil, nowMs = Date.now()) {
             const key = normalizeVehicleKey(movil);
             if (!key) return null;
-            const activeShiftId = getActiveCencoShift()?.turnoCencoId || '';
             const list = getGeofenceAuthsDB();
             for (let i = 0; i < list.length; i++) {
                 const a = list[i];
                 if (!a || a.revocada) continue;
                 if (normalizeVehicleKey(a.movil) !== key) continue;
-                if (a.modo === 'TODO_TURNO') {
-                    // Válida durante todo el turno CENCO activo (máx 12h si no hay turnoId)
-                    if (activeShiftId && a.turnoCencoId && a.turnoCencoId === activeShiftId) return a;
-                    if (!activeShiftId && a.createdMs && (nowMs - a.createdMs <= 10 * 60 * 60 * 1000)) return a;
+                if (String(a.modo || '').toUpperCase() === 'TODO_TURNO') {
+                    // Válida durante todo el turno (hasta endMs o 12h desde creación, sin fallar por turnoCencoId)
+                    const endT = Number(a.endMs || (Number(a.createdMs || 0) + 12 * 60 * 60 * 1000));
+                    if (endT && nowMs <= endT) return a;
                 } else {
                     const sMs = Number(a.startMs || 0);
                     const eMs = Number(a.endMs || 0);
-                    if (sMs && eMs && nowMs >= sMs - 60000 && nowMs <= eMs) return a;
+                    if (sMs && eMs && nowMs >= sMs - 120000 && nowMs <= eMs) return a;
                 }
             }
             return null;
@@ -8441,7 +8462,12 @@
             const alerts = [];
             const authorized = [];
             const nowMs = Date.now();
-            const COOLDOWN_MS = 15 * 60 * 1000; // Evitar duplicar registros por 15 min por móvil y tipo
+            const COOLDOWN_MS = 45 * 60 * 1000; // 45 min persistente anti-saturación de bitácora
+            const persistedCooldowns = Object.assign({}, getGeofenceCooldownsDB(), CencoState.geofenceCooldowns || {});
+            const openGpsIncidents = getCencoIncidentsDB().filter(inc =>
+                String(inc.folioId || '').startsWith('CAD-GPS-') &&
+                !['FINALIZADO', 'AUTORIZADO', 'CANCELADO', 'DESCARTADA'].includes(String(inc.estado || '').toUpperCase())
+            );
             CencoState.geofenceGraceActive = getQuadrantGraceWindowInfo(null, nowMs).reason || '';
 
             activeShifts.forEach(sh => {
@@ -8507,11 +8533,17 @@
                     };
                     alerts.push(alertObj);
 
-                    // Registro automático en la bitácora del turno CENCO (con cooldown anti-duplicado de 15 min)
-                    const coolKey = `${normalizeVehicleKey(sh.movil)}::${violationType}`;
-                    const lastLogged = Number(CencoState.geofenceCooldowns[coolKey] || 0);
-                    if (nowMs - lastLogged > COOLDOWN_MS) {
+                    // Registro automático en la bitácora del turno CENCO (con cooldown persistente de 45 min y sin duplicar si ya hay una alerta GPS abierta)
+                    const movKeyNorm = normalizeVehicleKey(sh.movil);
+                    const coolKey = `${movKeyNorm}::${violationType}`;
+                    const lastLogged = Number(persistedCooldowns[coolKey] || 0);
+                    const alreadyHasOpenGpsAlert = openGpsIncidents.some(inc =>
+                        normalizeVehicleKey(inc.movilesAsignados || '') === movKeyNorm
+                    );
+                    if (!alreadyHasOpenGpsAlert && (nowMs - lastLogged > COOLDOWN_MS)) {
+                        persistedCooldowns[coolKey] = nowMs;
                         CencoState.geofenceCooldowns[coolKey] = nowMs;
+                        saveGeofenceCooldownsDB(persistedCooldowns);
                         autoLogGeofenceAlertToBitacora(alertObj);
                     }
                 }
@@ -8739,11 +8771,23 @@
         }
 
         function revokeGeofenceAuth(authId) {
-            const list = getGeofenceAuthsDB().map(a => a.id === authId ? Object.assign({}, a, { revocada: true }) : a);
+            let revokedMovil = '';
+            const list = getGeofenceAuthsDB().map(a => {
+                if (a.id === authId) {
+                    revokedMovil = a.movil || '';
+                    return Object.assign({}, a, { revocada: true });
+                }
+                return a;
+            });
             saveGeofenceAuthsDB(list);
             evaluateGpsGeofences();
             renderGpsGeofencePanel();
             showToast('ℹ️ Autorización de cuadrante finalizada.', 'bg-slate-700');
+            sendPayloadToGoogleSheets({
+                action: 'CENCO_REVOCAR_AUTORIZACION',
+                authId: authId,
+                movil: revokedMovil
+            });
         }
 
         async function submitGeofenceAuth(e) {
@@ -8763,12 +8807,12 @@
 
                 const now = new Date();
                 let startMs = now.getTime();
-                let endMs = now.getTime() + 30 * 60000;
+                let endMs = now.getTime() + 12 * 60 * 60 * 1000; // Todo el turno = 12h de cobertura garantizada
                 let vigenciaTexto = 'TODO EL TURNO';
 
                 if (modo === 'RANGO') {
                     const hIni = document.getElementById('geo-auth-hora-inicio').value || formatHHMM(now);
-                    const hFin = document.getElementById('geo-auth-hora-fin').value || formatHHMM(new Date(endMs));
+                    const hFin = document.getElementById('geo-auth-hora-fin').value || formatHHMM(new Date(now.getTime() + 30 * 60000));
                     const [sh, sm] = hIni.split(':').map(Number);
                     const [eh, em] = hFin.split(':').map(Number);
                     const dStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), sh || 0, sm || 0, 0);
@@ -8804,27 +8848,28 @@
                 authList.unshift(authObj);
                 saveGeofenceAuthsDB(authList);
 
-                // Actualizar la alerta GPS abierta en Bitácora local como AUTORIZADO
+                // Cerrar TODAS las alertas GPS abiertas de este móvil en Bitácora local como AUTORIZADO
                 const nowStr = now.toLocaleString('es-CL');
                 const resumenLocal = `✅ AUTORIZADO: ${tipoAutorizacion} | Despachador: ${despachador} | Jefe de Turno: ${jefeTurno} | Vigencia: ${vigenciaTexto}${observaciones ? ' | Obs: ' + observaciones : ''}`;
                 const incList = getCencoIncidentsDB();
                 const movUp = movil.toUpperCase();
                 let linkedFolioId = '';
-                const existingInc = incList.find(i =>
-                    String(i.folioId || '').startsWith('CAD-GPS-') &&
-                    String(i.movilesAsignados || '').toUpperCase().includes(movUp) &&
-                    !['FINALIZADO', 'AUTORIZADO'].includes(String(i.estado || '').toUpperCase())
-                );
-                if (existingInc) {
-                    linkedFolioId = existingInc.folioId;
-                    existingInc.estado = 'AUTORIZADO';
-                    existingInc.despachador = despachador;
-                    existingInc.horaCierre = nowStr;
-                    existingInc.resolucion = resumenLocal;
-                    if (!Array.isArray(existingInc.historial)) existingInc.historial = [];
-                    existingInc.historial.push({ fecha: nowStr, rol: 'CENCO_DESPACHADOR', usuario: despachador, accion: resumenLocal });
-                    saveCencoIncidentsDB(incList);
-                }
+                let changedInc = false;
+                incList.forEach(i => {
+                    if (String(i.folioId || '').startsWith('CAD-GPS-') &&
+                        String(i.movilesAsignados || '').toUpperCase().includes(movUp) &&
+                        !['FINALIZADO', 'AUTORIZADO'].includes(String(i.estado || '').toUpperCase())) {
+                        if (!linkedFolioId) linkedFolioId = i.folioId;
+                        i.estado = 'AUTORIZADO';
+                        i.despachador = despachador;
+                        i.horaCierre = nowStr;
+                        i.resolucion = resumenLocal;
+                        if (!Array.isArray(i.historial)) i.historial = [];
+                        i.historial.push({ fecha: nowStr, rol: 'CENCO_DESPACHADOR', usuario: despachador, accion: resumenLocal });
+                        changedInc = true;
+                    }
+                });
+                if (changedInc) saveCencoIncidentsDB(incList);
 
                 closeGeofenceAuthModal();
                 evaluateGpsGeofences();
@@ -8834,6 +8879,7 @@
 
                 await sendPayloadToGoogleSheets({
                     action: 'CENCO_AUTORIZAR_CUADRANTE',
+                    authId: authObj.id,
                     folioId: linkedFolioId,
                     movil,
                     conductor,
@@ -8842,6 +8888,9 @@
                     tipoAutorizacion,
                     despachador,
                     jefeTurno,
+                    modo,
+                    startMs,
+                    endMs,
                     vigenciaTexto,
                     observaciones,
                     turnoCencoId: curShift?.turnoCencoId || ''
