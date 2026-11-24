@@ -2155,6 +2155,104 @@
                         </div>
                     </div>
 
+                    <!-- Modal Autorización / Justificación de Salida de Cuadrante (GPS Geocerca) -->
+                    <div id="cenco-geofence-auth-modal" class="hidden fixed inset-0 z-[940] bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-3">
+                        <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl text-slate-100 overflow-hidden">
+                            <div class="px-5 py-3.5 bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 border-b border-slate-700 flex items-center justify-between gap-3 shrink-0">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fa-solid fa-shield-check text-emerald-400 text-xl"></i>
+                                    <div>
+                                        <h3 class="text-sm font-black uppercase tracking-wide text-emerald-300">Autorizar / Justificar Salida de Cuadrante</h3>
+                                        <p class="text-[11px] text-slate-300" id="geo-auth-subtitle">El móvil quedará justificado en bitácora y se notificará a Telegram</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="closeGeofenceAuthModal()" class="text-slate-300 hover:text-white text-xl px-2">&times;</button>
+                            </div>
+
+                            <form id="form-geofence-auth" onsubmit="submitGeofenceAuth(event)" class="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
+                                <input type="hidden" id="geo-auth-movil">
+                                <input type="hidden" id="geo-auth-conductor">
+                                <input type="hidden" id="geo-auth-quad-asig">
+                                <input type="hidden" id="geo-auth-quad-det">
+                                <input type="hidden" id="geo-auth-lat">
+                                <input type="hidden" id="geo-auth-lon">
+
+                                <div id="geo-auth-info-box" class="rounded-xl bg-slate-800/80 border border-slate-700 p-3 text-[11px] space-y-1"></div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-emerald-300 mb-1">Tipo de Autorización / Justificación <span class="text-red-400">*</span></label>
+                                    <select id="geo-auth-tipo" required class="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-bold text-xs">
+                                        <option value="">-- Seleccionar justificación oficial --</option>
+                                        <option value="MOVIL CUBRIENDO RESGUARDO DE BANCOS">MOVIL CUBRIENDO RESGUARDO DE BANCOS</option>
+                                        <option value="MOVIL CUBRIENDO OTRO CUADRANTE AUTORIZADO POR CENCO Y JEFE DE TURNO">MOVIL CUBRIENDO OTRO CUADRANTE AUTORIZADO POR CENCO Y JEFE DE TURNO</option>
+                                        <option value="MOVIL APOYO DE FERIAS">MOVIL APOYO DE FERIAS</option>
+                                        <option value="MOVIL DESPLAZA A BAÑO">MOVIL DESPLAZA A BAÑO</option>
+                                        <option value="MOVIL DESPLAZA A COLACION">MOVIL DESPLAZA A COLACION</option>
+                                        <option value="MOVIL AUTORIZADO PARA SALIR FUERA DE ZONA POR DIRECTOR Y JEFATURA">MOVIL AUTORIZADO PARA SALIR FUERA DE ZONA POR DIRECTOR Y JEFATURA</option>
+                                        <option value="MOVIL AUTORIZADO PARA TRANSPORTE FUERA DE SU CUADRANTE">MOVIL AUTORIZADO PARA TRANSPORTE FUERA DE SU CUADRANTE</option>
+                                    </select>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-cyan-300 mb-1">Nombre del Despachador <span class="text-red-400">*</span></label>
+                                        <select id="geo-auth-despachador" required class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"></select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-amber-300 mb-1">Nombre del Jefe de Turno <span class="text-red-400">*</span></label>
+                                        <select id="geo-auth-jefe" required class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"></select>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-3 space-y-2.5">
+                                    <label class="block text-[10px] font-bold uppercase text-cyan-300">Vigencia / Rango Horario de la Autorización <span class="text-red-400">*</span></label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-emerald-500">
+                                            <input type="radio" name="geo-auth-modo" value="RANGO" checked onchange="toggleGeofenceAuthVigencia()" class="accent-emerald-500">
+                                            <span class="font-bold text-white text-[11px]">⏱️ Rango Horario</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-emerald-500">
+                                            <input type="radio" name="geo-auth-modo" value="TODO_TURNO" onchange="toggleGeofenceAuthVigencia()" class="accent-emerald-500">
+                                            <span class="font-bold text-white text-[11px]">🛡️ Todo el Turno</span>
+                                        </label>
+                                    </div>
+
+                                    <div id="geo-auth-rango-wrap" class="space-y-2">
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <button type="button" onclick="setGeofenceAuthQuickDuration(15)" class="px-2 py-1 rounded bg-slate-700 hover:bg-emerald-600 text-[10px] font-bold text-white">+15 min</button>
+                                            <button type="button" onclick="setGeofenceAuthQuickDuration(30)" class="px-2 py-1 rounded bg-slate-700 hover:bg-emerald-600 text-[10px] font-bold text-white">+30 min</button>
+                                            <button type="button" onclick="setGeofenceAuthQuickDuration(45)" class="px-2 py-1 rounded bg-slate-700 hover:bg-emerald-600 text-[10px] font-bold text-white">+45 min</button>
+                                            <button type="button" onclick="setGeofenceAuthQuickDuration(60)" class="px-2 py-1 rounded bg-slate-700 hover:bg-emerald-600 text-[10px] font-bold text-white">+1 hora</button>
+                                            <button type="button" onclick="setGeofenceAuthQuickDuration(120)" class="px-2 py-1 rounded bg-slate-700 hover:bg-emerald-600 text-[10px] font-bold text-white">+2 horas</button>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label class="block text-[10px] text-slate-400 mb-0.5">Hora Inicio</label>
+                                                <input type="time" id="geo-auth-hora-inicio" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] text-slate-400 mb-0.5">Hora Término</label>
+                                                <input type="time" id="geo-auth-hora-fin" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold text-xs">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Observaciones Adicionales (opcional)</label>
+                                    <input type="text" id="geo-auth-obs" placeholder="Ej: BancoEstado centro, feria libre Av. Vicuña Mackenna, etc." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs">
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                                    <button type="button" onclick="closeGeofenceAuthModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">Cancelar</button>
+                                    <button type="submit" id="btn-save-geo-auth" class="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white flex items-center gap-1.5 shadow-lg">
+                                        <i class="fa-solid fa-paper-plane"></i> Autorizar (Bitácora + Telegram)
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
                     <!-- ================================================================ -->
                     <!-- MÓDULO 2: PROCEDIMIENTOS (TABLA MAESTRA 10 COLUMNAS + BITÁCORA)  -->
                     <!-- ================================================================ -->
@@ -2926,7 +3024,8 @@
             INTEL_CALOR: 'pena_seguro_intel_calor_v1',
             CENCO_DISPATCHES: 'pena_seguro_cenco_dispatches_v1',
             CENCO_ACTIVE_SHIFT: 'pena_seguro_cenco_active_shift_v1',
-            STAFF_DIRECTORY: 'pena_seguro_staff_directory_v1'
+            STAFF_DIRECTORY: 'pena_seguro_staff_directory_v1',
+            CENCO_GEOFENCE_AUTHS: 'pena_seguro_cenco_geofence_auths_v1'
         };
 
         // --- Central State Object Declaration ---
@@ -8305,9 +8404,42 @@
             return { inGrace: false, reason: '' };
         }
 
+        function getGeofenceAuthsDB() {
+            try {
+                const list = JSON.parse(localStorage.getItem(STORAGE_KEYS.CENCO_GEOFENCE_AUTHS));
+                return Array.isArray(list) ? list : [];
+            } catch (e) { return []; }
+        }
+        function saveGeofenceAuthsDB(list) {
+            localStorage.setItem(STORAGE_KEYS.CENCO_GEOFENCE_AUTHS, JSON.stringify((list || []).slice(0, 120)));
+        }
+
+        function getActiveGeofenceAuthForMovil(movil, nowMs = Date.now()) {
+            const key = normalizeVehicleKey(movil);
+            if (!key) return null;
+            const activeShiftId = getActiveCencoShift()?.turnoCencoId || '';
+            const list = getGeofenceAuthsDB();
+            for (let i = 0; i < list.length; i++) {
+                const a = list[i];
+                if (!a || a.revocada) continue;
+                if (normalizeVehicleKey(a.movil) !== key) continue;
+                if (a.modo === 'TODO_TURNO') {
+                    // Válida durante todo el turno CENCO activo (máx 12h si no hay turnoId)
+                    if (activeShiftId && a.turnoCencoId && a.turnoCencoId === activeShiftId) return a;
+                    if (!activeShiftId && a.createdMs && (nowMs - a.createdMs <= 10 * 60 * 60 * 1000)) return a;
+                } else {
+                    const sMs = Number(a.startMs || 0);
+                    const eMs = Number(a.endMs || 0);
+                    if (sMs && eMs && nowMs >= sMs - 60000 && nowMs <= eMs) return a;
+                }
+            }
+            return null;
+        }
+
         function evaluateGpsGeofences() {
             const activeShifts = getActiveCheckedInShifts();
             const alerts = [];
+            const authorized = [];
             const nowMs = Date.now();
             const COOLDOWN_MS = 15 * 60 * 1000; // Evitar duplicar registros por 15 min por móvil y tipo
             CencoState.geofenceGraceActive = getQuadrantGraceWindowInfo(null, nowMs).reason || '';
@@ -8344,6 +8476,22 @@
                 }
 
                 if (violationType) {
+                    // Si el móvil cuenta con autorización vigente del Despachador + Jefe de Turno, no disparar alerta roja
+                    const activeAuth = getActiveGeofenceAuthForMovil(sh.movil, nowMs);
+                    if (activeAuth) {
+                        authorized.push({
+                            auth: activeAuth,
+                            movil: sh.movil,
+                            conductor: sh.rut || 'Inspector en Turno',
+                            cuadranteAsignado: assignedQuad || 'VOLANTE',
+                            cuadranteDetectado: inComuna ? (detectedQuad || 'Peñaflor') : 'FUERA DE PEÑAFLOR',
+                            lat: gps.lat,
+                            lon: gps.lon,
+                            velocidad: gps.velocidad || 0
+                        });
+                        return;
+                    }
+
                     const alertObj = {
                         movil: sh.movil,
                         conductor: sh.rut || 'Inspector en Turno',
@@ -8370,6 +8518,7 @@
             });
 
             CencoState.geofenceAlerts = alerts;
+            CencoState.geofenceAuthorized = authorized;
         }
 
         async function autoLogGeofenceAlertToBitacora(al) {
@@ -8468,28 +8617,238 @@
             }
 
             const alerts = CencoState.geofenceAlerts || [];
-            if (alerts.length === 0) {
+            const authorized = CencoState.geofenceAuthorized || [];
+            if (alerts.length === 0 && authorized.length === 0) {
                 alertsWrap.innerHTML = '';
                 return;
             }
-            alertsWrap.innerHTML = alerts.map(al => {
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const alertHtml = alerts.map(al => {
                 const isComuna = al.tipo === 'FUERA_COMUNA';
                 return `
                     <div class="rounded-lg p-2.5 shadow-xl border ${isComuna ? 'bg-red-950/95 border-red-500 text-red-100' : 'bg-amber-950/95 border-amber-400 text-amber-100'} text-[11px] backdrop-blur">
                         <div class="flex items-center justify-between gap-2">
                             <span class="font-black uppercase tracking-wide flex items-center gap-1">
                                 <i class="fa-solid fa-triangle-exclamation ${isComuna ? 'text-red-400 animate-pulse' : 'text-amber-300'}"></i>
-                                ${al.movil} • ${isComuna ? 'FUERA DE PEÑAFLOR' : 'FUERA DE CUADRANTE'}
+                                ${esc(al.movil)} • ${isComuna ? 'FUERA DE PEÑAFLOR' : 'FUERA DE CUADRANTE'}
                             </span>
                             <button type="button" onclick="focusGpsAlertOnMap(${al.lat}, ${al.lon})" class="px-2 py-0.5 rounded bg-white/15 hover:bg-white/25 text-white font-bold text-[10px]">Ver</button>
                         </div>
                         <div class="text-[10px] opacity-90 mt-0.5">
-                            Conductor: <strong>${al.conductor}</strong> • Asignado: <strong>${al.cuadranteAsignado}</strong> → Actual: <strong>${al.cuadranteDetectado}</strong> (${al.velocidad} km/h)
+                            Conductor: <strong>${esc(al.conductor)}</strong> • Asignado: <strong>${esc(al.cuadranteAsignado)}</strong> → Actual: <strong>${esc(al.cuadranteDetectado)}</strong> (${al.velocidad} km/h)
                         </div>
-                        <div class="text-[9px] text-emerald-300 font-bold mt-0.5"><i class="fa-solid fa-book mr-1"></i>Registrado automáticamente en Bitácora del Turno</div>
+                        <div class="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-white/15">
+                            <span class="text-[9px] text-emerald-300 font-bold"><i class="fa-solid fa-book mr-1"></i>En Bitácora</span>
+                            <button type="button" onclick="openGeofenceAuthModal('${esc(al.movil)}')" class="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] shadow flex items-center gap-1">
+                                <i class="fa-solid fa-shield-check"></i> Autorizar / Justificar
+                            </button>
+                        </div>
                     </div>
                 `;
             }).join('');
+
+            const authHtml = authorized.map(item => `
+                <div class="rounded-lg p-2 shadow-lg border bg-emerald-950/90 border-emerald-500/60 text-emerald-100 text-[10px] backdrop-blur">
+                    <div class="flex items-center justify-between gap-1.5">
+                        <span class="font-black uppercase text-emerald-300 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check"></i> ${esc(item.movil)} • AUTORIZADO
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="focusGpsAlertOnMap(${item.lat}, ${item.lon})" class="px-1.5 py-0.5 rounded bg-white/15 hover:bg-white/25 text-white font-bold text-[9px]">Ver</button>
+                            <button type="button" onclick="revokeGeofenceAuth('${esc(item.auth.id)}')" class="px-1.5 py-0.5 rounded bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white font-bold text-[9px]" title="Finalizar autorización">✕</button>
+                        </div>
+                    </div>
+                    <div class="mt-0.5 font-bold text-white leading-tight">${esc(item.auth.tipoAutorizacion)}</div>
+                    <div class="text-[9px] text-emerald-200/90 mt-0.5">
+                        ⏱️ ${esc(item.auth.vigenciaTexto)} • Desp: ${esc(item.auth.despachador)} • Jefe: ${esc(item.auth.jefeTurno)}
+                    </div>
+                </div>
+            `).join('');
+
+            alertsWrap.innerHTML = alertHtml + authHtml;
+        }
+
+        function formatHHMM(dateObj) {
+            return `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function toggleGeofenceAuthVigencia() {
+            const modo = document.querySelector('input[name="geo-auth-modo"]:checked')?.value || 'RANGO';
+            const wrap = document.getElementById('geo-auth-rango-wrap');
+            if (wrap) wrap.classList.toggle('hidden', modo === 'TODO_TURNO');
+        }
+
+        function setGeofenceAuthQuickDuration(minutes) {
+            const now = new Date();
+            const end = new Date(now.getTime() + minutes * 60000);
+            const iniEl = document.getElementById('geo-auth-hora-inicio');
+            const finEl = document.getElementById('geo-auth-hora-fin');
+            if (iniEl) iniEl.value = formatHHMM(now);
+            if (finEl) finEl.value = formatHHMM(end);
+        }
+
+        function openGeofenceAuthModal(movilName) {
+            const modal = document.getElementById('cenco-geofence-auth-modal');
+            if (!modal) return;
+            const key = normalizeVehicleKey(movilName);
+            const al = (CencoState.geofenceAlerts || []).find(a => normalizeVehicleKey(a.movil) === key);
+            if (!al) return;
+
+            document.getElementById('geo-auth-movil').value = al.movil;
+            document.getElementById('geo-auth-conductor').value = al.conductor || 'Inspector en Turno';
+            document.getElementById('geo-auth-quad-asig').value = al.cuadranteAsignado || '-';
+            document.getElementById('geo-auth-quad-det').value = al.cuadranteDetectado || '-';
+            document.getElementById('geo-auth-lat').value = al.lat;
+            document.getElementById('geo-auth-lon').value = al.lon;
+
+            const infoBox = document.getElementById('geo-auth-info-box');
+            if (infoBox) {
+                infoBox.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-black text-amber-300 text-xs">🚓 ${al.movil}</span>
+                        <span class="px-2 py-0.5 rounded bg-red-600/30 border border-red-500/50 text-red-200 font-bold text-[10px]">${al.cuadranteAsignado} → ${al.cuadranteDetectado}</span>
+                    </div>
+                    <div class="text-slate-300">Conductor: <strong class="text-white">${al.conductor}</strong> • Velocidad actual: ${al.velocidad} km/h</div>
+                `;
+            }
+
+            document.getElementById('geo-auth-tipo').value = '';
+            document.getElementById('geo-auth-obs').value = '';
+
+            const curShift = getActiveCencoShift();
+            const defaultDesp = curShift?.conformacion?.cenco1410?.despachador || curShift?.operador || AppState.userName || '';
+            const despSel = document.getElementById('geo-auth-despachador');
+            if (despSel) {
+                despSel.innerHTML = buildStaffSelectOptions(['INSPECTOR DESPACHADOR', 'SUPERVISOR'], resolveStaffNameFromIdentifier(defaultDesp), '-- Elegir Despachador --');
+            }
+            const jefeSel = document.getElementById('geo-auth-jefe');
+            if (jefeSel) {
+                jefeSel.innerHTML = buildStaffSelectOptions(['SUPERVISOR', 'INSPECTOR DESPACHADOR', 'INSPECTOR'], '', '-- Elegir Jefe de Turno --');
+            }
+
+            const radioRango = document.querySelector('input[name="geo-auth-modo"][value="RANGO"]');
+            if (radioRango) radioRango.checked = true;
+            toggleGeofenceAuthVigencia();
+            setGeofenceAuthQuickDuration(30);
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeGeofenceAuthModal() {
+            document.getElementById('cenco-geofence-auth-modal')?.classList.add('hidden');
+        }
+
+        function revokeGeofenceAuth(authId) {
+            const list = getGeofenceAuthsDB().map(a => a.id === authId ? Object.assign({}, a, { revocada: true }) : a);
+            saveGeofenceAuthsDB(list);
+            evaluateGpsGeofences();
+            renderGpsGeofencePanel();
+            showToast('ℹ️ Autorización de cuadrante finalizada.', 'bg-slate-700');
+        }
+
+        async function submitGeofenceAuth(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-geo-auth');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...'; }
+            try {
+                const movil = document.getElementById('geo-auth-movil').value.trim();
+                const conductor = document.getElementById('geo-auth-conductor').value.trim();
+                const cuadranteAsignado = document.getElementById('geo-auth-quad-asig').value.trim();
+                const cuadranteDetectado = document.getElementById('geo-auth-quad-det').value.trim();
+                const tipoAutorizacion = document.getElementById('geo-auth-tipo').value.trim();
+                const despachador = document.getElementById('geo-auth-despachador').value.trim();
+                const jefeTurno = document.getElementById('geo-auth-jefe').value.trim();
+                const observaciones = document.getElementById('geo-auth-obs').value.trim();
+                const modo = document.querySelector('input[name="geo-auth-modo"]:checked')?.value || 'RANGO';
+
+                const now = new Date();
+                let startMs = now.getTime();
+                let endMs = now.getTime() + 30 * 60000;
+                let vigenciaTexto = 'TODO EL TURNO';
+
+                if (modo === 'RANGO') {
+                    const hIni = document.getElementById('geo-auth-hora-inicio').value || formatHHMM(now);
+                    const hFin = document.getElementById('geo-auth-hora-fin').value || formatHHMM(new Date(endMs));
+                    const [sh, sm] = hIni.split(':').map(Number);
+                    const [eh, em] = hFin.split(':').map(Number);
+                    const dStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), sh || 0, sm || 0, 0);
+                    const dEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eh || 0, em || 0, 59);
+                    if (dEnd.getTime() <= dStart.getTime()) dEnd.setDate(dEnd.getDate() + 1); // Cruce de medianoche
+                    startMs = dStart.getTime();
+                    endMs = dEnd.getTime();
+                    vigenciaTexto = `Desde ${hIni} hasta ${hFin} hrs`;
+                }
+
+                const curShift = getActiveCencoShift();
+                const authObj = {
+                    id: `AUT-${Date.now()}`,
+                    movil,
+                    conductor,
+                    cuadranteAsignado,
+                    cuadranteDetectado,
+                    tipoAutorizacion,
+                    despachador,
+                    jefeTurno,
+                    modo,
+                    startMs,
+                    endMs,
+                    vigenciaTexto,
+                    observaciones,
+                    turnoCencoId: curShift?.turnoCencoId || '',
+                    createdMs: Date.now(),
+                    revocada: false
+                };
+
+                // Guardar autorización local (silencia alerta de inmediato mientras esté vigente)
+                const authList = getGeofenceAuthsDB().filter(a => !(normalizeVehicleKey(a.movil) === normalizeVehicleKey(movil) && !a.revocada));
+                authList.unshift(authObj);
+                saveGeofenceAuthsDB(authList);
+
+                // Actualizar la alerta GPS abierta en Bitácora local como AUTORIZADO
+                const nowStr = now.toLocaleString('es-CL');
+                const resumenLocal = `✅ AUTORIZADO: ${tipoAutorizacion} | Despachador: ${despachador} | Jefe de Turno: ${jefeTurno} | Vigencia: ${vigenciaTexto}${observaciones ? ' | Obs: ' + observaciones : ''}`;
+                const incList = getCencoIncidentsDB();
+                const movUp = movil.toUpperCase();
+                let linkedFolioId = '';
+                const existingInc = incList.find(i =>
+                    String(i.folioId || '').startsWith('CAD-GPS-') &&
+                    String(i.movilesAsignados || '').toUpperCase().includes(movUp) &&
+                    !['FINALIZADO', 'AUTORIZADO'].includes(String(i.estado || '').toUpperCase())
+                );
+                if (existingInc) {
+                    linkedFolioId = existingInc.folioId;
+                    existingInc.estado = 'AUTORIZADO';
+                    existingInc.despachador = despachador;
+                    existingInc.horaCierre = nowStr;
+                    existingInc.resolucion = resumenLocal;
+                    if (!Array.isArray(existingInc.historial)) existingInc.historial = [];
+                    existingInc.historial.push({ fecha: nowStr, rol: 'CENCO_DESPACHADOR', usuario: despachador, accion: resumenLocal });
+                    saveCencoIncidentsDB(incList);
+                }
+
+                closeGeofenceAuthModal();
+                evaluateGpsGeofences();
+                renderGpsGeofencePanel();
+                renderAllCencoPanels();
+                showToast(`✅ ${movil} autorizado (${vigenciaTexto}) y enviado a Telegram`, 'bg-emerald-600');
+
+                await sendPayloadToGoogleSheets({
+                    action: 'CENCO_AUTORIZAR_CUADRANTE',
+                    folioId: linkedFolioId,
+                    movil,
+                    conductor,
+                    cuadranteAsignado,
+                    cuadranteDetectado,
+                    tipoAutorizacion,
+                    despachador,
+                    jefeTurno,
+                    vigenciaTexto,
+                    observaciones,
+                    turnoCencoId: curShift?.turnoCencoId || ''
+                });
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Autorizar (Bitácora + Telegram)'; }
+            }
         }
 
         function openWialonConfigModal() {
