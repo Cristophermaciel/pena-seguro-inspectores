@@ -851,6 +851,7 @@ function apiGetBootstrapData() {
     date: todayStr,
     spreadsheetUrl: "https://docs.google.com/spreadsheets/d/" + CONFIG.SPREADSHEET_ID + "/edit",
     gpsConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("WIALON_TOKEN")),
+    telegramConfigured: Boolean(PropertiesService.getScriptProperties().getProperty("TELEGRAM_BOT_TOKEN") && PropertiesService.getScriptProperties().getProperty("TELEGRAM_CHAT_ID")),
     users: users,
     tasksCatalog: tasksCatalog,
     fleet: fleet,
@@ -1258,6 +1259,21 @@ function apiHandleAction(payload) {
         enviarNotificacionCorreo(payload, urlFoto, nowFormatted);
       }
 
+      // Respaldo automático en Telegram (fecha, hora, lugar e imagen)
+      enviarRespaldoTelegram({
+        titulo: "PROCEDIMIENTO INSPECTOR",
+        folio: cencoFolioId || procId,
+        fecha: payload.fechaRegistro || nowFormatted,
+        tipo: payload.tipo || "Procedimiento Terreno",
+        cuadrante: payload.cuadrante || "-",
+        lugar: payload.direccion || "-",
+        movil: payload.movil || "-",
+        responsable: payload.rut || "Inspector Municipal",
+        detalle: payload.detalle || "Sin observaciones",
+        urlFotoDrive: urlFoto,
+        imagenesBase64: payload.fotoBase64 ? [payload.fotoBase64] : []
+      });
+
       return { ok: true, action: action, procId: procId, cencoFolioId: cencoFolioId, urlFoto: urlFoto };
     }
 
@@ -1326,6 +1342,21 @@ function apiHandleAction(payload) {
           JSON.stringify(historialInit)
         ]);
       }
+
+      // Respaldo automático en Telegram (Tarea Diaria con fecha, hora, lugar e imagen)
+      enviarRespaldoTelegram({
+        titulo: "TAREA DIARIA CUMPLIDA",
+        folio: cencoFolioId || regId,
+        fecha: payload.fechaRegistro || nowFormatted,
+        tipo: payload.taskDesc || "Tarea Diaria de Cuadrante",
+        cuadrante: payload.cuadrante || "-",
+        lugar: payload.direccion || "-",
+        movil: payload.movil || "-",
+        responsable: payload.rut || "Inspector Municipal",
+        detalle: payload.detalle || "Visto bueno otorgado en terreno.",
+        urlFotoDrive: urlFoto,
+        imagenesBase64: payload.fotoBase64 ? [payload.fotoBase64] : []
+      });
 
       return { ok: true, action: action, regId: regId, cencoFolioId: cencoFolioId, urlFoto: urlFoto };
     }
@@ -1527,6 +1558,23 @@ function apiHandleAction(payload) {
             ]);
           });
         }
+      }
+
+      // Respaldo automático en Telegram (Procedimiento CAD / Alerta GPS / Alerta LPR con fecha, hora, lugar e imágenes)
+      if (estadoInit !== "DESCARTADA") {
+        enviarRespaldoTelegram({
+          titulo: (payload.origen || "PROCEDIMIENTO CENCO CAD").toUpperCase(),
+          folio: folioId,
+          fecha: payload.fechaIngreso || nowFormatted,
+          tipo: (payload.categoria || "Procedimiento") + (payload.subcategoria ? " — " + payload.subcategoria : ""),
+          cuadrante: payload.cuadrante || "-",
+          lugar: payload.direccion || "-",
+          movil: movilesStr || "Pendiente despacho",
+          responsable: payload.ingresadoPor || "Operador CENCO",
+          detalle: payload.detalle || "-",
+          urlFotoDrive: urlsFotos[0] || "",
+          imagenesBase64: Array.isArray(payload.imagenesBase64) ? payload.imagenesBase64 : []
+        });
       }
 
       return { ok: true, action: action, folioId: folioId, imagenes: urlsFotos };
@@ -1866,6 +1914,55 @@ function apiHandleAction(payload) {
       return { ok: true, action: action, id: payload.id };
     }
 
+    // ========================================================================
+    // CONFIGURACIÓN Y DETECCIÓN AUTOMÁTICA DE BOT TELEGRAM (RESPALDO REPORTES)
+    // ========================================================================
+    if (action === "ADMIN_DETECT_TELEGRAM_CHAT") {
+      const token = String(payload.token || PropertiesService.getScriptProperties().getProperty("TELEGRAM_BOT_TOKEN") || "").trim();
+      if (!token) return { ok: false, error: "Ingrese primero el Token del Bot de @BotFather" };
+      const resp = UrlFetchApp.fetch("https://api.telegram.org/bot" + encodeURIComponent(token) + "/getUpdates", { method: "get", muteHttpExceptions: true });
+      const data = JSON.parse(resp.getContentText() || "{}");
+      if (!data.ok) return { ok: false, error: data.description || "Token Telegram inválido" };
+      const chatsMap = {};
+      (data.result || []).forEach(u => {
+        const msg = u.message || u.channel_post || u.my_chat_member || {};
+        const ch = msg.chat;
+        if (ch && ch.id) {
+          chatsMap[String(ch.id)] = {
+            chatId: String(ch.id),
+            title: ch.title || [ch.first_name, ch.last_name].filter(Boolean).join(" ") || ch.username || String(ch.id),
+            type: ch.type || "chat"
+          };
+        }
+      });
+      const chats = Object.keys(chatsMap).map(k => chatsMap[k]);
+      return { ok: true, action: action, chats: chats };
+    }
+
+    if (action === "ADMIN_SAVE_TELEGRAM_CONFIG") {
+      const token = String(payload.token || "").trim();
+      const chatId = String(payload.chatId || "").trim();
+      const props = PropertiesService.getScriptProperties();
+      if (!token || !chatId) {
+        return { ok: false, error: "Debe ingresar tanto el Token del Bot como el Chat ID" };
+      }
+      props.setProperty("TELEGRAM_BOT_TOKEN", token);
+      props.setProperty("TELEGRAM_CHAT_ID", chatId);
+      const testRes = enviarRespaldoTelegram({
+        titulo: "PRUEBA DE CONEXIÓN EXITOSA",
+        folio: "TEST-TG-1410",
+        fecha: nowFormatted,
+        tipo: "Vinculación Bot de Respaldo Operativo",
+        cuadrante: "TODA LA COMUNA",
+        lugar: "Central CENCO CAD — Peña Seguro 1410",
+        movil: "CENTRAL 1410",
+        responsable: payload.usuario || "Administrador",
+        detalle: "✅ El respaldo automático en Telegram quedó activo. Cada procedimiento, tarea diaria y alerta enviará fecha, hora, lugar e imágenes a este chat.",
+        imagenesBase64: []
+      }, true);
+      return { ok: Boolean(testRes && testRes.ok), action: action, configured: Boolean(testRes && testRes.ok), error: (testRes && testRes.error) || "" };
+    }
+
     return { ok: false, error: "Acción no reconocida: " + action };
   } catch (err) {
     return { ok: false, error: err.toString() };
@@ -2164,5 +2261,92 @@ function apiGetGpsLive(bypassCache) {
     return payload;
   } catch (err) {
     return { ok: false, configured: true, units: [], error: err.toString() };
+  }
+}
+
+/**
+ * Envía respaldo automático a Telegram (Bot API) con fecha, hora, lugar, móvil, detalle e imágenes reales.
+ * Usa TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID almacenados en ScriptProperties.
+ */
+function enviarRespaldoTelegram(datos, isTest) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const token = String(props.getProperty("TELEGRAM_BOT_TOKEN") || "").trim();
+    const chatId = String(props.getProperty("TELEGRAM_CHAT_ID") || "").trim();
+    if (!token || !chatId) return { ok: false, error: "Telegram no configurado" };
+
+    const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const lines = [
+      "🛡️ <b>PEÑA SEGURO 1410 — " + esc(datos.titulo || "RESPALDO OPERATIVO") + "</b>",
+      "🆔 <b>Folio:</b> <code>" + esc(datos.folio || "-") + "</code>",
+      "📅 <b>Fecha y Hora:</b> " + esc(datos.fecha || "-"),
+      "📌 <b>Categoría / Tipo:</b> " + esc(datos.tipo || "-"),
+      "📍 <b>Cuadrante / Lugar:</b> [" + esc(datos.cuadrante || "-") + "] " + esc(datos.lugar || "-"),
+      "🚓 <b>Móvil:</b> " + esc(datos.movil || "-") + "  |  👤 <b>Resp.:</b> " + esc(datos.responsable || "-"),
+      "📝 <b>Detalle:</b> " + esc(String(datos.detalle || "-").slice(0, 480))
+    ];
+    if (datos.urlFotoDrive && datos.urlFotoDrive !== "Sin foto" && String(datos.urlFotoDrive).indexOf("http") === 0) {
+      lines.push("🔗 <a href=\"" + datos.urlFotoDrive + "\">Ver evidencia en Google Drive</a>");
+    }
+    const textMsg = lines.join("\n");
+    const apiBase = "https://api.telegram.org/bot" + encodeURIComponent(token);
+
+    // Extraer imágenes base64 válidas
+    const validImgs = (Array.isArray(datos.imagenesBase64) ? datos.imagenesBase64 : [])
+      .filter(b => b && String(b).indexOf("data:image/") === 0);
+
+    if (validImgs.length > 0) {
+      // Enviar primera imagen con el reporte completo como caption (máx 1024 chars en Telegram)
+      const firstParts = validImgs[0].split(",");
+      const firstMime = (firstParts[0].match(/data:(.*?);/) || [null, "image/jpeg"])[1];
+      const firstBlob = Utilities.newBlob(Utilities.base64Decode(firstParts[1]), firstMime, (datos.folio || "evidencia") + "_1.jpg");
+      const resp1 = UrlFetchApp.fetch(apiBase + "/sendPhoto", {
+        method: "post",
+        payload: {
+          chat_id: chatId,
+          caption: textMsg.slice(0, 1020),
+          parse_mode: "HTML",
+          photo: firstBlob
+        },
+        muteHttpExceptions: true
+      });
+      const json1 = JSON.parse(resp1.getContentText() || "{}");
+
+      // Si hay más imágenes (2da, 3ra, 4ta), enviarlas inmediatamente debajo
+      for (let i = 1; i < Math.min(validImgs.length, 4); i++) {
+        try {
+          const p = validImgs[i].split(",");
+          const m = (p[0].match(/data:(.*?);/) || [null, "image/jpeg"])[1];
+          const b = Utilities.newBlob(Utilities.base64Decode(p[1]), m, (datos.folio || "evidencia") + "_" + (i + 1) + ".jpg");
+          UrlFetchApp.fetch(apiBase + "/sendPhoto", {
+            method: "post",
+            payload: {
+              chat_id: chatId,
+              caption: "📸 Evidencia #" + (i + 1) + " — Folio " + (datos.folio || "-"),
+              photo: b
+            },
+            muteHttpExceptions: true
+          });
+        } catch (ignoreExtra) {}
+      }
+      return { ok: Boolean(json1.ok), error: json1.description || "" };
+    } else {
+      const resp = UrlFetchApp.fetch(apiBase + "/sendMessage", {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          chat_id: chatId,
+          text: textMsg,
+          parse_mode: "HTML",
+          disable_web_page_preview: true
+        }),
+        muteHttpExceptions: true
+      });
+      const json = JSON.parse(resp.getContentText() || "{}");
+      return { ok: Boolean(json.ok), error: json.description || "" };
+    }
+  } catch (err) {
+    if (isTest) return { ok: false, error: err.toString() };
+    return { ok: false };
   }
 }

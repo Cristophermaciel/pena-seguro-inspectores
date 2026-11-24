@@ -1510,6 +1510,10 @@
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Sin Turno
                             </span>
 
+                            <button type="button" onclick="openTelegramConfigModal()" class="w-8 h-8 rounded-lg cad-elevated border cad-border flex items-center justify-center text-sky-400 hover:border-sky-400 transition" title="Configurar Bot de Respaldo Telegram">
+                                <i class="fa-brands fa-telegram text-sm"></i>
+                            </button>
+
                             <button type="button" onclick="syncBootstrapFromCloud(true)" class="w-8 h-8 rounded-lg cad-elevated border cad-border flex items-center justify-center cad-muted hover:text-blue-400 transition" title="Sincronizar con Google Sheets">
                                 <i class="fa-solid fa-rotate text-xs"></i>
                             </button>
@@ -1908,6 +1912,49 @@
                                 <button type="button" onclick="closeWialonConfigModal()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">Cerrar</button>
                                 <button type="button" onclick="saveWialonTokenConfig()" id="btn-save-wialon-token" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white flex items-center gap-1.5">
                                     <i class="fa-solid fa-plug-circle-check"></i> Guardar y Conectar GPS en Vivo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Configuración Bot de Respaldo Telegram (CENCO / Admin) -->
+                    <div id="cenco-telegram-modal" class="hidden fixed inset-0 z-[900] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+                        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 text-slate-100">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-brands fa-telegram text-sky-400 text-xl"></i>
+                                    <div>
+                                        <h3 class="text-sm font-black uppercase tracking-wide">Bot de Respaldo Automático — Telegram</h3>
+                                        <p class="text-[11px] text-slate-400">Envía cada procedimiento y tarea con fecha, hora, lugar e imágenes</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="closeTelegramConfigModal()" class="text-slate-400 hover:text-white text-lg px-2">&times;</button>
+                            </div>
+                            <div class="bg-slate-800/70 border border-slate-700 rounded-xl p-3 text-xs space-y-1.5 text-slate-300">
+                                <p class="font-bold text-sky-300">Cómo crear el Bot en 30 segundos:</p>
+                                <p>1. En Telegram abre <strong>@BotFather</strong> → envía <code>/newbot</code> → ponle nombre (ej. <em>Peña Seguro 1410</em>) y usuario terminado en <code>_bot</code>.</p>
+                                <p>2. Agrega ese bot a tu <strong>Grupo de Respaldo Telegram</strong> y escribe <code>/start</code> o cualquier mensaje en el grupo.</p>
+                                <p>3. Pega el <strong>Token</strong> abajo y presiona <strong>Detectar Grupo</strong> para llenar el Chat ID automáticamente.</p>
+                            </div>
+                            <div class="space-y-2.5 text-xs">
+                                <div>
+                                    <label class="block font-bold text-slate-300 mb-1">1. Token del Bot (@BotFather)</label>
+                                    <div class="flex gap-1.5">
+                                        <input type="password" id="tg-token-input" placeholder="123456789:ABCdefGHIjklMNO..." class="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white font-mono">
+                                        <button type="button" onclick="detectTelegramChats()" id="btn-tg-detect" class="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-[11px] shrink-0">🔍 Detectar Grupo</button>
+                                    </div>
+                                </div>
+                                <div id="tg-detected-chats" class="hidden space-y-1"></div>
+                                <div>
+                                    <label class="block font-bold text-slate-300 mb-1">2. Chat ID del Grupo / Canal</label>
+                                    <input type="text" id="tg-chatid-input" placeholder="-1001234567890" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white font-mono">
+                                </div>
+                            </div>
+                            <div id="tg-config-feedback" class="text-xs hidden rounded-lg p-2.5"></div>
+                            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                                <button type="button" onclick="closeTelegramConfigModal()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">Cerrar</button>
+                                <button type="button" onclick="saveTelegramBotConfig()" id="btn-save-tg-config" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-black text-white flex items-center gap-1.5">
+                                    <i class="fa-brands fa-telegram"></i> Guardar y Probar Respaldo
                                 </button>
                             </div>
                         </div>
@@ -8036,6 +8083,92 @@
 
         function closeWialonConfigModal() {
             document.getElementById('cenco-wialon-modal')?.classList.add('hidden');
+        }
+
+        function openTelegramConfigModal() {
+            const modal = document.getElementById('cenco-telegram-modal');
+            const fb = document.getElementById('tg-config-feedback');
+            if (fb) { fb.classList.add('hidden'); fb.innerText = ''; }
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeTelegramConfigModal() {
+            document.getElementById('cenco-telegram-modal')?.classList.add('hidden');
+        }
+
+        async function detectTelegramChats() {
+            const token = (document.getElementById('tg-token-input')?.value || '').trim();
+            const wrap = document.getElementById('tg-detected-chats');
+            const fb = document.getElementById('tg-config-feedback');
+            const btn = document.getElementById('btn-tg-detect');
+            if (!token) {
+                if (fb) { fb.className = 'text-xs rounded-lg p-2.5 bg-red-950 border border-red-500 text-red-200'; fb.innerText = 'Primero pegue el Token de @BotFather.'; fb.classList.remove('hidden'); }
+                return;
+            }
+            if (btn) { btn.disabled = true; btn.innerText = 'Buscando...'; }
+            try {
+                // Consultar directo getUpdates de Telegram (admite CORS) para detectar grupos al instante
+                const resp = await fetch(`https://api.telegram.org/bot${encodeURIComponent(token)}/getUpdates`);
+                const data = await resp.json();
+                if (!data.ok) throw new Error(data.description || 'Token inválido');
+                const chatsMap = {};
+                (data.result || []).forEach(u => {
+                    const msg = u.message || u.channel_post || u.my_chat_member || {};
+                    const ch = msg.chat;
+                    if (ch && ch.id) {
+                        chatsMap[String(ch.id)] = {
+                            chatId: String(ch.id),
+                            title: ch.title || [ch.first_name, ch.last_name].filter(Boolean).join(' ') || ch.username || String(ch.id),
+                            type: ch.type || 'chat'
+                        };
+                    }
+                });
+                const chats = Object.values(chatsMap);
+                if (chats.length === 0) {
+                    if (fb) { fb.className = 'text-xs rounded-lg p-2.5 bg-amber-950 border border-amber-500 text-amber-200'; fb.innerText = 'Token válido, pero no hay mensajes recientes. Agregue el bot a su grupo de Telegram, escriba "/start" en el grupo y vuelva a presionar Detectar Grupo.'; fb.classList.remove('hidden'); }
+                    if (wrap) wrap.classList.add('hidden');
+                } else {
+                    if (chats.length === 1) document.getElementById('tg-chatid-input').value = chats[0].chatId;
+                    if (wrap) {
+                        wrap.innerHTML = `<div class="text-[10px] font-bold text-sky-300">Grupos/Chats detectados (toque para seleccionar):</div>` +
+                            chats.map(c => `<button type="button" onclick="document.getElementById('tg-chatid-input').value='${c.chatId}'" class="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-900 border border-slate-700 text-xs flex justify-between"><span>${c.title} (${c.type})</span><span class="font-mono text-sky-300">${c.chatId}</span></button>`).join('');
+                        wrap.classList.remove('hidden');
+                    }
+                    if (fb) fb.classList.add('hidden');
+                }
+            } catch (err) {
+                if (fb) { fb.className = 'text-xs rounded-lg p-2.5 bg-red-950 border border-red-500 text-red-200'; fb.innerText = `Error Telegram: ${err.message}`; fb.classList.remove('hidden'); }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = '🔍 Detectar Grupo'; }
+            }
+        }
+
+        async function saveTelegramBotConfig() {
+            const token = (document.getElementById('tg-token-input')?.value || '').trim();
+            const chatId = (document.getElementById('tg-chatid-input')?.value || '').trim();
+            const fb = document.getElementById('tg-config-feedback');
+            const btn = document.getElementById('btn-save-tg-config');
+            if (!token || !chatId) {
+                if (fb) { fb.className = 'text-xs rounded-lg p-2.5 bg-red-950 border border-red-500 text-red-200'; fb.innerText = 'Ingrese el Token del Bot y el Chat ID del grupo.'; fb.classList.remove('hidden'); }
+                return;
+            }
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando y probando...'; }
+            try {
+                await sendPayloadToGoogleSheets({
+                    action: 'ADMIN_SAVE_TELEGRAM_CONFIG',
+                    token,
+                    chatId,
+                    usuario: AppState.userName || AppState.userRut || 'CENCO'
+                });
+                if (fb) {
+                    fb.className = 'text-xs rounded-lg p-2.5 bg-emerald-950 border border-emerald-500 text-emerald-200 font-bold';
+                    fb.innerText = '✓ Configuración enviada a Apps Script. Revise su grupo de Telegram: debería llegar el mensaje de prueba "PRUEBA DE CONEXIÓN EXITOSA".';
+                    fb.classList.remove('hidden');
+                }
+                document.getElementById('tg-token-input').value = '';
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-brands fa-telegram"></i> Guardar y Probar Respaldo'; }
+            }
         }
 
         async function saveWialonTokenConfig() {
