@@ -1194,10 +1194,57 @@ function apiHandleAction(payload) {
       const enviadoPor = String(payload.enviadoPor || "Central CENCO 1410").trim();
       const esc = (s) => String(s || "-").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-      const imgs = Array.isArray(inc.imagenes) ? inc.imagenes.filter(u => String(u || "").indexOf("http") === 0) : [];
-      const imgsHtml = imgs.length > 0
-        ? "<p><strong>Evidencia Fotográfica (Drive):</strong><br>" + imgs.map((u, idx) => "<a href=\"" + u + "\" target=\"_blank\">Ver Fotografía #" + (idx + 1) + "</a>").join(" &nbsp;|&nbsp; ") + "</p>"
-        : "";
+      const rawImgs = [].concat(
+        Array.isArray(payload.imagenesBase64) ? payload.imagenesBase64 : [],
+        Array.isArray(inc.imagenesBase64) ? inc.imagenesBase64 : [],
+        Array.isArray(inc.imagenes) ? inc.imagenes : []
+      );
+      const driveLinks = [];
+      const imagesBase64ToSend = [];
+      const seenImgKeys = {};
+
+      rawImgs.forEach((entry, idx) => {
+        const s = String(entry || "").trim();
+        if (!s || s === "Sin foto") return;
+        if (s.indexOf("data:image/") === 0) {
+          const sig = s.slice(0, 64) + "_" + s.length;
+          if (!seenImgKeys[sig] && imagesBase64ToSend.length < 4) {
+            seenImgKeys[sig] = true;
+            imagesBase64ToSend.push({ name: folioId + "_Evidencia_" + (imagesBase64ToSend.length + 1) + ".jpg", dataUrl: s });
+          }
+        } else if (s.indexOf("http") === 0) {
+          if (driveLinks.indexOf(s) === -1) driveLinks.push(s);
+          // Intentar leer el archivo real desde Drive para incrustarlo y adjuntarlo en el correo
+          if (imagesBase64ToSend.length < 4) {
+            try {
+              const idMatch = s.match(/\/d\/([a-zA-Z0-9_-]{15,})/) || s.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+              if (idMatch && idMatch[1] && !seenImgKeys[idMatch[1]]) {
+                seenImgKeys[idMatch[1]] = true;
+                const fBlob = DriveApp.getFileById(idMatch[1]).getBlob();
+                const mime = fBlob.getContentType() || "image/jpeg";
+                if (mime.indexOf("image/") === 0 && fBlob.getBytes().length <= 4 * 1024 * 1024) {
+                  const dataUrl = "data:" + mime + ";base64," + Utilities.base64Encode(fBlob.getBytes());
+                  imagesBase64ToSend.push({ name: fBlob.getName() || (folioId + "_Evidencia_" + (imagesBase64ToSend.length + 1) + ".jpg"), dataUrl: dataUrl });
+                }
+              }
+            } catch (ignoreDriveBlob) {}
+          }
+        }
+      });
+
+      let imgsHtml = "";
+      if (imagesBase64ToSend.length > 0 || driveLinks.length > 0) {
+        imgsHtml = "<div style=\"margin-top:14px;\"><strong style=\"color:#0a2463;\">Evidencia Fotográfica (" + Math.max(imagesBase64ToSend.length, driveLinks.length) + "):</strong>";
+        if (imagesBase64ToSend.length > 0) {
+          imgsHtml += "<div style=\"margin-top:8px;\">" +
+            imagesBase64ToSend.map((im, i) => "<div style=\"margin-bottom:10px;\"><img src=\"cid:evidencia_" + i + "\" alt=\"Evidencia " + (i + 1) + "\" style=\"max-width:100%;max-height:360px;border-radius:8px;border:1px solid #cbd5e1;display:block;\"></div>").join("") +
+            "</div>";
+        }
+        if (driveLinks.length > 0) {
+          imgsHtml += "<p style=\"font-size:12px;margin-top:6px;\">" + driveLinks.map((u, idx) => "<a href=\"" + u + "\" target=\"_blank\">Abrir Fotografía #" + (idx + 1) + " en Google Drive</a>").join(" &nbsp;|&nbsp; ") + "</p>";
+        }
+        imgsHtml += "</div>";
+      }
       const hist = Array.isArray(inc.historial) ? inc.historial : [];
       const histHtml = hist.length > 0
         ? "<h3 style=\"color:#0a2463;margin:16px 0 6px;font-size:13px;\">Bitácora / Historial del Procedimiento</h3><ul style=\"padding-left:18px;font-size:12px;color:#334155;\">" +
@@ -1253,7 +1300,8 @@ function apiHandleAction(payload) {
             htmlBody: htmlBody,
             textBody: textBody,
             senderName: "Central 1410 — Peña Seguro",
-            replyTo: "central1410@penaflor.cl"
+            replyTo: "central1410@penaflor.cl",
+            imagesBase64: imagesBase64ToSend
           }),
           muteHttpExceptions: true
         });
@@ -1265,14 +1313,31 @@ function apiHandleAction(payload) {
         usedBridge = true;
       } else {
         // Respaldo automático si aún no se configura la URL del puente central1410@penaflor.cl
-        MailApp.sendEmail({
+        const fallbackAttachments = [];
+        const fallbackInline = {};
+        imagesBase64ToSend.forEach((im, idx) => {
+          try {
+            const parts = im.dataUrl.split(",");
+            const mimeMatch = parts[0].match(/data:(.*?);/);
+            const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+            const blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), mime, im.name || ("Evidencia_" + (idx + 1) + ".jpg"));
+            fallbackAttachments.push(blob);
+            fallbackInline["evidencia_" + idx] = blob;
+          } catch (ignoreFbImg) {}
+        });
+        const mailOpts = {
           to: recipients.join(","),
           subject: subject,
           body: textBody,
           htmlBody: htmlBody,
           name: "Central 1410 — Peña Seguro",
           replyTo: "central1410@penaflor.cl"
-        });
+        };
+        if (fallbackAttachments.length > 0) {
+          mailOpts.attachments = fallbackAttachments;
+          mailOpts.inlineImages = fallbackInline;
+        }
+        MailApp.sendEmail(mailOpts);
         sentFrom = Session.getActiveUser().getEmail() || "Respaldo Apps Script (reply-to central1410@penaflor.cl)";
       }
 
