@@ -24,26 +24,37 @@
             position: fixed;
             inset: -24px;
             z-index: -2;
-            background-image: url('./fondo-municipalidad-penaflor.jpg');
+            background-image: url('./fondo-policia-collage.jpg');
             background-size: cover;
             background-position: center;
-            filter: blur(16px) saturate(1.05) brightness(0.32);
-            transform: scale(1.06);
+            filter: blur(8px) saturate(1.12) brightness(0.40);
+            transform: scale(1.05);
         }
         .bg-muni-overlay {
             position: fixed;
             inset: 0;
             z-index: -1;
-            background: radial-gradient(circle at 18% 12%, rgba(16, 185, 129, 0.16), transparent 46%),
-                        radial-gradient(circle at 85% 82%, rgba(37, 99, 235, 0.22), transparent 50%),
-                        linear-gradient(180deg, rgba(5, 12, 26, 0.80) 0%, rgba(7, 17, 36, 0.92) 100%);
+            background: radial-gradient(circle at 16% 12%, rgba(16, 185, 129, 0.20), transparent 45%),
+                        radial-gradient(circle at 86% 84%, rgba(37, 99, 235, 0.26), transparent 48%),
+                        linear-gradient(180deg, rgba(4, 10, 24, 0.72) 0%, rgba(6, 15, 34, 0.86) 100%);
         }
         .glass-card {
-            background: rgba(11, 21, 41, 0.74);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+            background: linear-gradient(160deg, rgba(13, 25, 48, 0.80), rgba(8, 17, 34, 0.74));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.20);
+            border-top: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 22px 54px rgba(0, 0, 0, 0.50);
+        }
+        .inst-badge-card {
+            background: rgba(15, 23, 42, 0.68);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            backdrop-filter: blur(12px);
+            transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+        .inst-badge-card:hover {
+            transform: translateY(-1px);
+            border-color: rgba(56, 189, 248, 0.45);
         }
         .glass-sidebar {
             background: rgba(7, 15, 31, 0.82);
@@ -79,7 +90,64 @@
     <!-- 1. PANTALLA DE ACCESO INTERINSTITUCIONAL (CARABINEROS & PDI)       -->
     <!-- ================================================================== -->
     <main id="screen-login" class="min-h-screen flex items-center justify-center p-4 py-8">
-        <div class="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div class="max-w-5xl w-full space-y-5">
+            <!-- Barra de 4 Logos Institucionales -->
+            <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-around gap-3">
+                <!-- 1. I. Municipalidad de Peñaflor -->
+                <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
+                    <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-700 to-indigo-900 border border-amber-300/60 flex items-center justify-center shadow">
+                        <svg viewBox="0 0 40 44" class="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 3L35 8V22C35 31.5 28.5 38.2 20 41C11.5 38.2 5 31.5 5 22V8L20 3Z" fill="#1e3a8a" stroke="#fbbf24" stroke-width="2.2"/>
+                            <path d="M12 24H28M14 24V16H26V24M17 16V13H23V16M13 28H27" stroke="#fde68a" stroke-width="1.8" stroke-linecap="round"/>
+                            <circle cx="20" cy="10" r="1.8" fill="#fbbf24"/>
+                        </svg>
+                    </div>
+                    <div class="leading-tight">
+                        <div class="text-[9px] font-black uppercase tracking-widest text-amber-300">I. Municipalidad</div>
+                        <div class="text-xs font-black text-white">PEÑAFLOR</div>
+                    </div>
+                </div>
+                <!-- 2. Seguridad Pública 1410 -->
+                <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
+                    <div class="h-10 w-10 rounded-lg bg-white p-1 flex items-center justify-center shadow">
+                        <img src="logo-pena-seguro-1410.png" alt="Peña Seguro 1410" class="w-full h-full object-contain">
+                    </div>
+                    <div class="leading-tight">
+                        <div class="text-[9px] font-black uppercase tracking-widest text-cyan-300">Seguridad Pública</div>
+                        <div class="text-xs font-black text-white">PEÑA SEGURO 1410</div>
+                    </div>
+                </div>
+                <!-- 3. Carabineros de Chile -->
+                <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
+                    <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-800 to-green-950 border border-emerald-400/60 flex items-center justify-center shadow">
+                        <svg viewBox="0 0 40 44" class="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 3L35 8V22C35 31.5 28.5 38.2 20 41C11.5 38.2 5 31.5 5 22V8L20 3Z" fill="#065f46" stroke="#fbbf24" stroke-width="2.2"/>
+                            <path d="M12 13L28 29M28 13L12 29" stroke="#fde68a" stroke-width="2.4" stroke-linecap="round"/>
+                            <circle cx="20" cy="21" r="4" fill="#064e3b" stroke="#fbbf24" stroke-width="1.8"/>
+                        </svg>
+                    </div>
+                    <div class="leading-tight">
+                        <div class="text-[9px] font-black uppercase tracking-widest text-emerald-300">Orden y Patria</div>
+                        <div class="text-xs font-black text-white">CARABINEROS</div>
+                    </div>
+                </div>
+                <!-- 4. PDI Chile -->
+                <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
+                    <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-900 to-slate-950 border border-amber-400/70 flex items-center justify-center shadow">
+                        <svg viewBox="0 0 40 40" class="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <polygon points="20,3 24,13 35,14 27,21 29,32 20,26 11,32 13,21 5,14 16,13" fill="#1d4ed8" stroke="#fbbf24" stroke-width="2"/>
+                            <circle cx="20" cy="19" r="5" fill="#0f172a" stroke="#fbbf24" stroke-width="1.6"/>
+                            <text x="20" y="21.5" text-anchor="middle" fill="#fde68a" font-size="6.5" font-weight="900" font-family="Inter,sans-serif">PDI</text>
+                        </svg>
+                    </div>
+                    <div class="leading-tight">
+                        <div class="text-[9px] font-black uppercase tracking-widest text-blue-300">Policía de Investigaciones</div>
+                        <div class="text-xs font-black text-white">PDI CHILE</div>
+                    </div>
+                </div>
+            </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             <!-- Panel Izquierdo: Identidad y Alcance -->
             <section class="lg:col-span-6 glass-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6">
                 <div class="space-y-4">
@@ -102,6 +170,7 @@
                             <i class="fa-solid fa-shield-halved"></i> Módulos Habilitados en Tiempo Real
                         </p>
                         <ul class="space-y-2 text-slate-300">
+                            <li class="flex items-start gap-2"><i class="fa-solid fa-video text-sky-400 mt-0.5"></i><span><strong>Solicitud de Respaldo de Video CCTV:</strong> Envío directo a la consola del Operador de Cámaras 1410 con seguimiento de entrega.</span></li>
                             <li class="flex items-start gap-2"><i class="fa-solid fa-user-secret text-amber-400 mt-0.5"></i><span><strong>Mecheros y Hurtadores:</strong> Consulta y registro de fichas, alias, modus operandi y fotografía.</span></li>
                             <li class="flex items-start gap-2"><i class="fa-solid fa-car-burst text-red-400 mt-0.5"></i><span><strong>Vehículos Robados / Encargo LPR:</strong> Búsqueda instantánea por patente y carga de nuevos encargos.</span></li>
                             <li class="flex items-start gap-2"><i class="fa-solid fa-person-shelter text-cyan-400 mt-0.5"></i><span><strong>Personas en Situación de Calle:</strong> Catastro georreferenciado y actualización de seguimiento.</span></li>
@@ -168,6 +237,7 @@
                 </div>
             </section>
         </div>
+        </div>
     </main>
 
     <!-- ================================================================== -->
@@ -231,6 +301,12 @@
                         <span id="badge-sosafe" class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black">0</span>
                     </button>
 
+                    <div class="px-2 pt-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Central de Cámaras CCTV</div>
+                    <button type="button" onclick="switchTab('video')" id="nav-video" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-video text-sky-400 w-4 text-center"></i> Respaldo Video CCTV</span>
+                        <span id="badge-video" class="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-black">0</span>
+                    </button>
+
                     <div class="px-2 pt-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Inteligencia / LPR (Ver e Ingresar)</div>
                     <button type="button" onclick="switchTab('mecheros')" id="nav-mecheros" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
                         <span class="flex items-center gap-2.5"><i class="fa-solid fa-user-secret text-rose-400 w-4 text-center"></i> Mecheros / Hurtadores</span>
@@ -266,6 +342,27 @@
         <main class="flex-1 min-w-0 p-4 sm:p-6 space-y-5">
             <!-- Toast -->
             <div id="toast" class="hidden fixed bottom-5 right-5 z-[1000] px-4 py-3 rounded-2xl shadow-2xl text-xs font-black text-white border border-white/15"></div>
+
+            <!-- Barra Institucional Compacta (4 Logos) -->
+            <div class="glass-card rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-950/70 border border-amber-400/35 text-[10px] font-black text-amber-200">
+                        <i class="fa-solid fa-landmark text-amber-400"></i> I. MUNICIPALIDAD DE PEÑAFLOR
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-cyan-400/35 text-[10px] font-black text-cyan-200">
+                        <img src="logo-pena-seguro-1410.png" alt="1410" class="w-4 h-4 object-contain bg-white rounded-xs p-0.5"> SEGURIDAD PÚBLICA 1410
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-400/40 text-[10px] font-black text-emerald-200">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> CARABINEROS DE CHILE
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-blue-400/40 text-[10px] font-black text-blue-200">
+                        <i class="fa-solid fa-star text-amber-400"></i> PDI CHILE
+                    </span>
+                </div>
+                <button type="button" onclick="switchTab('video')" class="px-3 py-1.5 rounded-xl bg-sky-600/25 hover:bg-sky-600 text-sky-200 hover:text-white border border-sky-400/40 text-[11px] font-black flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-video"></i> Solicitar Respaldo Video CCTV
+                </button>
+            </div>
 
             <!-- ========================================================== -->
             <!-- TAB 1: MAPA DE CUADRANTES Y ESTADÍSTICAS                   -->
@@ -712,6 +809,119 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 7: SOLICITUDES DE RESPALDO DE VIDEO CCTV               -->
+            <!-- ========================================================== -->
+            <section id="tab-video" class="tab-panel hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-video text-sky-400"></i> Solicitudes de Respaldo de Video — Central CCTV 1410</h2>
+                        <p class="text-xs text-slate-300">Envía solicitudes oficiales de grabación de cámaras municipales directo a la consola del Operador de CCTV y haz seguimiento en tiempo real.</p>
+                    </div>
+                    <select id="video-filter-estado" onchange="renderVideoTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                        <option value="ALL">Estado: Todas</option>
+                        <option value="PENDIENTE">🟡 Pendientes CCTV</option>
+                        <option value="EN_PROCESO_CCTV">🔵 En Extracción</option>
+                        <option value="RESPALDO_LISTO">🟢 Respaldo Listo / Entregado</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <form id="form-video-req" onsubmit="saveVideoRequest(event)" class="lg:col-span-5 glass-card rounded-2xl p-5 space-y-3 text-xs h-fit">
+                        <div class="flex items-center justify-between border-b border-slate-700/70 pb-2.5">
+                            <h3 class="font-black text-sky-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-film"></i> Nueva Solicitud de Respaldo CCTV</h3>
+                            <button type="button" onclick="resetVideoForm()" class="text-[10px] text-cyan-300 hover:underline">Limpiar</button>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Cámara Municipal Solicitada <span class="text-red-400">*</span></label>
+                            <select id="vid-camara" onchange="onVideoCamChange()" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-semibold">
+                                <option value="">Cargando cámaras de Peñaflor...</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Cuadrante <span class="text-red-400">*</span></label>
+                                <select id="vid-cuadrante" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                                    <option value="253A">253A</option><option value="253B">253B</option>
+                                    <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Prioridad <span class="text-red-400">*</span></label>
+                                <select id="vid-prioridad" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="CRÍTICA">🔴 URGENTE (Flagrancia)</option>
+                                    <option value="ALTA" selected>🟠 ALTA (Investigación)</option>
+                                    <option value="MEDIA">🟡 NORMAL (Oficio)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Fecha Hecho <span class="text-red-400">*</span></label>
+                                <input type="date" id="vid-fecha" required class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Hora Desde <span class="text-red-400">*</span></label>
+                                <input type="time" id="vid-hora-ini" required class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Hora Hasta <span class="text-red-400">*</span></label>
+                                <input type="time" id="vid-hora-fin" required class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">N° Parte / RUC / Oficio <span class="text-red-400">*</span></label>
+                                <input type="text" id="vid-parte" required placeholder="Ej: RUC 2600123456-7 / Parte 412" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Delito / Hecho</label>
+                                <select id="vid-delito" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="ROBO CON INTIMIDACIÓN / VIOLENCIA">Robo con intimidación / violencia</option>
+                                    <option value="PORTONAZO / ROBO VEHÍCULO">Portonazo / Robo vehículo</option>
+                                    <option value="ROBO LUGAR HABITADO / NO HABITADO">Robo lugar habitado / no habitado</option>
+                                    <option value="HURTO / MECHERO">Hurto / Mechero</option>
+                                    <option value="LESIONES / HOMICIDIO / RIÑA">Lesiones / Homicidio / Riña</option>
+                                    <option value="MICROTRÁFICO / LEY 20.000">Microtráfico / Ley 20.000</option>
+                                    <option value="ACCIDENTE DE TRÁNSITO / FUGA">Accidente de tránsito / Fuga</option>
+                                    <option value="OTRO PROCEDIMIENTO POLICIAL">Otro procedimiento policial</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Correo Institucional o Teléfono para Entrega <span class="text-red-400">*</span></label>
+                            <input type="text" id="vid-contacto" required placeholder="Ej: funcionario@carabineros.cl / @investigaciones.cl • +56 9..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Detalle del Hecho (vehículos, vestimentas, dirección exacta) <span class="text-red-400">*</span></label>
+                            <textarea id="vid-detalle" rows="3" required placeholder="Indica dirección exacta, sentido de huida, color/patente de vehículo o vestimenta para agilizar la búsqueda en CCTV..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Adjuntar Oficio o Imagen de Referencia (opcional)</label>
+                            <input type="file" id="vid-foto-file" accept="image/*" onchange="handleFilePreview(this, 'video')" class="w-full text-[10px] text-slate-300">
+                            <div id="video-foto-preview" class="text-[10px] text-emerald-300 mt-1"></div>
+                        </div>
+
+                        <button type="submit" id="btn-save-video" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-black text-xs shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> ENVIAR SOLICITUD DIRECTO A OPERADOR CCTV
+                        </button>
+                    </form>
+
+                    <div class="lg:col-span-7 space-y-3">
+                        <div id="video-kpis" class="grid grid-cols-3 gap-2.5"></div>
+                        <div id="video-requests-list" class="space-y-2.5 max-h-[580px] overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -759,7 +969,9 @@
             calle: [],
             calor: [],
             sosafe: [],
-            pendingPhotos: { mech: '', rob: '', calle: '', calor: '' }
+            cameras: [],
+            cctvAlerts: [],
+            pendingPhotos: { mech: '', rob: '', calle: '', calor: '', video: '' }
         };
 
         let _quadMap = null, _quadLayer = null, _quadHeat = null;
@@ -844,6 +1056,9 @@
             State.calle = Array.isArray(data.intelCalle) ? data.intelCalle : [];
             State.calor = Array.isArray(data.intelPuntosCalor) ? data.intelPuntosCalor : [];
             State.sosafe = Array.isArray(data.sosafeReports) ? data.sosafeReports : [];
+            State.cameras = Array.isArray(data.cencoCameras) ? data.cencoCameras : [];
+            State.cctvAlerts = Array.isArray(data.cencoCctvAlerts) ? data.cencoCctvAlerts : [];
+            populateVideoCamerasSelect();
             return data;
         }
 
@@ -950,7 +1165,7 @@
 
         function switchTab(tab) {
             State.activeTab = tab;
-            ['cuadrantes', 'sosafe', 'mecheros', 'robados', 'calle', 'calor'].forEach(t => {
+            ['cuadrantes', 'sosafe', 'video', 'mecheros', 'robados', 'calle', 'calor'].forEach(t => {
                 document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== tab);
                 const nav = document.getElementById(`nav-${t}`);
                 if (nav) {
@@ -961,14 +1176,23 @@
             toggleMobileSidebar(false);
             if (tab === 'cuadrantes') setTimeout(renderQuadrantsTab, 80);
             if (tab === 'sosafe') renderSosafeTab();
+            if (tab === 'video') renderVideoTab();
             if (tab === 'mecheros') renderMecherosTab();
             if (tab === 'robados') renderRobadosTab();
             if (tab === 'calle') renderCalleTab();
             if (tab === 'calor') setTimeout(renderCalorTab, 80);
         }
 
+        function isPoliceVideoRequest(al) {
+            return String(al?.alertaId || '').startsWith('VID-POL-') || String(al?.categoria || '').toUpperCase().includes('SOLICITUD RESPALDO VIDEO');
+        }
+
         function updateBadges() {
             document.getElementById('badge-sosafe').innerText = State.sosafe.length;
+            const vidReqs = State.cctvAlerts.filter(isPoliceVideoRequest);
+            const vidPend = vidReqs.filter(a => !['RESPALDO_LISTO', 'DESPACHADO', 'ENTREGADO'].includes(String(a.estado || '').toUpperCase())).length;
+            const bv = document.getElementById('badge-video');
+            if (bv) bv.innerText = vidPend;
             document.getElementById('badge-mecheros').innerText = State.mecheros.length;
             document.getElementById('badge-robados').innerText = State.robados.filter(r => String(r.estado || '').toUpperCase().includes('VIGENTE')).length;
             document.getElementById('badge-calle').innerText = State.calle.length;
@@ -979,10 +1203,153 @@
             updateBadges();
             renderQuadrantsTab();
             renderSosafeTab();
+            renderVideoTab();
             renderMecherosTab();
             renderRobadosTab();
             renderCalleTab();
             renderCalorTab();
+        }
+
+        // ====================================================================
+        // TAB 7: SOLICITUDES DE RESPALDO DE VIDEO CCTV
+        // ====================================================================
+        function populateVideoCamerasSelect() {
+            const sel = document.getElementById('vid-camara');
+            if (!sel) return;
+            const cur = sel.value;
+            const cams = State.cameras.length > 0 ? State.cameras : [
+                { id: 'CAM-101', nombre: 'Av. Troncal - Ulkantún', cuadrante: '253A' },
+                { id: 'CAM-102', nombre: '21 de Mayo - María Ester Garay', cuadrante: '252A' },
+                { id: 'CAM-103', nombre: 'Bilbao - Vicuña Mackenna', cuadrante: '252C' },
+                { id: 'CAM-116', nombre: 'Plaza de Peñaflor - Luis Araya Cereceda', cuadrante: '252A' }
+            ];
+            sel.innerHTML = `<option value="">-- Selecciona cámara municipal --</option>` +
+                cams.map(c => `<option value="${esc(c.id)}" data-name="${esc(c.nombre)}" data-quad="${esc(c.cuadrante || '252A')}">${esc(c.id)} • [${esc(c.cuadrante || '')}] ${esc(c.nombre)}</option>`).join('') +
+                `<option value="CAM-POR-DETERMINAR" data-name="Por determinar según dirección del hecho" data-quad="252A">📍 Otra cámara / Por determinar según dirección</option>`;
+            if (cur) sel.value = cur;
+            const fDate = document.getElementById('vid-fecha');
+            if (fDate && !fDate.value) fDate.value = new Date().toISOString().slice(0, 10);
+        }
+
+        function onVideoCamChange() {
+            const sel = document.getElementById('vid-camara');
+            const opt = sel?.options[sel.selectedIndex];
+            const q = opt?.getAttribute('data-quad');
+            if (q && document.getElementById('vid-cuadrante')) {
+                document.getElementById('vid-cuadrante').value = q;
+            }
+        }
+
+        function resetVideoForm() {
+            document.getElementById('form-video-req')?.reset();
+            const fDate = document.getElementById('vid-fecha');
+            if (fDate) fDate.value = new Date().toISOString().slice(0, 10);
+            document.getElementById('video-foto-preview').innerHTML = '';
+            State.pendingPhotos.video = '';
+        }
+
+        async function saveVideoRequest(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-video');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando a Central CCTV...';
+            try {
+                const camSel = document.getElementById('vid-camara');
+                const camOpt = camSel.options[camSel.selectedIndex];
+                const camId = camSel.value || 'CAM-POR-DETERMINAR';
+                const camName = camOpt?.getAttribute('data-name') || camId;
+                const quad = document.getElementById('vid-cuadrante').value;
+                const prio = document.getElementById('vid-prioridad').value;
+                const fechaHecho = document.getElementById('vid-fecha').value;
+                const hIni = document.getElementById('vid-hora-ini').value;
+                const hFin = document.getElementById('vid-hora-fin').value;
+                const parte = document.getElementById('vid-parte').value.trim();
+                const delito = document.getElementById('vid-delito').value;
+                const contacto = document.getElementById('vid-contacto').value.trim();
+                const detalle = document.getElementById('vid-detalle').value.trim();
+                const inst = State.session?.institucion || 'POLICIA';
+
+                const alertaId = `VID-POL-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(Date.now()).slice(-4)}`;
+                const descFull = `[${inst}] N° Parte/RUC: ${parte} | Delito: ${delito} | Ventana Video: ${fechaHecho} de ${hIni} a ${hFin} | Contacto entrega: ${contacto} | Detalle: ${detalle}`;
+
+                await postAction('CENCO_CREAR_ALERTA_CCTV', {
+                    alertaId,
+                    camaraId: camId,
+                    camaraNombre: camName,
+                    cuadrante: quad,
+                    categoria: `SOLICITUD RESPALDO VIDEO — ${inst}`,
+                    prioridad: prio,
+                    descripcion: descFull,
+                    operadorCctv: officerStamp(),
+                    imagenesBase64: State.pendingPhotos.video ? [State.pendingPhotos.video] : [],
+                    crearFolioInmediato: false
+                });
+                resetVideoForm();
+                await syncCloudData(false);
+                showToast(`✅ Solicitud ${alertaId} enviada directo al Operador CCTV`);
+            } catch (err) {
+                showToast('⚠️ Error al enviar solicitud: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ENVIAR SOLICITUD DIRECTO A OPERADOR CCTV';
+            }
+        }
+
+        function renderVideoTab() {
+            populateVideoCamerasSelect();
+            const all = State.cctvAlerts.filter(isPoliceVideoRequest);
+            const fEst = document.getElementById('video-filter-estado')?.value || 'ALL';
+            const normStatus = (st) => {
+                const u = String(st || '').toUpperCase();
+                if (u === 'RESPALDO_LISTO' || u === 'DESPACHADO' || u === 'ENTREGADO') return 'RESPALDO_LISTO';
+                if (u === 'EN_PROCESO_CCTV') return 'EN_PROCESO_CCTV';
+                return 'PENDIENTE';
+            };
+            const filtered = all.filter(a => fEst === 'ALL' || normStatus(a.estado) === fEst);
+
+            const pend = all.filter(a => normStatus(a.estado) === 'PENDIENTE').length;
+            const proc = all.filter(a => normStatus(a.estado) === 'EN_PROCESO_CCTV').length;
+            const done = all.filter(a => normStatus(a.estado) === 'RESPALDO_LISTO').length;
+            const kpiEl = document.getElementById('video-kpis');
+            if (kpiEl) {
+                kpiEl.innerHTML = `
+                    <div class="glass-card rounded-2xl p-3 text-center"><div class="text-[10px] uppercase text-slate-400 font-bold">Pendientes CCTV</div><div class="text-xl font-black text-amber-400">${pend}</div></div>
+                    <div class="glass-card rounded-2xl p-3 text-center"><div class="text-[10px] uppercase text-slate-400 font-bold">En Extracción</div><div class="text-xl font-black text-sky-400">${proc}</div></div>
+                    <div class="glass-card rounded-2xl p-3 text-center"><div class="text-[10px] uppercase text-slate-400 font-bold">Respaldo Listo</div><div class="text-xl font-black text-emerald-400">${done}</div></div>
+                `;
+            }
+
+            const listEl = document.getElementById('video-requests-list');
+            if (!listEl) return;
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div class="glass-card rounded-2xl p-8 text-center text-xs text-slate-400">Aún no hay solicitudes de respaldo de video en este estado.</div>`;
+                return;
+            }
+            listEl.innerHTML = filtered.map(a => {
+                const st = normStatus(a.estado);
+                const stBadge = st === 'RESPALDO_LISTO'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : (st === 'EN_PROCESO_CCTV' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40');
+                const stLabel = st === 'RESPALDO_LISTO' ? '🟢 RESPALDO LISTO' : (st === 'EN_PROCESO_CCTV' ? '🔵 EN EXTRACCIÓN CCTV' : '🟡 PENDIENTE CCTV');
+                const imgs = Array.isArray(a.imagenes) ? a.imagenes : (typeof a.imagenes === 'string' && a.imagenes.startsWith('http') ? a.imagenes.split('|').map(x => x.trim()).filter(Boolean) : []);
+                return `
+                    <div class="glass-card rounded-2xl p-4 space-y-2 text-xs">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-mono font-black text-sky-300">${esc(a.alertaId)} • ${esc(a.camaraId)} (${esc(a.cuadrante)})</span>
+                            <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${stBadge}">${stLabel}</span>
+                        </div>
+                        <div class="font-bold text-white">${esc(a.camaraNombre || a.camaraId)} <span class="text-[10px] text-amber-300 ml-1">[${esc(a.prioridad)}]</span></div>
+                        <p class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2.5 text-[11px] text-slate-200 leading-relaxed">${esc(a.descripcion)}</p>
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-700/60 text-[10px] text-slate-400">
+                            <span>Solicitado por: <strong class="text-slate-200">${esc(a.operadorCctv || 'Policía')}</strong> • ${esc(a.fecha)}</span>
+                            <div class="flex items-center gap-1.5">
+                                ${imgs.map((u, i) => `<a href="${esc(u)}" target="_blank" class="px-2 py-0.5 rounded bg-blue-600/25 text-blue-200 font-bold">📎 Adjunto #${i + 1}</a>`).join('')}
+                            </div>
+                        </div>
+                        ${(a.atendidoPor || a.folioVinculado) ? `<div class="rounded-lg bg-emerald-950/50 border border-emerald-500/30 p-2 text-[11px] text-emerald-200"><strong>Respuesta CCTV (${esc(a.atendidoPor || 'Operador CCTV')}):</strong> ${esc(a.folioVinculado || 'Respaldo procesado')}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
         }
 
         // ====================================================================
