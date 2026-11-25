@@ -19,20 +19,20 @@
             position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
         }
         .hero-bg-img {
-            position: absolute; inset: -24px;
+            position: absolute; inset: 0;
             background-image: url('./fondo-municipalidad-penaflor.jpg');
-            background-size: cover; background-position: center;
-            filter: blur(8px) brightness(0.42) saturate(1.15);
-            transform: scale(1.06);
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            filter: none;
         }
         .hero-bg-tint {
             position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(10, 36, 99, 0.72) 0%, rgba(7, 13, 26, 0.84) 55%, rgba(15, 23, 42, 0.90) 100%);
+            background: transparent;
         }
         /* Glassmorphism cards & Glassy Sidebar */
         .glass-card {
-            background: rgba(15, 23, 42, 0.68);
-            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: linear-gradient(160deg, rgba(10, 20, 40, 0.82), rgba(7, 15, 32, 0.78));
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-top: 1px solid rgba(255, 255, 255, 0.30);
             backdrop-filter: blur(18px);
             -webkit-backdrop-filter: blur(18px);
             box-shadow: 0 20px 45px rgba(2, 6, 23, 0.55);
