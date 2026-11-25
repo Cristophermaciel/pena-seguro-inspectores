@@ -1662,15 +1662,29 @@
                                     </h4>
                                     <p class="text-[11px] text-slate-500">Reportes recibidos con evidencia y estado de resolución.</p>
                                 </div>
-                                <select id="admin-sosafe-report-filter" onchange="renderAdminSosafePanel()" class="text-xs px-2.5 py-1.5 rounded-xl border border-slate-300 bg-slate-50 font-bold text-slate-700">
-                                    <option value="ALL">Todos</option>
-                                    <option value="RECIBIDO">🟡 Recibidos</option>
-                                    <option value="EN_PROCESO">🔵 En Proceso</option>
-                                    <option value="RESUELTO">🟢 Resueltos</option>
-                                    <option value="RECHAZADO">🔴 Rechazados</option>
-                                </select>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <select id="admin-sosafe-quadrant-filter" onchange="renderAdminSosafePanel()" class="text-xs px-2.5 py-1.5 rounded-xl border border-slate-300 bg-slate-50 font-bold text-slate-700">
+                                        <option value="ALL">Cuadrante: Todos</option>
+                                        <option value="252A">252A</option>
+                                        <option value="252B">252B</option>
+                                        <option value="252C">252C</option>
+                                        <option value="253A">253A</option>
+                                        <option value="253B">253B</option>
+                                        <option value="SRA">SRA</option>
+                                        <option value="SRB">SRB</option>
+                                        <option value="SRA1">SRA1</option>
+                                    </select>
+                                    <select id="admin-sosafe-report-filter" onchange="renderAdminSosafePanel()" class="text-xs px-2.5 py-1.5 rounded-xl border border-slate-300 bg-slate-50 font-bold text-slate-700">
+                                        <option value="ALL">Estado: Todos</option>
+                                        <option value="RECIBIDO">🟡 Recibidos</option>
+                                        <option value="EN_PROCESO">🔵 En Proceso</option>
+                                        <option value="RESUELTO">🟢 Resueltos</option>
+                                        <option value="RECHAZADO">🔴 Rechazados</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div id="admin-sosafe-reports-list" class="space-y-2 max-h-[440px] overflow-y-auto pr-1"></div>
+                            <div id="admin-sosafe-quadrant-stats" class="flex flex-wrap gap-1.5"></div>
+                            <div id="admin-sosafe-reports-list" class="space-y-2 max-h-[400px] overflow-y-auto pr-1"></div>
                         </div>
                     </div>
                 </div>
@@ -2882,6 +2896,8 @@
 
                         <div id="cenco-sosafe-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
 
+                        <div id="cenco-sosafe-quadrant-bars" class="cad-surface border cad-border rounded-xl p-3 space-y-2"></div>
+
                         <div id="cenco-sosafe-admin-access-box" class="hidden cad-surface border border-emerald-500/35 rounded-xl p-3.5 space-y-2">
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <div class="text-xs font-black text-emerald-300 flex items-center gap-1.5">
@@ -2896,15 +2912,28 @@
 
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                             <div class="lg:col-span-6 cad-surface border cad-border rounded-xl overflow-hidden flex flex-col min-h-[460px]">
-                                <div class="px-3.5 py-2 border-b cad-border flex items-center justify-between text-xs">
-                                    <span class="font-bold cad-text"><i class="fa-solid fa-map-location-dot text-amber-400 mr-1"></i> Mapa Exclusivo SOSAFE Peñaflor</span>
-                                    <select id="cenco-sosafe-filter-estado" onchange="renderCencoSosafeModule()" class="cad-input text-[11px] py-1">
-                                        <option value="ALL">Estado: Todos</option>
-                                        <option value="RECIBIDO">🟡 Recibidos (Pendientes)</option>
-                                        <option value="EN_PROCESO">🔵 En Proceso</option>
-                                        <option value="RESUELTO">🟢 Resueltos</option>
-                                        <option value="RECHAZADO">🔴 Rechazados</option>
-                                    </select>
+                                <div class="px-3.5 py-2 border-b cad-border flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <span class="font-bold cad-text"><i class="fa-solid fa-map-location-dot text-amber-400 mr-1"></i> Mapa Exclusivo SOSAFE Peñaflor (por Cuadrantes)</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <select id="cenco-sosafe-filter-cuadrante" onchange="renderCencoSosafeModule()" class="cad-input text-[11px] py-1">
+                                            <option value="ALL">Cuadrante: Todos</option>
+                                            <option value="252A">252A</option>
+                                            <option value="252B">252B</option>
+                                            <option value="252C">252C</option>
+                                            <option value="253A">253A</option>
+                                            <option value="253B">253B</option>
+                                            <option value="SRA">SRA (Pelvín)</option>
+                                            <option value="SRB">SRB (Peñaflor Alto)</option>
+                                            <option value="SRA1">SRA1 (Mallarauco)</option>
+                                        </select>
+                                        <select id="cenco-sosafe-filter-estado" onchange="renderCencoSosafeModule()" class="cad-input text-[11px] py-1">
+                                            <option value="ALL">Estado: Todos</option>
+                                            <option value="RECIBIDO">🟡 Recibidos (Pendientes)</option>
+                                            <option value="EN_PROCESO">🔵 En Proceso</option>
+                                            <option value="RESUELTO">🟢 Resueltos</option>
+                                            <option value="RECHAZADO">🔴 Rechazados</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div id="cenco-sosafe-map" class="flex-1 min-h-[420px] z-10"></div>
                             </div>
@@ -13267,7 +13296,21 @@
             }
 
             const repFilter = document.getElementById('admin-sosafe-report-filter')?.value || 'ALL';
-            const filteredReps = repFilter === 'ALL' ? reports : reports.filter(r => String(r.estado || '').toUpperCase() === repFilter);
+            const quadFilter = document.getElementById('admin-sosafe-quadrant-filter')?.value || 'ALL';
+            const filteredReps = reports.filter(r => {
+                const okEst = repFilter === 'ALL' || String(r.estado || '').toUpperCase() === repFilter;
+                const okQuad = quadFilter === 'ALL' || resolveSosafeQuadrant(r) === quadFilter;
+                return okEst && okQuad;
+            });
+
+            const qStatsEl = document.getElementById('admin-sosafe-quadrant-stats');
+            if (qStatsEl && typeof CARABINEROS_QUADRANTS_GEO !== 'undefined') {
+                qStatsEl.innerHTML = CARABINEROS_QUADRANTS_GEO.map(q => {
+                    const cnt = reports.filter(r => resolveSosafeQuadrant(r) === q.id).length;
+                    const active = quadFilter === q.id;
+                    return `<button type="button" onclick="document.getElementById('admin-sosafe-quadrant-filter').value='${active ? 'ALL' : q.id}'; renderAdminSosafePanel();" class="px-2 py-1 rounded-lg text-[10px] font-black border transition flex items-center gap-1 ${active ? 'bg-[#1e3a8a] text-white border-[#1e3a8a]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}"><span style="width:7px;height:7px;border-radius:999px;background:${q.color};display:inline-block;"></span>${q.id}: ${cnt}</button>`;
+                }).join('');
+            }
             const badgeLight = (est) => {
                 if (est === 'RESUELTO') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
                 if (est === 'EN_PROCESO') return 'bg-cyan-100 text-cyan-800 border-cyan-200';
@@ -13279,10 +13322,12 @@
                 if (filteredReps.length === 0) {
                     repEl.innerHTML = `<div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-xs text-slate-500">No hay reportes SOSAFE en este filtro.</div>`;
                 } else {
-                    repEl.innerHTML = filteredReps.map(r => `
+                    repEl.innerHTML = filteredReps.map(r => {
+                        const qId = resolveSosafeQuadrant(r);
+                        return `
                         <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs space-y-1.5">
                             <div class="flex items-center justify-between gap-2">
-                                <span class="font-mono font-black text-[#1e3a8a]">${esc(r.id)} • ${esc(r.cuadrante || 'Peñaflor')}</span>
+                                <span class="font-mono font-black text-[#1e3a8a]">${esc(r.id)} • Cuadrante ${esc(qId)}</span>
                                 <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${badgeLight(r.estado)}">${esc(r.estado)}</span>
                             </div>
                             <div class="font-bold text-slate-800">${esc(r.categoria)}</div>
@@ -13297,7 +13342,8 @@
                                 </div>
                             </div>
                         </div>
-                    `).join('');
+                    `;
+                    }).join('');
                 }
             }
         }
@@ -13311,11 +13357,37 @@
             }
         }
 
+        function resolveSosafeQuadrant(r) {
+            const validIds = (typeof CARABINEROS_QUADRANTS_GEO !== 'undefined' ? CARABINEROS_QUADRANTS_GEO.map(q => q.id) : ['252A', '252B', '252C', '253A', '253B', 'SRA', 'SRB', 'SRA1']);
+            const raw = String(r && r.cuadrante || '').trim().toUpperCase();
+            if (validIds.includes(raw)) return raw;
+            if (r && r.gps) {
+                const m = String(r.gps).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                if (m && typeof detectQuadrantForPoint === 'function') {
+                    const det = detectQuadrantForPoint(parseFloat(m[1]), parseFloat(m[2]));
+                    if (det && validIds.includes(det)) return det;
+                }
+            }
+            return raw || '252A';
+        }
+
+        function filterCencoSosafeByQuadrant(qId) {
+            const sel = document.getElementById('cenco-sosafe-filter-cuadrante');
+            if (!sel) return;
+            sel.value = sel.value === qId ? 'ALL' : qId;
+            renderCencoSosafeModule();
+        }
+
         function renderCencoSosafeModule() {
             updateSosafeNavBadge();
             const all = getSosafeReportsDB();
             const fEst = document.getElementById('cenco-sosafe-filter-estado')?.value || 'ALL';
-            const filtered = fEst === 'ALL' ? all : all.filter(r => String(r.estado || '').toUpperCase() === fEst);
+            const fQuad = document.getElementById('cenco-sosafe-filter-cuadrante')?.value || 'ALL';
+            const filtered = all.filter(r => {
+                const okEst = fEst === 'ALL' || String(r.estado || '').toUpperCase() === fEst;
+                const okQuad = fQuad === 'ALL' || resolveSosafeQuadrant(r) === fQuad;
+                return okEst && okQuad;
+            });
 
             const tot = all.length;
             const rec = all.filter(r => r.estado === 'RECIBIDO').length;
@@ -13330,6 +13402,32 @@
                     <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Recibidos (Nuevos)</div><div class="text-2xl font-black text-amber-400 mt-1">${rec}</div></div>
                     <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">En Proceso</div><div class="text-2xl font-black text-cyan-400 mt-1">${proc}</div></div>
                     <div class="cad-surface border cad-border rounded-xl p-3.5"><div class="text-[10px] uppercase cad-muted font-bold">Resueltos</div><div class="text-2xl font-black text-emerald-400 mt-1">${res} <span class="text-xs font-bold">(${pct}%)</span></div></div>
+                `;
+            }
+
+            const qBarsEl = document.getElementById('cenco-sosafe-quadrant-bars');
+            if (qBarsEl && typeof CARABINEROS_QUADRANTS_GEO !== 'undefined') {
+                qBarsEl.innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-[11px] font-black uppercase tracking-wider cad-muted"><i class="fa-solid fa-draw-polygon text-emerald-400 mr-1"></i> Alertas SOSAFE Registradas por Cuadrante</span>
+                        ${fQuad !== 'ALL' ? `<button type="button" onclick="filterCencoSosafeByQuadrant('${fQuad}')" class="text-[10px] font-bold text-amber-300 hover:underline">✕ Mostrar todos los cuadrantes</button>` : '<span class="text-[10px] cad-muted">Haz clic en un cuadrante para filtrar</span>'}
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                        ${CARABINEROS_QUADRANTS_GEO.map(q => {
+                            const inQ = all.filter(r => resolveSosafeQuadrant(r) === q.id);
+                            const pendQ = inQ.filter(r => r.estado === 'RECIBIDO').length;
+                            const isActive = fQuad === q.id;
+                            return `
+                                <button type="button" onclick="filterCencoSosafeByQuadrant('${q.id}')" class="text-left rounded-lg px-2.5 py-2 border transition ${isActive ? 'bg-blue-600/30 border-amber-400 ring-1 ring-amber-400' : 'cad-elevated cad-border hover:border-slate-500'}">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <span class="flex items-center gap-1.5 font-black text-xs cad-text"><span style="width:8px;height:8px;border-radius:999px;background:${q.color};display:inline-block;"></span>${q.id}</span>
+                                        <span class="text-xs font-black ${inQ.length > 0 ? 'text-amber-300' : 'cad-muted'}">${inQ.length}</span>
+                                    </div>
+                                    <div class="text-[9px] cad-muted truncate mt-0.5">${pendQ > 0 ? `<span class="text-amber-400 font-bold">${pendQ} pendientes</span>` : (inQ.length > 0 ? 'Sin pendientes' : 'Sin alertas')}</div>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
                 `;
             }
 
@@ -13369,10 +13467,12 @@
                 if (filtered.length === 0) {
                     listEl.innerHTML = `<div class="cad-surface border cad-border rounded-xl p-8 text-center cad-muted text-xs">No hay reportes vecinales SOSAFE en este estado.</div>`;
                 } else {
-                    listEl.innerHTML = filtered.map(r => `
+                    listEl.innerHTML = filtered.map(r => {
+                        const qId = resolveSosafeQuadrant(r);
+                        return `
                         <div class="cad-surface border cad-border rounded-xl p-3.5 space-y-2 text-xs">
                             <div class="flex items-center justify-between gap-2">
-                                <span class="font-mono font-black text-amber-400">${esc(r.id)} • ${esc(r.cuadrante)}</span>
+                                <span class="font-mono font-black text-amber-400">${esc(r.id)} • Cuadrante ${esc(qId)}</span>
                                 <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${badgeCls(r.estado)}">${esc(r.estado)}</span>
                             </div>
                             <div class="font-bold cad-text text-sm">${esc(r.categoria)}</div>
@@ -13390,7 +13490,8 @@
                             </div>
                             ${r.respuestaOficial ? `<div class="text-[10px] text-emerald-300 bg-emerald-950/50 border border-emerald-500/30 rounded p-2"><strong>Respuesta:</strong> ${esc(r.respuestaOficial)} ${r.fotoSolucion && r.fotoSolucion.startsWith('http') ? `• <a href="${esc(r.fotoSolucion)}" target="_blank" class="underline font-bold">Ver foto solución</a>` : ''}</div>` : ''}
                         </div>
-                    `).join('');
+                    `;
+                    }).join('');
                 }
             }
 
@@ -13409,9 +13510,42 @@
             if (typeof PENAFLOR_COMMUNE_BOUNDARY !== 'undefined') {
                 L.polygon(PENAFLOR_COMMUNE_BOUNDARY, { color: '#f59e0b', weight: 2.5, dashArray: '6,4', fillOpacity: 0.02 }).addTo(_cencoSosafeLayer);
             }
+            if (typeof CARABINEROS_QUADRANTS_GEO !== 'undefined') {
+                CARABINEROS_QUADRANTS_GEO.forEach(q => {
+                    const alertsInQ = all.filter(r => resolveSosafeQuadrant(r) === q.id);
+                    const pendInQ = alertsInQ.filter(r => r.estado === 'RECIBIDO').length;
+                    const procInQ = alertsInQ.filter(r => r.estado === 'EN_PROCESO').length;
+                    const resInQ = alertsInQ.filter(r => r.estado === 'RESUELTO').length;
+                    const isSelectedQ = fQuad === q.id;
+                    L.polygon(q.coords, {
+                        color: q.color,
+                        weight: isSelectedQ ? 3.5 : 2,
+                        opacity: 0.92,
+                        fillColor: q.color,
+                        fillOpacity: isSelectedQ ? 0.28 : 0.14
+                    }).bindPopup(`
+                        <div class="text-xs font-sans space-y-1">
+                            <div class="font-black" style="color:${q.color}">Cuadrante ${q.id}</div>
+                            <div class="font-semibold text-slate-700">${q.desc}</div>
+                            <div>Total alertas SOSAFE: <strong>${alertsInQ.length}</strong></div>
+                            <div class="text-[11px] text-slate-600">🟡 Recibidas: <strong>${pendInQ}</strong> • 🔵 En proceso: <strong>${procInQ}</strong> • 🟢 Resueltas: <strong>${resInQ}</strong></div>
+                            <button onclick="filterCencoSosafeByQuadrant('${q.id}')" style="background:${q.color};color:#fff;padding:4px 8px;border-radius:6px;font-weight:700;font-size:11px;margin-top:4px;cursor:pointer;">${isSelectedQ ? 'Mostrar todos los cuadrantes' : 'Filtrar solo ' + q.id}</button>
+                        </div>
+                    `).addTo(_cencoSosafeLayer);
+
+                    const labelIcon = L.divIcon({
+                        className: '',
+                        html: `<div style="background:${q.color}ee;color:#fff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:900;letter-spacing:0.3px;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;">${q.id}${alertsInQ.length > 0 ? ` (${alertsInQ.length})` : ''}</div>`,
+                        iconSize: [64, 20],
+                        iconAnchor: [32, 10]
+                    });
+                    L.marker(q.center, { icon: labelIcon, interactive: false }).addTo(_cencoSosafeLayer);
+                });
+            }
             const heatPts = [];
             filtered.forEach((r, idx) => {
-                const coords = parseGpsOrQuadrantCoords(r.gps || r.direccion, r.cuadrante, idx);
+                const qId = resolveSosafeQuadrant(r);
+                const coords = parseGpsOrQuadrantCoords(r.gps || r.direccion, qId, idx);
                 heatPts.push([coords[0], coords[1], r.estado === 'RESUELTO' ? 0.35 : 0.9]);
                 const bg = r.estado === 'RESUELTO' ? '#10b981' : (r.estado === 'EN_PROCESO' ? '#0ea5e9' : '#f59e0b');
                 const icon = L.divIcon({
@@ -13421,7 +13555,7 @@
                 });
                 L.marker(coords, { icon }).bindPopup(`
                     <div class="text-xs font-sans space-y-1">
-                        <div class="font-black text-slate-900">${esc(r.id)} • ${esc(r.cuadrante)}</div>
+                        <div class="font-black text-slate-900">${esc(r.id)} • Cuadrante ${esc(qId)}</div>
                         <div class="font-bold text-blue-700">${esc(r.categoria)}</div>
                         <div>${esc(r.direccion || 'Peñaflor')}</div>
                         <div>Estado: <strong style="color:${bg}">${esc(r.estado)}</strong></div>
