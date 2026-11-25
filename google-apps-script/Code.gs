@@ -463,10 +463,72 @@ function doPost(e) {
 }
 
 /**
- * Carga todos los datos maestros desde el Excel en Drive.
+ * Optimización para alta concurrencia (hasta 100 usuarios simultáneos):
+ * Evita re-verificar las 19 pestañas y Drive en cada lectura/escritura.
  */
-function apiGetBootstrapData() {
-  inicializarHojas();
+function ensureSheetsInitializedFast() {
+  try {
+    const cache = CacheService.getScriptCache();
+    if (cache.get("SHEETS_INIT_OK_V46") === "1") return;
+    inicializarHojas();
+    cache.put("SHEETS_INIT_OK_V46", "1", 21600); // 6 horas
+  } catch (e) {
+    inicializarHojas();
+  }
+}
+
+function getCachedBootstrapData() {
+  try {
+    const cache = CacheService.getScriptCache();
+    const metaRaw = cache.get("BOOT_CACHE_META_V46");
+    if (!metaRaw) return null;
+    const meta = JSON.parse(metaRaw);
+    if (!meta || !meta.chunks) return null;
+    const keys = [];
+    for (let i = 0; i < meta.chunks; i++) keys.push("BOOT_CACHE_C_" + i);
+    const map = cache.getAll(keys);
+    let fullStr = "";
+    for (let i = 0; i < meta.chunks; i++) {
+      const part = map["BOOT_CACHE_C_" + i];
+      if (part === undefined || part === null) return null;
+      fullStr += part;
+    }
+    return JSON.parse(fullStr);
+  } catch (e) {
+    return null;
+  }
+}
+
+function setCachedBootstrapData(obj) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const fullStr = JSON.stringify(obj);
+    const CHUNK_SIZE = 90000;
+    const count = Math.ceil(fullStr.length / CHUNK_SIZE);
+    if (count > 12) return; // Seguridad
+    const batch = { "BOOT_CACHE_META_V46": JSON.stringify({ chunks: count, ts: Date.now() }) };
+    for (let i = 0; i < count; i++) {
+      batch["BOOT_CACHE_C_" + i] = fullStr.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+    }
+    cache.putAll(batch, 20); // 20s TTL compartido entre los 100 usuarios
+  } catch (e) {}
+}
+
+function invalidateBootstrapCache() {
+  try {
+    CacheService.getScriptCache().remove("BOOT_CACHE_META_V46");
+  } catch (e) {}
+}
+
+/**
+ * Carga todos los datos maestros desde el Excel en Drive (con caché RAM compartida 20s para 100 usuarios).
+ */
+function apiGetBootstrapData(forceRefresh) {
+  if (!forceRefresh) {
+    const cached = getCachedBootstrapData();
+    if (cached && cached.ok) return cached;
+  }
+  ensureSheetsInitializedFast();
   const ss = obtenerSpreadsheet();
   const todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
 
@@ -988,7 +1050,7 @@ function apiGetBootstrapData() {
     });
   }
 
-  return {
+  const bootstrapPayload = {
     ok: true,
     date: todayStr,
     spreadsheetUrl: "https://docs.google.com/spreadsheets/d/" + CONFIG.SPREADSHEET_ID + "/edit",
@@ -1015,6 +1077,8 @@ function apiGetBootstrapData() {
     intelCalle: intelCalle,
     intelPuntosCalor: intelPuntosCalor
   };
+  setCachedBootstrapData(bootstrapPayload);
+  return bootstrapPayload;
 }
 
 /**
@@ -1025,7 +1089,8 @@ function apiHandleAction(payload) {
   lock.waitLock(20000);
 
   try {
-    inicializarHojas();
+    ensureSheetsInitializedFast();
+    invalidateBootstrapCache();
     const action = payload.action;
     const ss = obtenerSpreadsheet();
     const nowFormatted = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd-MM-yyyy HH:mm:ss");
@@ -3136,7 +3201,7 @@ function apiGetGpsLive(bypassCache) {
     };
 
     try {
-      cache.put(cacheKey, JSON.stringify(payload), 8);
+      cache.put(cacheKey, JSON.stringify(payload), 15);
     } catch (ignore) {}
 
     return payload;
