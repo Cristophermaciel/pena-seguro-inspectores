@@ -1744,13 +1744,20 @@
                                                 <span id="cad-role-chain-hint" class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30">Cadena 1410 → Despacho</span>
                                             </div>
 
-                                            <!-- Dirección con sufijo fijo ", Peñaflor, Chile" -->
+                                            <!-- Dirección con sufijo fijo ", Peñaflor, Chile" + Botón Ubicar en Mapa -->
                                             <div>
-                                                <label class="block text-[11px] font-semibold cad-text mb-1">Dirección <span class="text-red-400">*</span></label>
-                                                <div class="flex items-center cad-input p-0 overflow-hidden">
-                                                    <input type="text" id="tel-direccion" name="cad_direccion_evento" value="" autocomplete="off" class="flex-1 bg-transparent px-2.5 py-2 text-xs cad-text outline-none" placeholder="Ej: Av. Vicuña Mackenna 2450" required>
-                                                    <span class="px-2.5 py-2 text-[11px] cad-muted border-l cad-border shrink-0 select-none">, Peñaflor, Chile</span>
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <label class="block text-[11px] font-semibold cad-text">Dirección <span class="text-red-400">*</span></label>
+                                                    <span id="tel-geocode-status" class="text-[10px] font-bold text-slate-400"></span>
                                                 </div>
+                                                <div class="flex items-center cad-input p-0 overflow-hidden">
+                                                    <input type="text" id="tel-direccion" name="cad_direccion_evento" value="" autocomplete="off" onblur="locateTelAddressOnMap(true)" class="flex-1 bg-transparent px-2.5 py-2 text-xs cad-text outline-none" placeholder="Ej: Av. Miraflores 777" required>
+                                                    <span class="px-2 py-2 text-[10px] cad-muted border-l cad-border shrink-0 select-none hidden sm:inline">, Peñaflor</span>
+                                                    <button type="button" onclick="locateTelAddressOnMap(false)" class="px-2.5 py-2 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border-l cad-border text-[11px] font-bold shrink-0 transition" title="Buscar y verificar ubicación exacta en el mapa">
+                                                        <i class="fa-solid fa-location-crosshairs"></i> Ubicar
+                                                    </button>
+                                                </div>
+                                                <input type="hidden" id="tel-gps-coords" value="">
                                             </div>
 
                                             <!-- Cuadrante + Villa/Sector rápido -->
@@ -3173,7 +3180,8 @@
             STAFF_DIRECTORY: 'pena_seguro_staff_directory_v1',
             CENCO_GEOFENCE_AUTHS: 'pena_seguro_cenco_geofence_auths_v1',
             CENCO_GEOFENCE_COOLDOWNS: 'pena_seguro_cenco_geofence_cooldowns_v1',
-            EMAIL_DIRECTORY: 'pena_seguro_email_directory_v1'
+            EMAIL_DIRECTORY: 'pena_seguro_email_directory_v1',
+            GEOCODE_CACHE: 'pena_seguro_geocode_cache_v1'
         };
 
         // --- Central State Object Declaration ---
@@ -8635,10 +8643,205 @@
             if (CencoState.map) CencoState.map.setView([-33.6063, -70.8768], 13);
         }
 
+        // --- Geocodificación Real en Peñaflor (OpenStreetMap Nominatim + Caché Local) ---
+        function normalizeAddressCacheKey(addr) {
+            return String(addr || '')
+                .replace(/\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)/g, '')
+                .replace(/,?\s*peñaflor\s*,?\s*(chile)?/gi, '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toUpperCase()
+                .replace(/\bAV\.?\b/g, 'AVENIDA')
+                .replace(/\bPJE\.?\b/g, 'PASAJE')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function getGeocodeCache() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.GEOCODE_CACHE)) || {}; }
+            catch (e) { return {}; }
+        }
+        function saveGeocodeCache(mapObj) {
+            try {
+                const keys = Object.keys(mapObj || {});
+                if (keys.length > 400) {
+                    const trimmed = {};
+                    keys.slice(-300).forEach(k => { trimmed[k] = mapObj[k]; });
+                    mapObj = trimmed;
+                }
+                localStorage.setItem(STORAGE_KEYS.GEOCODE_CACHE, JSON.stringify(mapObj));
+            } catch (e) {}
+        }
+
+        function lookupCachedCoordsForAddress(addrStr) {
+            const key = normalizeAddressCacheKey(addrStr);
+            if (!key || key.length < 3) return null;
+            const cache = getGeocodeCache();
+            const hit = cache[key];
+            if (Array.isArray(hit) && hit.length === 2 && typeof hit[0] === 'number' && typeof hit[1] === 'number') {
+                return hit;
+            }
+            return null;
+        }
+
+        async function geocodePenaflorAddress(rawAddr) {
+            const cleanBase = String(rawAddr || '')
+                .replace(/\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)/g, '')
+                .replace(/,?\s*peñaflor\s*,?\s*(chile)?/gi, '')
+                .trim();
+            if (!cleanBase || cleanBase.length < 3) return null;
+
+            const cached = lookupCachedCoordsForAddress(cleanBase);
+            if (cached) return { lat: cached[0], lon: cached[1], cached: true };
+
+            const expanded = cleanBase
+                .replace(/\bav\.?\s+/gi, 'Avenida ')
+                .replace(/\bpje\.?\s+/gi, 'Pasaje ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            const streetOnly = expanded.replace(/\s+#?\d+[a-zA-Z]?\b/g, '').trim();
+            const queries = [
+                `${expanded}, Peñaflor, Región Metropolitana, Chile`,
+                `${cleanBase}, Peñaflor, Chile`
+            ];
+            if (streetOnly && streetOnly.toLowerCase() !== expanded.toLowerCase()) {
+                queries.push(`${streetOnly}, Peñaflor, Región Metropolitana, Chile`);
+            }
+
+            // Viewbox estricto de la comuna de Peñaflor (west, north, east, south)
+            const viewbox = '-70.965,-33.545,-70.815,-33.665';
+            for (let i = 0; i < queries.length; i++) {
+                try {
+                    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=3&countrycodes=cl&bounded=1&viewbox=${viewbox}&q=${encodeURIComponent(queries[i])}`;
+                    const ctrl = new AbortController();
+                    const tId = setTimeout(() => ctrl.abort(), 3500);
+                    const resp = await fetch(url, { signal: ctrl.signal, headers: { 'Accept': 'application/json' } });
+                    clearTimeout(tId);
+                    if (!resp.ok) continue;
+                    const arr = await resp.json();
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        const valid = arr.find(r => {
+                            const la = parseFloat(r.lat), lo = parseFloat(r.lon);
+                            return la >= -33.67 && la <= -33.54 && lo >= -70.97 && lo <= -70.81;
+                        });
+                        if (valid) {
+                            const lat = parseFloat(valid.lat);
+                            const lon = parseFloat(valid.lon);
+                            const cache = getGeocodeCache();
+                            cache[normalizeAddressCacheKey(cleanBase)] = [lat, lon];
+                            saveGeocodeCache(cache);
+                            return { lat, lon, displayName: valid.display_name || cleanBase, exact: i === 0 };
+                        }
+                    }
+                } catch (ignoreGeo) {}
+            }
+            return null;
+        }
+
+        function setTelDraftPinOnMap(lat, lon, labelText = '') {
+            const coordsEl = document.getElementById('tel-gps-coords');
+            if (coordsEl) coordsEl.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+            // Auto-detectar cuadrante exacto según polígono oficial KMZ
+            const detectedQ = typeof detectQuadrantForPoint === 'function' ? detectQuadrantForPoint(lat, lon) : '';
+            const qSel = document.getElementById('tel-cuadrante');
+            if (detectedQ && qSel && Array.from(qSel.options).some(o => o.value === detectedQ)) {
+                qSel.value = detectedQ;
+            }
+
+            if (CencoState.map) {
+                if (CencoState.draftPinMarker) {
+                    try { CencoState.map.removeLayer(CencoState.draftPinMarker); } catch (e) {}
+                }
+                const pinIcon = L.divIcon({
+                    className: '',
+                    html: `<div style="background:#2563eb;color:#fff;width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 4px 12px rgba(37,99,235,0.65);font-size:13px;"><i class="fa-solid fa-location-dot"></i></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                CencoState.draftPinMarker = L.marker([lat, lon], { icon: pinIcon, draggable: true })
+                    .bindPopup(`<div class="text-xs font-sans"><strong>📍 Ubicación verificada</strong><br>${labelText || 'Arrastra el pin para ajustar el punto exacto'}<br><span class="font-mono text-[10px]">${lat.toFixed(5)}, ${lon.toFixed(5)}</span>${detectedQ ? `<br>Cuadrante: <strong>${detectedQ}</strong>` : ''}</div>`)
+                    .addTo(CencoState.map);
+                CencoState.draftPinMarker.on('dragend', (ev) => {
+                    const pos = ev.target.getLatLng();
+                    const cEl = document.getElementById('tel-gps-coords');
+                    if (cEl) cEl.value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+                    const dq = typeof detectQuadrantForPoint === 'function' ? detectQuadrantForPoint(pos.lat, pos.lng) : '';
+                    if (dq && qSel && Array.from(qSel.options).some(o => o.value === dq)) qSel.value = dq;
+                    const stEl = document.getElementById('tel-geocode-status');
+                    if (stEl) {
+                        stEl.className = 'text-[10px] font-bold text-emerald-400';
+                        stEl.innerText = `✓ Pin ajustado (${dq || 'Peñaflor'})`;
+                    }
+                });
+                CencoState.map.setView([lat, lon], 16, { animate: true });
+                CencoState.draftPinMarker.openPopup();
+            }
+        }
+
+        async function locateTelAddressOnMap(silent = false) {
+            const addrEl = document.getElementById('tel-direccion');
+            const stEl = document.getElementById('tel-geocode-status');
+            const raw = String(addrEl?.value || '').trim();
+            if (!raw || raw.length < 3) return null;
+
+            if (stEl) {
+                stEl.className = 'text-[10px] font-bold text-blue-400';
+                stEl.innerText = 'Buscando dirección...';
+            }
+            const res = await geocodePenaflorAddress(raw);
+            if (res && typeof res.lat === 'number' && typeof res.lon === 'number') {
+                setTelDraftPinOnMap(res.lat, res.lon, raw);
+                if (stEl) {
+                    const dq = typeof detectQuadrantForPoint === 'function' ? detectQuadrantForPoint(res.lat, res.lon) : '';
+                    stEl.className = 'text-[10px] font-bold text-emerald-400';
+                    stEl.innerText = `✓ Ubicado en mapa${dq ? ' • ' + dq : ''}`;
+                }
+                return res;
+            } else {
+                if (stEl) {
+                    stEl.className = 'text-[10px] font-bold text-amber-400';
+                    stEl.innerText = 'Sin coincidencia exacta (puedes escribir calle + n°)';
+                }
+                if (!silent) showToast('⚠️ No se encontró esa dirección exacta en Peñaflor. Prueba con el nombre de la calle y número.', 'bg-amber-600');
+                return null;
+            }
+        }
+
+        const _bgGeocodePending = new Set();
+        let _bgGeocodeRunning = false;
+        const _bgGeocodeQueue = [];
+
+        function queueBackgroundGeocodeForIncidents(incidents) {
+            (incidents || []).forEach(inc => {
+                const addr = String(inc?.direccion || '').trim();
+                if (!addr) return;
+                if (/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/.test(addr)) return;
+                if (lookupCachedCoordsForAddress(addr)) return;
+                const key = normalizeAddressCacheKey(addr);
+                if (!key || key.length < 4 || _bgGeocodePending.has(key)) return;
+                _bgGeocodePending.add(key);
+                _bgGeocodeQueue.push(addr);
+            });
+            if (_bgGeocodeRunning || _bgGeocodeQueue.length === 0) return;
+            _bgGeocodeRunning = true;
+            const processNext = async () => {
+                if (_bgGeocodeQueue.length === 0) { _bgGeocodeRunning = false; return; }
+                const nextAddr = _bgGeocodeQueue.shift();
+                const hit = await geocodePenaflorAddress(nextAddr);
+                if (hit && CencoState.map) {
+                    renderCadMapMarkers();
+                }
+                setTimeout(processNext, 1100);
+            };
+            processNext();
+        }
+
         function parseGpsOrQuadrantCoords(gpsStr, cuadrante, jitterIndex = 0) {
             if (gpsStr) {
                 const m = String(gpsStr).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
                 if (m) return [parseFloat(m[1]), parseFloat(m[2])];
+                const cached = lookupCachedCoordsForAddress(gpsStr);
+                if (cached) return cached;
             }
             const base = CENCO_QUADRANT_COORDS[String(cuadrante || '252A').toUpperCase()] || [-33.6063, -70.8768];
             const angle = (jitterIndex * 2.39996);
@@ -9530,6 +9733,7 @@
             // 3. Incidentes Abiertos (Pines escudo estilo Governa)
             if (CencoState.mapVisibility.incidents) {
                 const openInc = getCencoIncidentsDB().filter(i => !['FINALIZADO', 'CANCELADO', 'DESCARTADA'].includes(i.estado));
+                queueBackgroundGeocodeForIncidents(openInc);
                 openInc.forEach((inc, idx) => {
                     const coords = parseGpsOrQuadrantCoords(inc.direccion, inc.cuadrante, idx + 7);
                     const pCls = inc.prioridad === 'CRITICA' ? 'prio-critica' : (inc.prioridad === 'ALTA' ? 'prio-alta' : '');
@@ -11118,6 +11322,22 @@
                     .map(cb => String(cb.value || '').trim().toLowerCase())
                     .filter(Boolean);
 
+                // Resolver coordenadas exactas de la dirección en Peñaflor antes de guardar
+                const rawDir = document.getElementById('tel-direccion').value.trim();
+                let gpsCoordsStr = String(document.getElementById('tel-gps-coords')?.value || '').trim();
+                if (!gpsCoordsStr && rawDir.length >= 3) {
+                    const geoHit = await geocodePenaflorAddress(rawDir);
+                    if (geoHit && typeof geoHit.lat === 'number' && typeof geoHit.lon === 'number') {
+                        gpsCoordsStr = `${geoHit.lat.toFixed(6)}, ${geoHit.lon.toFixed(6)}`;
+                        const dq = typeof detectQuadrantForPoint === 'function' ? detectQuadrantForPoint(geoHit.lat, geoHit.lon) : '';
+                        const qSel = document.getElementById('tel-cuadrante');
+                        if (dq && qSel && Array.from(qSel.options).some(o => o.value === dq)) qSel.value = dq;
+                    }
+                }
+                const fullDir = gpsCoordsStr
+                    ? `${rawDir}, Peñaflor, Chile (${gpsCoordsStr})`
+                    : `${rawDir}, Peñaflor, Chile`;
+
                 const payload = {
                     action: 'CENCO_CREAR_INCIDENTE',
                     folioId, fechaIngreso,
@@ -11127,7 +11347,7 @@
                     categoria: document.getElementById('tel-categoria').value,
                     subcategoria: document.getElementById('tel-subcategoria').value,
                     cuadrante: document.getElementById('tel-cuadrante').value,
-                    direccion: document.getElementById('tel-direccion').value.trim() + ', Peñaflor, Chile',
+                    direccion: fullDir,
                     denunciante: document.getElementById('tel-denunciante').value.trim() || 'Anónimo',
                     telefono: document.getElementById('tel-telefono').value.trim(),
                     detalle: document.getElementById('tel-detalle').value.trim(),
@@ -11184,6 +11404,14 @@
                 onCencoQuadrantChange('tel');
                 clearCencoTempImages('tel');
                 toggleTelEmailCheckboxes(false);
+                const gpsHiddenEl = document.getElementById('tel-gps-coords');
+                if (gpsHiddenEl) gpsHiddenEl.value = '';
+                const geoStEl = document.getElementById('tel-geocode-status');
+                if (geoStEl) geoStEl.innerText = '';
+                if (CencoState.draftPinMarker && CencoState.map) {
+                    try { CencoState.map.removeLayer(CencoState.draftPinMarker); } catch (ignoreDraft) {}
+                    CencoState.draftPinMarker = null;
+                }
                 if (btn) btn.disabled = false;
 
                 renderAllCencoPanels();
