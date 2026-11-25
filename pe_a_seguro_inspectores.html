@@ -1659,7 +1659,7 @@
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Sin Turno
                             </span>
 
-                            <button type="button" onclick="openTelegramConfigModal()" class="w-8 h-8 rounded-lg cad-elevated border cad-border flex items-center justify-center text-sky-400 hover:border-sky-400 transition" title="Configurar Bot de Respaldo Telegram">
+                            <button type="button" id="cad-btn-telegram-config" onclick="openTelegramConfigModal()" class="w-8 h-8 rounded-lg cad-elevated border cad-border flex items-center justify-center text-sky-400 hover:border-sky-400 transition" title="Configurar Bot de Respaldo Telegram">
                                 <i class="fa-brands fa-telegram text-sm"></i>
                             </button>
 
@@ -1695,8 +1695,8 @@
                     <!-- ================================================================ -->
                     <div id="cad-mod-central" class="cad-module flex-1 flex flex-col lg:flex-row min-h-[calc(100vh-64px)]">
 
-                        <!-- PANEL IZQUIERDO OPERATIVO (520px fijo en escritorio) -->
-                        <aside class="w-full lg:w-[520px] shrink-0 cad-surface border-b lg:border-b-0 lg:border-r cad-border flex flex-col max-h-none lg:max-h-[calc(100vh-64px)] overflow-y-auto">
+                        <!-- PANEL IZQUIERDO OPERATIVO (520px fijo en escritorio; oculto para Operador CCTV en modo Solo Mapa) -->
+                        <aside id="cad-central-left-sidebar" class="w-full lg:w-[520px] shrink-0 cad-surface border-b lg:border-b-0 lg:border-r cad-border flex flex-col max-h-none lg:max-h-[calc(100vh-64px)] overflow-y-auto">
                             <div class="p-3.5 space-y-3">
                                 <!-- Selector Segmentado Superior: Procedimientos | Turno -->
                                 <div class="grid grid-cols-2 p-1 rounded-lg cad-elevated border cad-border">
@@ -4429,6 +4429,10 @@
 
         // --- View Navigation (Pantallas 100% Independientes) ---
         function navigateTo(viewId, skipReset = false) {
+            if (viewId === 'view-admin' && String(AppState.userRole || '').toUpperCase() !== 'ADMIN') {
+                showToast('⛔ Acceso restringido solo a Administradores', 'bg-red-600');
+                return;
+            }
             repairOrphanedViewContent();
 
             document.querySelectorAll('.view-section').forEach(el => {
@@ -8290,6 +8294,53 @@
             } catch (e) {}
         }
 
+        // --- Control Estricto de Privilegios por Rol CENCO (v46) ---
+        function getAllowedCencoModulesForRole(role) {
+            const r = String(role || AppState.userRole || '').trim().toUpperCase();
+            if (r === 'ADMIN' || r === 'CENCO_SUPERVISOR') {
+                return ['central', 'procedimientos', 'cctv', 'turnos', 'vehiculos', 'incivilidades', 'inteligencia', 'seguridad', 'reportes'];
+            }
+            if (r === 'CENCO_CCTV') {
+                return ['central', 'cctv', 'procedimientos', 'turnos', 'inteligencia'];
+            }
+            if (r === 'CENCO_TELEFONISTA' || r === 'CENCO_DESPACHADOR') {
+                return ['central', 'procedimientos', 'turnos', 'inteligencia'];
+            }
+            return ['central', 'procedimientos', 'turnos', 'inteligencia'];
+        }
+
+        function applyCencoRolePrivileges() {
+            const role = String(AppState.userRole || '').trim().toUpperCase();
+            const isAdmin = role === 'ADMIN';
+            const isSuper = role === 'ADMIN' || role === 'CENCO_SUPERVISOR';
+            const isCctvOnlyMap = role === 'CENCO_CCTV';
+            const allowed = getAllowedCencoModulesForRole(role);
+
+            // Mostrar solo los módulos permitidos en la barra superior
+            const allMods = ['central', 'procedimientos', 'cctv', 'turnos', 'vehiculos', 'incivilidades', 'inteligencia', 'seguridad', 'reportes'];
+            allMods.forEach(m => {
+                const btn = document.getElementById(`cad-nav-${m}`);
+                if (btn) btn.classList.toggle('hidden', !allowed.includes(m));
+            });
+
+            // Para Operador CCTV: en "Central" mostrar SOLO EL MAPA (ocultar panel lateral izquierdo)
+            const leftSidebar = document.getElementById('cad-central-left-sidebar');
+            if (leftSidebar) {
+                leftSidebar.classList.toggle('hidden', isCctvOnlyMap);
+            }
+
+            // Ningún operador (Callcenter, CCTV, Despachador) tiene privilegios de Administrador ni configuración
+            const backAdminBtn = document.getElementById('cad-btn-back-admin');
+            if (backAdminBtn) {
+                backAdminBtn.classList.toggle('hidden', !isAdmin);
+                backAdminBtn.classList.toggle('inline-flex', isAdmin);
+            }
+            const tgBtn = document.getElementById('cad-btn-telegram-config');
+            if (tgBtn) {
+                tgBtn.classList.toggle('hidden', !isSuper);
+            }
+        }
+
         // --- Inicialización Estación de Trabajo CAD ---
         function initCencoView() {
             if (!CencoState.initialized) {
@@ -8299,13 +8350,7 @@
             }
             onCencoQuadrantChange('tel');
             updateCencoShiftHeaderUI();
-
-            // Mostrar botón Admin solo para rol ADMIN
-            const backAdminBtn = document.getElementById('cad-btn-back-admin');
-            if (backAdminBtn) {
-                backAdminBtn.classList.toggle('hidden', AppState.userRole !== 'ADMIN');
-                backAdminBtn.classList.toggle('inline-flex', AppState.userRole === 'ADMIN');
-            }
+            applyCencoRolePrivileges();
 
             // Preseleccionar rol/rango en inicio de turno
             const startRolEl = document.getElementById('cenco-start-rol');
@@ -8316,16 +8361,22 @@
                 startRangoEl.value = (h >= 7 && h < 15) ? 'MANANA' : ((h >= 15 && h < 23) ? 'TARDE' : 'NOCHE');
             }
 
-            // Abrir módulo adecuado según rol
-            const effRole = (getActiveCencoShift()?.rolCenco) || AppState.userRole;
+            // Abrir módulo adecuado según rol (respetando privilegios estrictos)
+            const effRole = String(AppState.userRole || '').toUpperCase();
             if (effRole === 'CENCO_CCTV') {
                 switchCencoModule('cctv');
             } else if (effRole === 'CENCO_DESPACHADOR') {
                 switchCencoModule('central');
                 switchCentralMainTab('procedimientos');
                 switchCentralProcSubtab('abiertos');
+            } else if (effRole === 'CENCO_TELEFONISTA') {
+                switchCencoModule('central');
+                switchCentralMainTab('procedimientos');
+                switchCentralProcSubtab('crear');
             } else {
-                switchCencoModule(CencoState.activeModule || 'central');
+                const allowed = getAllowedCencoModulesForRole(effRole);
+                const defMod = allowed.includes(CencoState.activeModule) ? CencoState.activeModule : 'central';
+                switchCencoModule(defMod);
             }
 
             // Fechas por defecto en Reportes
@@ -8343,6 +8394,7 @@
         function startCencoTimers() {
             if (CencoState.clockTimer) clearInterval(CencoState.clockTimer);
             const tick = () => {
+                if (document.hidden) return;
                 const ts = document.getElementById('cad-live-timestamp');
                 if (ts) {
                     const d = new Date();
@@ -8355,19 +8407,23 @@
             tick();
             CencoState.clockTimer = setInterval(tick, 1000);
 
+            // Polling optimizado para hasta 100 usuarios concurrentes (pausa en segundo plano + jitter escalonado)
+            const syncJitterMs = 40000 + Math.floor(Math.random() * 15000); // 40–55s
+            const gpsJitterMs = 18000 + Math.floor(Math.random() * 6000);   // 18–24s
+
             if (CencoState.pollTimer) clearInterval(CencoState.pollTimer);
             fetchLiveGpsFromCloud();
             CencoState.pollTimer = setInterval(() => {
-                if (document.getElementById('view-cenco')?.classList.contains('active')) {
+                if (!document.hidden && document.getElementById('view-cenco')?.classList.contains('active')) {
                     syncBootstrapFromCloud(false);
                 }
-            }, 20000);
+            }, syncJitterMs);
             if (CencoState.gpsPollTimer) clearInterval(CencoState.gpsPollTimer);
             CencoState.gpsPollTimer = setInterval(() => {
-                if (document.getElementById('view-cenco')?.classList.contains('active')) {
+                if (!document.hidden && document.getElementById('view-cenco')?.classList.contains('active')) {
                     fetchLiveGpsFromCloud();
                 }
-            }, 10000);
+            }, gpsJitterMs);
         }
 
         function toggleCencoTheme() {
@@ -8387,7 +8443,12 @@
         }
 
         function switchCencoModule(modName) {
+            const allowed = getAllowedCencoModulesForRole(AppState.userRole);
+            if (!allowed.includes(modName)) {
+                modName = allowed[0] || 'central';
+            }
             CencoState.activeModule = modName;
+            applyCencoRolePrivileges();
             document.querySelectorAll('.cad-module').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(`cad-mod-${modName}`);
             if (target) target.classList.remove('hidden');
