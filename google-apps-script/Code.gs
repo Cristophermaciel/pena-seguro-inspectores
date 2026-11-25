@@ -40,8 +40,9 @@ const SHEETS = {
   STAFF_FUNCIONARIOS: "Staff_Funcionarios",
   // --- Directorio Oficial de Correos Destinatarios (v40) ---
   CORREOS_DESTINATARIOS: "Correos_Destinatarios",
-  // --- Portal Vecinal SOSAFE Peñaflor (v49) ---
-  SOSAFE_VECINOS: "SOSAFE_Vecinos_Reportes"
+  // --- Portal Vecinal SOSAFE Peñaflor (v49/v51) ---
+  SOSAFE_VECINOS: "SOSAFE_Vecinos_Reportes",
+  SOSAFE_ACCESOS: "SOSAFE_Accesos_Vecinos"
 };
 
 /**
@@ -220,6 +221,14 @@ function inicializarHojas() {
         "Descripción Vecino", "Fotos Evidencia Vecino (Drive)", "Estado",
         "Fecha/Hora Resolución", "Respuesta Oficial CENCO",
         "Foto Respaldo Solución (Drive)", "Folio CAD Vinculado / Atendido Por"
+      ]
+    },
+    {
+      name: SHEETS.SOSAFE_ACCESOS,
+      headers: [
+        "ID Acceso", "Fecha/Hora Ingreso", "RUT Vecino", "Nombre Vecino",
+        "Teléfono", "Correo", "Método Verificación",
+        "Foto Carnet (Drive - Privado)", "Dispositivo / Navegador"
       ]
     }
   ];
@@ -1100,6 +1109,29 @@ function apiGetBootstrapData(forceRefresh) {
     });
   }
 
+  const shSosAcc = ss.getSheetByName(SHEETS.SOSAFE_ACCESOS);
+  const sosafeAccessLogs = [];
+  if (shSosAcc && shSosAcc.getLastRow() > 1) {
+    const countA = Math.min(200, shSosAcc.getLastRow() - 1);
+    const startA = shSosAcc.getLastRow() - countA + 1;
+    const rowsA = shSosAcc.getRange(startA, 1, countA, 9).getValues();
+    rowsA.reverse().forEach(r => {
+      if (String(r[0]).trim()) {
+        sosafeAccessLogs.push({
+          id: String(r[0]).trim(),
+          fecha: String(r[1]).trim(),
+          rut: String(r[2]).trim(),
+          nombre: String(r[3]).trim(),
+          telefono: String(r[4]).trim(),
+          correo: String(r[5]).trim(),
+          metodo: String(r[6]).trim(),
+          fotoCarnet: String(r[7]).trim(),
+          dispositivo: String(r[8]).trim()
+        });
+      }
+    });
+  }
+
   const bootstrapPayload = {
     ok: true,
     date: todayStr,
@@ -1111,6 +1143,7 @@ function apiGetBootstrapData(forceRefresh) {
     staffDirectory: staffDirectory,
     emailDirectory: emailDirectory,
     sosafeReports: sosafeReports,
+    sosafeAccessLogs: sosafeAccessLogs,
     tasksCatalog: tasksCatalog,
     fleet: fleet,
     completedTaskIds: completedTaskIds,
@@ -1480,6 +1513,35 @@ function apiHandleAction(payload) {
       return { ok: true, action: action, folioId: folioId, recipients: recipients, sentFrom: sentFrom, usedBridge: usedBridge };
     }
 
+    if (action === "SOSAFE_REGISTRAR_ACCESO") {
+      let shAcc = ss.getSheetByName(SHEETS.SOSAFE_ACCESOS);
+      if (!shAcc) {
+        inicializarHojas();
+        shAcc = ss.getSheetByName(SHEETS.SOSAFE_ACCESOS);
+      }
+      const accId = "ACC-" + String(Date.now()).slice(-6);
+      const rutClean = String(payload.rut || "").trim();
+      const nombreVec = String(payload.nombre || "").trim();
+      let carnetUrl = String(payload.fotoCarnetUrl || "").trim();
+      if (!carnetUrl && payload.fotoCarnetBase64 && String(payload.fotoCarnetBase64).indexOf("data:image/") === 0) {
+        carnetUrl = guardarFotoEnDrive(payload.fotoCarnetBase64, "CARNET_ACCESO_" + accId + ".jpg");
+      }
+      if (shAcc) {
+        shAcc.appendRow([
+          accId,
+          nowFormatted,
+          rutClean,
+          nombreVec,
+          String(payload.telefono || "").trim(),
+          String(payload.correo || "").trim().toLowerCase(),
+          String(payload.metodo || "Verificación Carnet").trim(),
+          carnetUrl || "Sin foto",
+          String(payload.dispositivo || "Web").slice(0, 120)
+        ]);
+      }
+      return { ok: true, action: action, id: accId, fecha: nowFormatted, carnetUrl: carnetUrl };
+    }
+
     if (action === "SOSAFE_CREAR_REPORTE") {
       let shSos = ss.getSheetByName(SHEETS.SOSAFE_VECINOS);
       if (!shSos) {
@@ -1489,15 +1551,18 @@ function apiHandleAction(payload) {
       const rutClean = String(payload.rut || "").trim();
       const nombreVec = String(payload.nombre || "").trim();
       const carnetB64 = String(payload.fotoCarnetBase64 || "").trim();
+      const carnetExistingUrl = String(payload.fotoCarnetUrl || "").trim();
       if (!rutClean || !nombreVec) {
         return { ok: false, error: "RUT y Nombre Completo son obligatorios." };
       }
-      if (!carnetB64 || carnetB64.indexOf("data:image/") !== 0) {
+      if (!carnetExistingUrl && (!carnetB64 || carnetB64.indexOf("data:image/") !== 0)) {
         return { ok: false, error: "La fotografía de la Cédula de Identidad es obligatoria para verificar tu identidad." };
       }
 
       const repId = String(payload.id || ("SOS-" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd") + "-" + String(Date.now()).slice(-4))).trim();
-      const carnetUrl = guardarFotoEnDrive(carnetB64, "CARNET_PRIVADO_" + repId + ".jpg");
+      const carnetUrl = carnetExistingUrl && carnetExistingUrl.indexOf("http") === 0
+        ? carnetExistingUrl
+        : guardarFotoEnDrive(carnetB64, "CARNET_PRIVADO_" + repId + ".jpg");
 
       const fotosUrls = [];
       if (Array.isArray(payload.fotosBase64)) {
