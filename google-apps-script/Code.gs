@@ -39,7 +39,9 @@ const SHEETS = {
   // --- Directorio Oficial de Funcionarios (v34) ---
   STAFF_FUNCIONARIOS: "Staff_Funcionarios",
   // --- Directorio Oficial de Correos Destinatarios (v40) ---
-  CORREOS_DESTINATARIOS: "Correos_Destinatarios"
+  CORREOS_DESTINATARIOS: "Correos_Destinatarios",
+  // --- Portal Vecinal SOSAFE Peñaflor (v49) ---
+  SOSAFE_VECINOS: "SOSAFE_Vecinos_Reportes"
 };
 
 /**
@@ -207,6 +209,17 @@ function inicializarHojas() {
       name: SHEETS.CORREOS_DESTINATARIOS,
       headers: [
         "ID", "Nombre / Área", "Cargo / Institución", "Correo Electrónico", "Estado"
+      ]
+    },
+    {
+      name: SHEETS.SOSAFE_VECINOS,
+      headers: [
+        "ID Reporte", "Fecha/Hora Ingreso", "RUT Vecino", "Nombre Vecino",
+        "Teléfono Vecino", "Correo Vecino", "Foto Carnet Identidad (Drive - Privado)",
+        "Categoría Incivilidad", "Cuadrante", "Dirección", "GPS (Lat, Lon)",
+        "Descripción Vecino", "Fotos Evidencia Vecino (Drive)", "Estado",
+        "Fecha/Hora Resolución", "Respuesta Oficial CENCO",
+        "Foto Respaldo Solución (Drive)", "Folio CAD Vinculado / Atendido Por"
       ]
     }
   ];
@@ -436,6 +449,11 @@ function doGet(e) {
 
     if (action === "gpsLive") {
       return respuestaJSON(apiGetGpsLive());
+    }
+
+    if (action === "sosafePublic") {
+      const rutParam = (e && e.parameter && e.parameter.rut) ? String(e.parameter.rut) : "";
+      return respuestaJSON(apiGetSosafePublicData(rutParam));
     }
 
     return respuestaJSON({ ok: true, service: "Peña Seguro 1410 API" });
@@ -1050,6 +1068,38 @@ function apiGetBootstrapData(forceRefresh) {
     });
   }
 
+  const shSosafe = ss.getSheetByName(SHEETS.SOSAFE_VECINOS);
+  const sosafeReports = [];
+  if (shSosafe && shSosafe.getLastRow() > 1) {
+    const rows = shSosafe.getRange(2, 1, shSosafe.getLastRow() - 1, 18).getValues();
+    rows.reverse().forEach(r => {
+      if (String(r[0]).trim()) {
+        sosafeReports.push({
+          id: String(r[0]).trim(),
+          fecha: String(r[1]).trim(),
+          rut: String(r[2]).trim(),
+          nombre: String(r[3]).trim(),
+          telefono: String(r[4]).trim(),
+          correo: String(r[5]).trim(),
+          fotoCarnet: String(r[6]).trim(),
+          categoria: String(r[7]).trim() || "Incivilidad",
+          cuadrante: String(r[8]).trim() || "252A",
+          direccion: String(r[9]).trim(),
+          gps: String(r[10]).trim(),
+          descripcion: String(r[11]).trim(),
+          fotosVecino: String(r[12]).trim() && String(r[12]).trim() !== "Sin foto"
+            ? String(r[12]).trim().split(/\s*\|\s*/).filter(Boolean)
+            : [],
+          estado: String(r[13]).trim().toUpperCase() || "RECIBIDO",
+          fechaResolucion: String(r[14]).trim(),
+          respuestaOficial: String(r[15]).trim(),
+          fotoSolucion: String(r[16]).trim(),
+          folioVinculado: String(r[17]).trim()
+        });
+      }
+    });
+  }
+
   const bootstrapPayload = {
     ok: true,
     date: todayStr,
@@ -1060,6 +1110,7 @@ function apiGetBootstrapData(forceRefresh) {
     users: users,
     staffDirectory: staffDirectory,
     emailDirectory: emailDirectory,
+    sosafeReports: sosafeReports,
     tasksCatalog: tasksCatalog,
     fleet: fleet,
     completedTaskIds: completedTaskIds,
@@ -1427,6 +1478,168 @@ function apiHandleAction(payload) {
       }
 
       return { ok: true, action: action, folioId: folioId, recipients: recipients, sentFrom: sentFrom, usedBridge: usedBridge };
+    }
+
+    if (action === "SOSAFE_CREAR_REPORTE") {
+      let shSos = ss.getSheetByName(SHEETS.SOSAFE_VECINOS);
+      if (!shSos) {
+        inicializarHojas();
+        shSos = ss.getSheetByName(SHEETS.SOSAFE_VECINOS);
+      }
+      const rutClean = String(payload.rut || "").trim();
+      const nombreVec = String(payload.nombre || "").trim();
+      const carnetB64 = String(payload.fotoCarnetBase64 || "").trim();
+      if (!rutClean || !nombreVec) {
+        return { ok: false, error: "RUT y Nombre Completo son obligatorios." };
+      }
+      if (!carnetB64 || carnetB64.indexOf("data:image/") !== 0) {
+        return { ok: false, error: "La fotografía de la Cédula de Identidad es obligatoria para verificar tu identidad." };
+      }
+
+      const repId = String(payload.id || ("SOS-" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd") + "-" + String(Date.now()).slice(-4))).trim();
+      const carnetUrl = guardarFotoEnDrive(carnetB64, "CARNET_PRIVADO_" + repId + ".jpg");
+
+      const fotosUrls = [];
+      if (Array.isArray(payload.fotosBase64)) {
+        payload.fotosBase64.slice(0, 3).forEach((b64, idx) => {
+          if (b64 && String(b64).indexOf("data:image/") === 0) {
+            fotosUrls.push(guardarFotoEnDrive(b64, repId + "_Evidencia_" + (idx + 1) + ".jpg"));
+          }
+        });
+      }
+      const fotosStr = fotosUrls.length > 0 ? fotosUrls.join(" | ") : "Sin foto";
+      const categoria = String(payload.categoria || "Incivilidad").trim();
+      const cuadrante = String(payload.cuadrante || "252A").trim().toUpperCase();
+      const direccion = String(payload.direccion || "").trim();
+      const gps = String(payload.gps || "").trim();
+      const descripcion = String(payload.descripcion || "").trim();
+
+      shSos.appendRow([
+        repId,
+        nowFormatted,
+        rutClean,
+        nombreVec,
+        String(payload.telefono || "").trim(),
+        String(payload.correo || "").trim().toLowerCase(),
+        carnetUrl,
+        categoria,
+        cuadrante,
+        direccion,
+        gps,
+        descripcion,
+        fotosStr,
+        "RECIBIDO",
+        "",
+        "",
+        "",
+        ""
+      ]);
+
+      // Notificación automática a Telegram CENCO 1410 (sin exponer la foto del carnet en el grupo)
+      enviarRespaldoTelegram({
+        titulo: "NUEVO REPORTE VECINAL — SOSAFE PEÑAFLOR",
+        folio: repId,
+        fecha: nowFormatted,
+        tipo: categoria,
+        cuadrante: cuadrante,
+        lugar: direccion || gps || "Peñaflor",
+        movil: "Pendiente revisión CENCO",
+        responsable: nombreVec + " (Identidad verificada con Carnet)",
+        detalle: descripcion || "-",
+        urlFotoDrive: fotosUrls[0] || "",
+        imagenesBase64: Array.isArray(payload.fotosBase64) ? payload.fotosBase64.slice(0, 3) : []
+      });
+
+      return {
+        ok: true,
+        action: action,
+        id: repId,
+        fecha: nowFormatted,
+        fotosVecino: fotosUrls
+      };
+    }
+
+    if (action === "SOSAFE_ACTUALIZAR_ESTADO") {
+      const shSos = ss.getSheetByName(SHEETS.SOSAFE_VECINOS);
+      const repId = String(payload.id || "").trim();
+      if (!shSos || !repId || shSos.getLastRow() <= 1) {
+        return { ok: false, error: "Reporte SOSAFE no encontrado" };
+      }
+      const ids = shSos.getRange(2, 1, shSos.getLastRow() - 1, 1).getValues();
+      let rowIndex = -1;
+      for (let i = ids.length - 1; i >= 0; i--) {
+        if (String(ids[i][0]).trim() === repId) { rowIndex = i + 2; break; }
+      }
+      if (rowIndex < 0) return { ok: false, error: "Reporte SOSAFE no encontrado: " + repId };
+
+      const curRow = shSos.getRange(rowIndex, 1, 1, 18).getValues()[0];
+      const newEstado = String(payload.estado || curRow[13] || "EN_PROCESO").trim().toUpperCase();
+      const respuesta = payload.respuestaOficial !== undefined ? String(payload.respuestaOficial).trim() : String(curRow[15] || "");
+      const atendidoPor = String(payload.atendidoPor || "CENCO 1410").trim();
+      let fotoSolUrl = String(curRow[16] || "").trim();
+      if (payload.fotoSolucionBase64 && String(payload.fotoSolucionBase64).indexOf("data:image/") === 0) {
+        fotoSolUrl = guardarFotoEnDrive(payload.fotoSolucionBase64, repId + "_Solucion_" + Date.now() + ".jpg");
+      }
+      const fechaRes = (newEstado === "RESUELTO" || newEstado === "RECHAZADO") ? (curRow[14] || nowFormatted) : String(curRow[14] || "");
+      let folioVinc = String(curRow[17] || "").trim();
+
+      // Si el operador pidió derivar a móvil en terreno, crear Folio CAD en CENCO_Bitacora_CAD
+      if (payload.derivarACad && folioVinc.indexOf("CAD-") === -1) {
+        const shBit = ss.getSheetByName(SHEETS.CENCO_BITACORA);
+        if (shBit) {
+          const cadFolio = "CAD-SOS-" + String(Date.now()).slice(-5);
+          const turnoId = obtenerTurnoCencoActivoId(ss, payload.turnoCencoId);
+          shBit.appendRow([
+            cadFolio,
+            nowFormatted,
+            "SOSAFE PEÑAFLOR",
+            "PENDIENTE_DESPACHO",
+            "MEDIA",
+            "Incivilidad Vecinal (SOSAFE)",
+            String(curRow[7] || "Incivilidad"),
+            String(curRow[8] || "252A"),
+            String(curRow[9] || "") + (curRow[10] ? (" (" + curRow[10] + ")") : ""),
+            "",
+            String(curRow[3] || "Vecino Verificado"),
+            String(curRow[4] || ""),
+            "[Reporte " + repId + "] " + String(curRow[11] || ""),
+            atendidoPor,
+            atendidoPor,
+            "",
+            "",
+            "",
+            "",
+            respuesta,
+            String(curRow[12] || "Sin foto"),
+            turnoId,
+            repId,
+            JSON.stringify([{ fecha: nowFormatted, rol: "SOSAFE", usuario: atendidoPor, accion: "Derivado desde Portal Vecinal SOSAFE Peñaflor (" + repId + ")" }])
+          ]);
+          folioVinc = cadFolio + " (" + atendidoPor + ")";
+        }
+      } else if (!folioVinc) {
+        folioVinc = atendidoPor;
+      }
+
+      shSos.getRange(rowIndex, 14, 1, 5).setValues([[newEstado, fechaRes, respuesta, fotoSolUrl, folioVinc]]);
+
+      if (newEstado === "RESUELTO") {
+        enviarRespaldoTelegram({
+          titulo: "REPORTE SOSAFE RESUELTO",
+          folio: repId,
+          fecha: fechaRes,
+          tipo: String(curRow[7] || "Incivilidad"),
+          cuadrante: String(curRow[8] || "-"),
+          lugar: String(curRow[9] || "-"),
+          movil: folioVinc || "CENCO 1410",
+          responsable: atendidoPor,
+          detalle: "✅ RESUELTO PARA VECINO:\n" + (respuesta || "Problema solucionado en terreno."),
+          urlFotoDrive: fotoSolUrl || "",
+          imagenesBase64: payload.fotoSolucionBase64 ? [payload.fotoSolucionBase64] : []
+        });
+      }
+
+      return { ok: true, action: action, id: repId, estado: newEstado, fotoSolucion: fotoSolUrl, folioVinculado: folioVinc };
     }
 
     if (action === "ADMIN_SAVE_TASK") {
@@ -3359,4 +3572,55 @@ function hasActiveCloudGeofenceAuth(movil, nowMs) {
     }
   }
   return false;
+}
+
+/**
+ * Endpoint público anonimizado para el Portal Vecinal SOSAFE Peñaflor (vecinos.html).
+ * NUNCA expone RUT, nombre, teléfono, correo ni fotografía de carnet al mapa público.
+ */
+function apiGetSosafePublicData(rutFilter) {
+  ensureSheetsInitializedFast();
+  const ss = obtenerSpreadsheet();
+  const shSos = ss.getSheetByName(SHEETS.SOSAFE_VECINOS);
+  const normRut = (r) => String(r || "").replace(/[^0-9kK]/g, "").toUpperCase();
+  const targetRut = normRut(rutFilter);
+
+  const publicReports = [];
+  const myReports = [];
+
+  if (shSos && shSos.getLastRow() > 1) {
+    const rows = shSos.getRange(2, 1, shSos.getLastRow() - 1, 18).getValues();
+    rows.reverse().forEach(r => {
+      const id = String(r[0] || "").trim();
+      if (!id) return;
+      const item = {
+        id: id,
+        fecha: String(r[1] || "").trim(),
+        categoria: String(r[7] || "Incivilidad").trim(),
+        cuadrante: String(r[8] || "252A").trim(),
+        direccion: String(r[9] || "").trim(),
+        gps: String(r[10] || "").trim(),
+        descripcion: String(r[11] || "").trim(),
+        fotosVecino: String(r[12] || "").trim() && String(r[12] || "").trim() !== "Sin foto"
+          ? String(r[12]).trim().split(/\s*\|\s*/).filter(Boolean)
+          : [],
+        estado: String(r[13] || "RECIBIDO").trim().toUpperCase(),
+        fechaResolucion: String(r[14] || "").trim(),
+        respuestaOficial: String(r[15] || "").trim(),
+        fotoSolucion: String(r[16] || "").trim()
+      };
+      if (item.estado !== "RECHAZADO") {
+        publicReports.push(item);
+      }
+      if (targetRut && normRut(r[2]) === targetRut) {
+        myReports.push(item);
+      }
+    });
+  }
+
+  return {
+    ok: true,
+    reports: publicReports,
+    myReports: myReports
+  };
 }
