@@ -8237,22 +8237,36 @@
             else localStorage.setItem(STORAGE_KEYS.CENCO_ACTIVE_SHIFT, JSON.stringify(shiftObj));
         }
 
+        function isClosedOrArchivedIncident(inc) {
+            const est = String(inc?.estado || '').trim().toUpperCase();
+            return ['FINALIZADO', 'CANCELADO', 'DESCARTADA', 'AUTORIZADO'].includes(est);
+        }
+
         function mergeCencoIncidentsFromCloud(cloudList) {
+            // Regla de alineación entre usuarios: Google Sheets es la fuente única de verdad.
+            // Elimina procedimientos fantasma/borrados localmente; solo conserva creaciones en vuelo (< 60s) que no sean geocercas.
+            const nowMs = Date.now();
             const local = getCencoIncidentsDB();
             const map = new Map();
-            cloudList.forEach(item => { if (item && item.folioId) map.set(item.folioId, item); });
+            (cloudList || []).forEach(item => { if (item && item.folioId) map.set(item.folioId, item); });
             local.forEach(item => {
-                if (item && item.folioId && !map.has(item.folioId)) map.set(item.folioId, item);
+                if (!item || !item.folioId || map.has(item.folioId)) return;
+                const isInFlight = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
+                const isGeo = String(item.folioId).toUpperCase().startsWith('CAD-GPS-') || String(item.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA';
+                if (isInFlight && !isGeo) map.set(item.folioId, item);
             });
             saveCencoIncidentsDB(Array.from(map.values()));
         }
 
         function mergeCencoCctvAlertsFromCloud(cloudList) {
+            const nowMs = Date.now();
             const local = getCencoCctvAlertsDB();
             const map = new Map();
-            cloudList.forEach(item => { if (item && item.alertaId) map.set(item.alertaId, item); });
+            (cloudList || []).forEach(item => { if (item && item.alertaId) map.set(item.alertaId, item); });
             local.forEach(item => {
-                if (item && item.alertaId && !map.has(item.alertaId)) map.set(item.alertaId, item);
+                if (!item || !item.alertaId || map.has(item.alertaId)) return;
+                const isInFlight = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
+                if (isInFlight) map.set(item.alertaId, item);
             });
             saveCencoCctvAlertsDB(Array.from(map.values()));
         }
@@ -9730,9 +9744,9 @@
                 });
             }
 
-            // 3. Incidentes Abiertos (Pines escudo estilo Governa)
+            // 3. Incidentes Abiertos (Pines escudo estilo Governa — excluye cerrados/archivados; mantiene abiertos entre turnos)
             if (CencoState.mapVisibility.incidents) {
-                const openInc = getCencoIncidentsDB().filter(i => !['FINALIZADO', 'CANCELADO', 'DESCARTADA'].includes(i.estado));
+                const openInc = getCencoIncidentsDB().filter(i => !isClosedOrArchivedIncident(i));
                 queueBackgroundGeocodeForIncidents(openInc);
                 openInc.forEach((inc, idx) => {
                     const coords = parseGpsOrQuadrantCoords(inc.direccion, inc.cuadrante, idx + 7);
@@ -10044,7 +10058,7 @@
             const prioRank = { 'CRITICA': 1, 'ALTA': 2, 'MEDIA': 3, 'BAJA': 4 };
 
             const open = getCencoIncidentsDB()
-                .filter(i => !['FINALIZADO', 'CANCELADO', 'DESCARTADA'].includes(i.estado))
+                .filter(i => !isClosedOrArchivedIncident(i))
                 .filter(i => fEst === 'ALL' || i.estado === fEst)
                 .filter(i => !q || normalizeSearchText(`${i.folioId} ${i.direccion} ${i.cuadrante} ${i.categoria} ${i.movilesAsignados} ${i.detalle}`).includes(q))
                 .sort((a, b) => (prioRank[a.prioridad] || 3) - (prioRank[b.prioridad] || 3));
@@ -11366,6 +11380,7 @@
 
                 const res = await sendPayloadToGoogleSheets(payload);
                 const savedInc = Object.assign({}, payload, {
+                    _localCreatedMs: Date.now(),
                     imagenes: (res && Array.isArray(res.imagenes) && res.imagenes.length > 0) ? res.imagenes : imgsB64
                 });
                 const list = getCencoIncidentsDB();
@@ -11635,21 +11650,15 @@
                         puesto: 'Central Peña Seguro 1410', rangoHorario: AppState.rangoHorario || 'MANANA', novedadesInicio: ''
                     };
 
-                    // 1. Finalizar localmente TODOS los procedimientos de Geocerca GPS abiertos para limpiar mapa y bitácora
-                    const incidents = getCencoIncidentsDB();
+                    // 1. Eliminar del registro TODAS las salidas de geocerca GPS al cerrar turno (manteniendo abiertos los procedimientos reales para el turno entrante)
+                    const allIncidents = getCencoIncidentsDB();
                     let closedGeoLocal = 0;
-                    incidents.forEach(inc => {
-                        const isGeo = String(inc.folioId || '').startsWith('CAD-GPS-') ||
+                    const incidents = allIncidents.filter(inc => {
+                        const isGeo = String(inc.folioId || '').toUpperCase().startsWith('CAD-GPS-') ||
                             String(inc.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA' ||
                             String(inc.categoria || '').toUpperCase().includes('GEOCERCA');
-                        if (isGeo && !['FINALIZADO', 'CANCELADO', 'DESCARTADA'].includes(String(inc.estado || '').toUpperCase())) {
-                            inc.estado = 'FINALIZADO';
-                            inc.horaCierre = fechaCierreStr;
-                            inc.resolucion = inc.resolucion
-                                ? `${inc.resolucion} | Finalizado al Cierre de Turno CENCO`
-                                : `Finalizado automáticamente al Cierre de Turno CENCO (${activeShift.turnoCencoId})`;
-                            closedGeoLocal++;
-                        }
+                        if (isGeo) { closedGeoLocal++; return false; }
+                        return true;
                     });
                     if (closedGeoLocal > 0) saveCencoIncidentsDB(incidents);
 
