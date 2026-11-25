@@ -1100,7 +1100,7 @@
                 <div id="admin-maintenance-alert-banner" class="hidden mb-4 rounded-2xl border-2 p-4 shadow-sm"></div>
 
                 <!-- Admin Navigation Tabs -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2 mb-4">
                     <button type="button" onclick="switchAdminTab('users')" id="admin-tab-btn-users" class="admin-tab-btn bg-[#1e3a8a] text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-users-gear text-yellow-400"></i> Usuarios
                     </button>
@@ -1123,6 +1123,10 @@
                     <button type="button" onclick="switchAdminTab('alerts')" id="admin-tab-btn-alerts" class="admin-tab-btn relative bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-bell text-red-600"></i> Alertas Flota
                         <span id="admin-alerts-tab-badge" class="hidden ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white">0</span>
+                    </button>
+                    <button type="button" onclick="switchAdminTab('sosafe')" id="admin-tab-btn-sosafe" class="admin-tab-btn relative bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-people-roof text-amber-600"></i> SOSAFE
+                        <span id="admin-sosafe-tab-badge" class="hidden ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">0</span>
                     </button>
                     <button type="button" onclick="switchAdminTab('monitor')" id="admin-tab-btn-monitor" class="admin-tab-btn bg-white text-slate-700 border border-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-chart-line text-emerald-600"></i> Monitor
@@ -1607,6 +1611,67 @@
                             </div>
                         </div>
                         <div id="admin-monitor-list" class="space-y-2 max-h-[380px] overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: AUDITORÍA SOSAFE PEÑAFLOR (ACCESOS CIUDADANOS Y REPORTES) -->
+                <div id="admin-panel-sosafe" class="admin-panel-section hidden space-y-4">
+                    <div class="bg-gradient-to-r from-[#0a2463] to-blue-900 text-white rounded-2xl p-4 shadow flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm font-black flex items-center gap-2">
+                                <i class="fa-solid fa-people-roof text-amber-400"></i> Auditoría SOSAFE Peñaflor — Accesos Vecinales e Ingresos
+                            </h3>
+                            <p class="text-[11px] text-blue-100 mt-0.5">Control exclusivo de Administración: visualiza quién se conectó al portal ciudadano, su validación de Carnet y todos los reportes ingresados.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" onclick="copySosafePortalLink()" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-100 hover:text-white border border-emerald-400/40 text-xs font-bold">
+                                <i class="fa-solid fa-link mr-1"></i> Copiar Link Vecinos
+                            </button>
+                            <button type="button" onclick="openCencoFromAdminSosafe()" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black">
+                                <i class="fa-solid fa-map-location-dot mr-1"></i> Abrir Mapa & Gestión CENCO
+                            </button>
+                            <button type="button" onclick="syncBootstrapFromCloud(true)" class="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold">
+                                <i class="fa-solid fa-rotate mr-1"></i> Actualizar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="admin-sosafe-kpis" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                        <!-- Columna Izquierda: Vecinos Conectados (Accesos) -->
+                        <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                <div>
+                                    <h4 class="text-sm font-extrabold text-[#1e3a8a] flex items-center gap-1.5">
+                                        <i class="fa-solid fa-user-shield text-emerald-600"></i> Vecinos Conectados (Registro de Accesos)
+                                    </h4>
+                                    <p class="text-[11px] text-slate-500">Cada inicio de sesión verificado con Carnet queda auditado aquí.</p>
+                                </div>
+                                <input type="text" id="admin-sosafe-access-search" oninput="renderAdminSosafePanel()" placeholder="Buscar RUT, nombre o teléfono..." class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-slate-50 outline-none focus:border-blue-600 w-full sm:w-52">
+                            </div>
+                            <div id="admin-sosafe-access-list" class="space-y-2 max-h-[440px] overflow-y-auto pr-1"></div>
+                        </div>
+
+                        <!-- Columna Derecha: Reportes Ciudadanos Ingresados -->
+                        <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                <div>
+                                    <h4 class="text-sm font-extrabold text-[#1e3a8a] flex items-center gap-1.5">
+                                        <i class="fa-solid fa-bullhorn text-amber-500"></i> Ingresos / Reportes SOSAFE Peñaflor
+                                    </h4>
+                                    <p class="text-[11px] text-slate-500">Reportes recibidos con evidencia y estado de resolución.</p>
+                                </div>
+                                <select id="admin-sosafe-report-filter" onchange="renderAdminSosafePanel()" class="text-xs px-2.5 py-1.5 rounded-xl border border-slate-300 bg-slate-50 font-bold text-slate-700">
+                                    <option value="ALL">Todos</option>
+                                    <option value="RECIBIDO">🟡 Recibidos</option>
+                                    <option value="EN_PROCESO">🔵 En Proceso</option>
+                                    <option value="RESUELTO">🟢 Resueltos</option>
+                                    <option value="RECHAZADO">🔴 Rechazados</option>
+                                </select>
+                            </div>
+                            <div id="admin-sosafe-reports-list" class="space-y-2 max-h-[440px] overflow-y-auto pr-1"></div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -2817,6 +2882,18 @@
 
                         <div id="cenco-sosafe-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
 
+                        <div id="cenco-sosafe-admin-access-box" class="hidden cad-surface border border-emerald-500/35 rounded-xl p-3.5 space-y-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-user-shield"></i> Últimos Vecinos Conectados al Portal (Solo Administrador)
+                                </div>
+                                <button type="button" onclick="openAdminSosafeFromCenco()" class="text-[11px] font-bold text-cyan-300 hover:underline">
+                                    Ver auditoría completa en Admin &rarr;
+                                </button>
+                            </div>
+                            <div id="cenco-sosafe-admin-access-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2"></div>
+                        </div>
+
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                             <div class="lg:col-span-6 cad-surface border cad-border rounded-xl overflow-hidden flex flex-col min-h-[460px]">
                                 <div class="px-3.5 py-2 border-b cad-border flex items-center justify-between text-xs">
@@ -3273,7 +3350,8 @@
             CENCO_GEOFENCE_COOLDOWNS: 'pena_seguro_cenco_geofence_cooldowns_v1',
             EMAIL_DIRECTORY: 'pena_seguro_email_directory_v1',
             GEOCODE_CACHE: 'pena_seguro_geocode_cache_v1',
-            SOSAFE_REPORTS: 'pena_seguro_sosafe_reports_v1'
+            SOSAFE_REPORTS: 'pena_seguro_sosafe_reports_v1',
+            SOSAFE_ACCESS_LOGS: 'pena_seguro_sosafe_access_logs_v1'
         };
 
         // --- Central State Object Declaration ---
@@ -3837,6 +3915,16 @@
         }
         function saveSosafeReportsDB(list) {
             localStorage.setItem(STORAGE_KEYS.SOSAFE_REPORTS, JSON.stringify(Array.isArray(list) ? list : []));
+        }
+
+        function getSosafeAccessLogsDB() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.SOSAFE_ACCESS_LOGS));
+                return Array.isArray(stored) ? stored : [];
+            } catch (e) { return []; }
+        }
+        function saveSosafeAccessLogsDB(list) {
+            localStorage.setItem(STORAGE_KEYS.SOSAFE_ACCESS_LOGS, JSON.stringify(Array.isArray(list) ? list : []));
         }
 
         function resolveStaffNameFromIdentifier(val) {
@@ -4856,7 +4944,7 @@
         // ADMINISTRATOR PANEL FUNCTIONS (USUARIOS, TAREAS, FLOTA, MONITOR)
         // ========================================================================
         function switchAdminTab(tabName) {
-            ['users', 'staff', 'emails', 'tasks', 'fleet', 'maintenance', 'alerts', 'monitor'].forEach(t => {
+            ['users', 'staff', 'emails', 'tasks', 'fleet', 'maintenance', 'alerts', 'sosafe', 'monitor'].forEach(t => {
                 const panel = document.getElementById(`admin-panel-${t}`);
                 const btn = document.getElementById(`admin-tab-btn-${t}`);
                 if (panel) panel.classList.toggle('hidden', t !== tabName);
@@ -4878,6 +4966,7 @@
             renderAdminMaintenanceBanner();
             renderAdminMaintenancePanel();
             renderAdminFleetAlertsPanel();
+            renderAdminSosafePanel();
             renderAdminMonitor();
         }
 
@@ -6842,6 +6931,9 @@
             if (Array.isArray(data.sosafeReports)) {
                 saveSosafeReportsDB(data.sosafeReports);
                 updateSosafeNavBadge();
+            }
+            if (Array.isArray(data.sosafeAccessLogs)) {
+                saveSosafeAccessLogsDB(data.sosafeAccessLogs);
             }
             if (typeof data.mailBridgeConfigured === 'boolean') {
                 AppState.mailBridgeConfigured = data.mailBridgeConfigured;
@@ -13072,11 +13164,142 @@
         let _sosafeSolFotoB64 = '';
 
         function updateSosafeNavBadge() {
-            const badge = document.getElementById('cad-badge-sosafe');
-            if (!badge) return;
             const pending = getSosafeReportsDB().filter(r => String(r.estado || '').toUpperCase() === 'RECIBIDO').length;
-            badge.innerText = pending;
-            badge.classList.toggle('hidden', pending === 0);
+            const badge = document.getElementById('cad-badge-sosafe');
+            if (badge) {
+                badge.innerText = pending;
+                badge.classList.toggle('hidden', pending === 0);
+            }
+            const admBadge = document.getElementById('admin-sosafe-tab-badge');
+            if (admBadge) {
+                admBadge.innerText = pending;
+                admBadge.classList.toggle('hidden', pending === 0);
+            }
+        }
+
+        function openCencoFromAdminSosafe() {
+            showView('view-cenco');
+            if (typeof switchCencoModule === 'function') switchCencoModule('sosafe');
+        }
+
+        function openAdminSosafeFromCenco() {
+            if (String(AppState.userRole || '').toUpperCase() !== 'ADMIN') return;
+            showView('view-admin');
+            if (typeof switchAdminTab === 'function') switchAdminTab('sosafe');
+        }
+
+        function renderAdminSosafePanel() {
+            updateSosafeNavBadge();
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const accessLogs = getSosafeAccessLogsDB();
+            const reports = getSosafeReportsDB();
+            const todayIso = new Date().toISOString().slice(0, 10);
+            const todayCl = new Date().toLocaleDateString('es-CL');
+            const accesosHoy = accessLogs.filter(a => {
+                const f = String(a.fecha || '');
+                return f.includes(todayIso) || f.includes(todayCl);
+            }).length;
+            const uniqueRuts = new Set(accessLogs.map(a => String(a.rut || '').trim()).filter(Boolean)).size;
+            const pendingReps = reports.filter(r => String(r.estado || '').toUpperCase() === 'RECIBIDO').length;
+
+            const kpiEl = document.getElementById('admin-sosafe-kpis');
+            if (kpiEl) {
+                kpiEl.innerHTML = `
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">Accesos Registrados</p>
+                        <p class="text-2xl font-black text-[#1e3a8a] mt-1">${accessLogs.length}</p>
+                        <p class="text-[10px] text-slate-400">${uniqueRuts} vecinos únicos</p>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">Conectados Hoy</p>
+                        <p class="text-2xl font-black text-emerald-600 mt-1">${accesosHoy}</p>
+                        <p class="text-[10px] text-slate-400">Con Carnet validado</p>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">Total Reportes SOSAFE</p>
+                        <p class="text-2xl font-black text-blue-700 mt-1">${reports.length}</p>
+                        <p class="text-[10px] text-slate-400">Incivilidades ingresadas</p>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase">Pendientes (Recibidos)</p>
+                        <p class="text-2xl font-black text-amber-600 mt-1">${pendingReps}</p>
+                        <p class="text-[10px] text-slate-400">Esperando gestión CENCO</p>
+                    </div>
+                `;
+            }
+
+            const q = (document.getElementById('admin-sosafe-access-search')?.value || '').trim().toLowerCase();
+            const filteredAccess = accessLogs.filter(a => {
+                if (!q) return true;
+                const blob = `${a.nombre || ''} ${a.rut || ''} ${a.telefono || ''} ${a.email || ''} ${a.metodo || ''} ${a.fecha || ''}`.toLowerCase();
+                return blob.includes(q);
+            });
+
+            const accEl = document.getElementById('admin-sosafe-access-list');
+            if (accEl) {
+                if (filteredAccess.length === 0) {
+                    accEl.innerHTML = `<div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-xs text-slate-500">No hay accesos de vecinos registrados aún.</div>`;
+                } else {
+                    accEl.innerHTML = filteredAccess.map(a => `
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs space-y-1.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="font-extrabold text-[#1e3a8a] flex items-center gap-1.5">
+                                    <i class="fa-solid fa-user-check text-emerald-600"></i>
+                                    <span>${esc(a.nombre || 'Vecino')}</span>
+                                    <span class="font-mono text-[11px] text-slate-600">(${esc(a.rut)})</span>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold text-slate-500">${esc(a.fecha)}</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
+                                ${a.telefono ? `<span><i class="fa-solid fa-phone text-blue-600 mr-1"></i>${esc(a.telefono)}</span>` : ''}
+                                ${a.email ? `<span><i class="fa-solid fa-envelope text-indigo-600 mr-1"></i>${esc(a.email)}</span>` : ''}
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/80">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">${esc(a.metodo || 'Carnet verificado')}</span>
+                                <div class="flex items-center gap-2">
+                                    ${a.dispositivo ? `<span class="text-[10px] text-slate-400 truncate max-w-[160px]" title="${esc(a.dispositivo)}"><i class="fa-solid fa-mobile-screen mr-0.5"></i>${esc(a.dispositivo)}</span>` : ''}
+                                    ${a.fotoCarnet && String(a.fotoCarnet).startsWith('http') ? `<a href="${esc(a.fotoCarnet)}" target="_blank" class="px-2.5 py-1 rounded-lg bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold text-[10px]"><i class="fa-solid fa-id-card mr-1"></i>Ver Carnet</a>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            const repFilter = document.getElementById('admin-sosafe-report-filter')?.value || 'ALL';
+            const filteredReps = repFilter === 'ALL' ? reports : reports.filter(r => String(r.estado || '').toUpperCase() === repFilter);
+            const badgeLight = (est) => {
+                if (est === 'RESUELTO') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                if (est === 'EN_PROCESO') return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+                if (est === 'RECHAZADO') return 'bg-red-100 text-red-800 border-red-200';
+                return 'bg-amber-100 text-amber-800 border-amber-200';
+            };
+            const repEl = document.getElementById('admin-sosafe-reports-list');
+            if (repEl) {
+                if (filteredReps.length === 0) {
+                    repEl.innerHTML = `<div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-xs text-slate-500">No hay reportes SOSAFE en este filtro.</div>`;
+                } else {
+                    repEl.innerHTML = filteredReps.map(r => `
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs space-y-1.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-mono font-black text-[#1e3a8a]">${esc(r.id)} • ${esc(r.cuadrante || 'Peñaflor')}</span>
+                                <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${badgeLight(r.estado)}">${esc(r.estado)}</span>
+                            </div>
+                            <div class="font-bold text-slate-800">${esc(r.categoria)}</div>
+                            <div class="text-[11px] text-slate-500"><i class="fa-solid fa-location-dot text-blue-600 mr-1"></i>${esc(r.direccion || r.gps || 'Peñaflor')} • ${esc(r.fecha)}</div>
+                            <p class="text-[11px] text-slate-700 bg-white border border-slate-200 rounded-lg p-2">${esc(r.descripcion)}</p>
+                            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/80 text-[11px]">
+                                <span class="text-slate-600"><strong>${esc(r.nombre)}</strong> (${esc(r.rut)}) ${r.telefono ? `• ${esc(r.telefono)}` : ''}</span>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    ${r.fotoCarnet && String(r.fotoCarnet).startsWith('http') ? `<a href="${esc(r.fotoCarnet)}" target="_blank" class="px-2 py-0.5 rounded bg-slate-700 text-white font-bold text-[10px]">🪪 Carnet</a>` : ''}
+                                    ${(r.fotosVecino || []).map((u, i) => `<a href="${esc(u)}" target="_blank" class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">Foto #${i + 1}</a>`).join('')}
+                                    <button type="button" onclick="openCencoFromAdminSosafe(); setTimeout(() => openSosafeManageModal('${esc(r.id)}'), 180);" class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px]">⚙️ Gestionar</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
         }
 
         function copySosafePortalLink() {
@@ -13111,6 +13334,29 @@
             }
 
             const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+            const adminAccessBox = document.getElementById('cenco-sosafe-admin-access-box');
+            const adminAccessList = document.getElementById('cenco-sosafe-admin-access-list');
+            const isAdminRole = String(AppState.userRole || '').toUpperCase() === 'ADMIN';
+            if (adminAccessBox && adminAccessList) {
+                adminAccessBox.classList.toggle('hidden', !isAdminRole);
+                if (isAdminRole) {
+                    const recentAccess = getSosafeAccessLogsDB().slice(0, 6);
+                    if (recentAccess.length === 0) {
+                        adminAccessList.innerHTML = `<div class="col-span-full text-[11px] cad-muted">Aún no hay conexiones de vecinos registradas.</div>`;
+                    } else {
+                        adminAccessList.innerHTML = recentAccess.map(a => `
+                            <div class="cad-elevated border cad-border rounded-lg p-2.5 text-[11px] flex items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="font-bold cad-text truncate">${esc(a.nombre)} <span class="font-mono text-[10px] cad-muted">(${esc(a.rut)})</span></div>
+                                    <div class="text-[10px] cad-muted truncate">${esc(a.fecha)} • ${esc(a.telefono || a.metodo || 'Verificado')}</div>
+                                </div>
+                                ${a.fotoCarnet && String(a.fotoCarnet).startsWith('http') ? `<a href="${esc(a.fotoCarnet)}" target="_blank" class="shrink-0 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-cyan-300 font-bold text-[10px]">🪪 Carnet</a>` : ''}
+                            </div>
+                        `).join('');
+                    }
+                }
+            }
             const badgeCls = (est) => {
                 if (est === 'RESUELTO') return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
                 if (est === 'EN_PROCESO') return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
