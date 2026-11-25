@@ -1170,6 +1170,8 @@
                                             <option value="CENCO_DESPACHADOR">CENCO — DESPACHADOR</option>
                                             <option value="CENCO_CCTV">CENCO — OPERADOR CCTV</option>
                                             <option value="CENCO_SUPERVISOR">CENCO — SUPERVISOR CAD</option>
+                                            <option value="CARABINEROS">CARABINEROS — PORTAL POLICIAL</option>
+                                            <option value="PDI">PDI — PORTAL POLICIAL</option>
                                             <option value="ADMIN">ADMIN (Total)</option>
                                         </select>
                                     </div>
@@ -2832,14 +2834,22 @@
                                 <h2 class="text-lg font-bold cad-text flex items-center gap-2"><i class="fa-solid fa-shield-virus text-cyan-400"></i> Inteligencia Operativa y Escáner LPR</h2>
                                 <p class="text-xs cad-muted">Base unificada con Inspectores en terreno: Lista Negra de Vehículos Robados, Mecheros, Situación de Calle y Puntos de Calor.</p>
                             </div>
-                            <div class="flex flex-wrap p-1 rounded-lg cad-elevated border cad-border text-xs font-bold gap-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" onclick="copyPoliciaPortalLink()" class="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-link"></i> Link Carabineros / PDI
+                                </button>
+                                <a href="./policia.html" target="_blank" class="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 text-xs font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-shield-halved"></i> Abrir Portal Policial
+                                </a>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap p-1 rounded-lg cad-elevated border cad-border text-xs font-bold gap-1">
                                 <button type="button" onclick="switchIntelTab('scanner','cenco')" id="cad-intel-tab-scanner" class="px-3 py-1.5 rounded-md bg-white text-slate-900"><i class="fa-solid fa-barcode mr-1"></i>Escáner LPR</button>
                                 <button type="button" onclick="switchIntelTab('robados','cenco')" id="cad-intel-tab-robados" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-car-burst mr-1"></i>Robados (<span id="intel-cnt-robados">0</span>)</button>
                                 <button type="button" onclick="switchIntelTab('mecheros','cenco')" id="cad-intel-tab-mecheros" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-user-secret mr-1"></i>Mecheros (<span id="intel-cnt-mecheros">0</span>)</button>
                                 <button type="button" onclick="switchIntelTab('calle','cenco')" id="cad-intel-tab-calle" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-person-shelter mr-1"></i>Sit. Calle (<span id="intel-cnt-calle">0</span>)</button>
                                 <button type="button" onclick="switchIntelTab('calor','cenco')" id="cad-intel-tab-calor" class="px-3 py-1.5 rounded-md cad-muted"><i class="fa-solid fa-fire mr-1"></i>Mapa Calor (<span id="intel-cnt-calor">0</span>)</button>
                             </div>
-                        </div>
                         <div id="cenco-intel-content" class="space-y-4"></div>
                     </div>
 
@@ -13354,6 +13364,15 @@
                 navigator.clipboard.writeText(url).then(() => showToast('✅ Enlace Portal Vecinos copiado al portapapeles', 'bg-emerald-600'));
             } else {
                 prompt('Copia el enlace del Portal Vecinos SOSAFE Peñaflor:', url);
+            }
+        }
+
+        function copyPoliciaPortalLink() {
+            const url = 'https://cristophermaciel.github.io/pena-seguro-inspectores/policia.html';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => showToast('✅ Enlace Portal Carabineros / PDI copiado al portapapeles', 'bg-emerald-600'));
+            } else {
+                prompt('Copia el enlace del Portal Carabineros / PDI:', url);
             }
         }
 

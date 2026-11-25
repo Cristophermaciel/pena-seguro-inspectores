@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enlace Policial — Carabineros & PDI • Peña Seguro 1410</title>
+    <meta name="theme-color" content="#071326">
+    <link rel="icon" type="image/png" href="logo-pena-seguro-1410.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050c1a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .bg-muni-blur {
+            position: fixed;
+            inset: -24px;
+            z-index: -2;
+            background-image: url('./fondo-municipalidad-penaflor.jpg');
+            background-size: cover;
+            background-position: center;
+            filter: blur(16px) saturate(1.05) brightness(0.32);
+            transform: scale(1.06);
+        }
+        .bg-muni-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 18% 12%, rgba(16, 185, 129, 0.16), transparent 46%),
+                        radial-gradient(circle at 85% 82%, rgba(37, 99, 235, 0.22), transparent 50%),
+                        linear-gradient(180deg, rgba(5, 12, 26, 0.80) 0%, rgba(7, 17, 36, 0.92) 100%);
+        }
+        .glass-card {
+            background: rgba(11, 21, 41, 0.74);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        }
+        .glass-sidebar {
+            background: rgba(7, 15, 31, 0.82);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border-right: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 8px 0 36px rgba(0, 0, 0, 0.45);
+        }
+        .nav-item {
+            transition: all 0.18s ease;
+            border: 1px solid transparent;
+        }
+        .nav-item:hover {
+            background: rgba(51, 65, 85, 0.42);
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(37, 99, 235, 0.26));
+            border-color: rgba(52, 211, 153, 0.45);
+            color: #ffffff;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.16);
+        }
+        .leaflet-container { background: #0f172a; font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="bg-muni-blur" aria-hidden="true"></div>
+    <div class="bg-muni-overlay" aria-hidden="true"></div>
+
+    <!-- ================================================================== -->
+    <!-- 1. PANTALLA DE ACCESO INTERINSTITUCIONAL (CARABINEROS & PDI)       -->
+    <!-- ================================================================== -->
+    <main id="screen-login" class="min-h-screen flex items-center justify-center p-4 py-8">
+        <div class="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            <!-- Panel Izquierdo: Identidad y Alcance -->
+            <section class="lg:col-span-6 glass-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3.5">
+                        <div class="h-14 w-14 rounded-2xl bg-white p-1.5 shadow-lg shrink-0 flex items-center justify-center">
+                            <img src="logo-pena-seguro-1410.png" alt="Peña Seguro 1410" class="w-full h-full object-contain">
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider">Carabineros de Chile</span>
+                                <span class="px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-[10px] font-black uppercase tracking-wider">PDI Chile</span>
+                            </div>
+                            <h1 class="text-xl sm:text-2xl font-black text-white leading-tight mt-1">Portal Interinstitucional de Inteligencia</h1>
+                            <p class="text-xs text-slate-300">Dirección de Seguridad Pública • I. Municipalidad de Peñaflor</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-slate-900/70 border border-slate-700/80 p-4 space-y-2.5 text-xs">
+                        <p class="font-black text-emerald-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved"></i> Módulos Habilitados en Tiempo Real
+                        </p>
+                        <ul class="space-y-2 text-slate-300">
+                            <li class="flex items-start gap-2"><i class="fa-solid fa-user-secret text-amber-400 mt-0.5"></i><span><strong>Mecheros y Hurtadores:</strong> Consulta y registro de fichas, alias, modus operandi y fotografía.</span></li>
+                            <li class="flex items-start gap-2"><i class="fa-solid fa-car-burst text-red-400 mt-0.5"></i><span><strong>Vehículos Robados / Encargo LPR:</strong> Búsqueda instantánea por patente y carga de nuevos encargos.</span></li>
+                            <li class="flex items-start gap-2"><i class="fa-solid fa-person-shelter text-cyan-400 mt-0.5"></i><span><strong>Personas en Situación de Calle:</strong> Catastro georreferenciado y actualización de seguimiento.</span></li>
+                            <li class="flex items-start gap-2"><i class="fa-solid fa-fire text-orange-400 mt-0.5"></i><span><strong>Mapa de Calor y Puntos Críticos:</strong> Visualización e ingreso georreferenciado por cuadrante.</span></li>
+                            <li class="flex items-start gap-2"><i class="fa-solid fa-map-location-dot text-emerald-400 mt-0.5"></i><span><strong>SOSAFE Peñaflor y Cuadrantes:</strong> Estadísticas comunales, mapa oficial de los 8 cuadrantes y reportes correspondientes.</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-700/60 text-[11px] text-slate-400">
+                    <span><i class="fa-solid fa-lock text-emerald-400 mr-1"></i> Sincronizado con Central CENCO 1410</span>
+                    <a href="./index.html" class="text-cyan-300 hover:underline font-bold">Ir a App CENCO / Inspectores &rarr;</a>
+                </div>
+            </section>
+
+            <!-- Panel Derecho: Formulario de Ingreso -->
+            <section class="lg:col-span-6 glass-card rounded-3xl p-6 sm:p-8 flex flex-col justify-center">
+                <div class="mb-5">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/35 text-cyan-300 text-[10px] font-black uppercase tracking-wider">
+                        <i class="fa-solid fa-id-badge"></i> Acceso Restringido a Policías y Administración
+                    </span>
+                    <h2 class="text-xl font-black text-white mt-2">Iniciar Sesión Institucional</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Ingresa con tu credencial asignada por Seguridad Pública Peñaflor.</p>
+                </div>
+
+                <form id="form-policia-login" onsubmit="handlePoliciaLogin(event)" class="space-y-3.5 text-xs">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">Institución</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" id="btn-inst-carabineros" onclick="selectInstitution('CARABINEROS')" class="p-3 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-white font-black flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-shield-halved text-emerald-400"></i> CARABINEROS
+                            </button>
+                            <button type="button" id="btn-inst-pdi" onclick="selectInstitution('PDI')" class="p-3 rounded-xl border border-slate-700 bg-slate-900/70 text-slate-300 font-black flex items-center justify-center gap-2 transition hover:border-blue-500">
+                                <i class="fa-solid fa-magnifying-glass-chart text-blue-400"></i> PDI CHILE
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">Usuario / RUT <span class="text-red-400">*</span></label>
+                        <input type="text" id="login-user" required autocomplete="username" placeholder="Ej: carabineros, pdi o tu RUT" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-semibold focus:border-emerald-400 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">Contraseña <span class="text-red-400">*</span></label>
+                        <input type="password" id="login-pass" required autocomplete="current-password" placeholder="••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-semibold focus:border-emerald-400 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">Grado / Nombre Funcionario (para firmar registros)</label>
+                        <input type="text" id="login-officer" placeholder="Ej: Sgto. 2° C. Rojas — 56ª Comisaría / Subinsp. M. Díaz — BICRIM" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white focus:border-cyan-400 outline-none">
+                    </div>
+
+                    <div id="login-error" class="hidden rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 p-2.5 text-[11px] font-semibold"></div>
+
+                    <button type="submit" id="btn-login-submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-right-to-bracket"></i> INGRESAR AL PORTAL POLICIAL
+                    </button>
+                </form>
+
+                <div class="mt-4 rounded-xl bg-slate-900/60 border border-slate-800 p-3 text-[11px] text-slate-400">
+                    <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i>
+                    Las cuentas policiales son administradas desde <strong>Peña Seguro 1410 &rarr; Administrador &rarr; Usuarios</strong> (roles <code class="text-emerald-300">CARABINEROS</code>, <code class="text-blue-300">PDI</code> o <code class="text-amber-300">ADMIN</code>).
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- ================================================================== -->
+    <!-- 2. PORTAL ACTIVO CON GLASSY SIDEBAR                                -->
+    <!-- ================================================================== -->
+    <div id="screen-portal" class="hidden min-h-screen flex flex-col lg:flex-row">
+        <!-- Mobile Topbar -->
+        <header class="lg:hidden sticky top-0 z-40 glass-sidebar border-b border-slate-700/60 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <button type="button" onclick="toggleMobileSidebar(true)" class="h-9 w-9 rounded-xl bg-slate-800/80 border border-slate-700 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div>
+                    <div class="text-xs font-black text-white leading-tight">ENLACE POLICIAL 1410</div>
+                    <div id="mob-inst-badge" class="text-[10px] font-bold text-emerald-400">CARABINEROS / PDI</div>
+                </div>
+            </div>
+            <button type="button" onclick="syncCloudData(true)" class="px-3 py-1.5 rounded-xl bg-blue-600/80 text-white text-xs font-bold">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </header>
+
+        <!-- Mobile Backdrop -->
+        <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="hidden fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-xs lg:hidden"></div>
+
+        <!-- Glassy Sidebar -->
+        <aside id="policia-sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 shrink-0 glass-sidebar flex flex-col justify-between p-4 transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+            <div class="space-y-4 overflow-y-auto no-scrollbar">
+                <!-- Brand -->
+                <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-700/60">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="h-10 w-10 rounded-xl bg-white p-1 shadow shrink-0 flex items-center justify-center">
+                            <img src="logo-pena-seguro-1410.png" alt="Logo" class="w-full h-full object-contain">
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-xs font-black text-white tracking-wide truncate">PEÑA SEGURO 1410</div>
+                            <div id="side-inst-label" class="text-[10px] font-black text-emerald-400 uppercase truncate">ENLACE CARABINEROS</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="toggleMobileSidebar(false)" class="lg:hidden text-slate-400 hover:text-white text-lg px-1">&times;</button>
+                </div>
+
+                <!-- Session Card -->
+                <div class="rounded-2xl bg-slate-900/75 border border-slate-700/70 p-3 text-xs space-y-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <span id="side-role-pill" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">CARABINEROS</span>
+                        <span id="sync-status-dot" class="text-[10px] text-emerald-400 font-bold"><i class="fa-solid fa-circle text-[7px] mr-1"></i>En línea</span>
+                    </div>
+                    <div id="side-officer-name" class="font-black text-white truncate">Funcionario Policial</div>
+                    <div id="side-last-sync" class="text-[10px] text-slate-400">Sincronizando...</div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="space-y-1 text-xs font-bold">
+                    <div class="px-2 pt-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Territorio y Estadísticas</div>
+                    <button type="button" onclick="switchTab('cuadrantes')" id="nav-cuadrantes" class="nav-item active w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-draw-polygon text-emerald-400 w-4 text-center"></i> Cuadrantes y Estadísticas</span>
+                    </button>
+                    <button type="button" onclick="switchTab('sosafe')" id="nav-sosafe" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-people-roof text-amber-400 w-4 text-center"></i> Reportes SOSAFE</span>
+                        <span id="badge-sosafe" class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black">0</span>
+                    </button>
+
+                    <div class="px-2 pt-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Inteligencia / LPR (Ver e Ingresar)</div>
+                    <button type="button" onclick="switchTab('mecheros')" id="nav-mecheros" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-user-secret text-rose-400 w-4 text-center"></i> Mecheros / Hurtadores</span>
+                        <span id="badge-mecheros" class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">0</span>
+                    </button>
+                    <button type="button" onclick="switchTab('robados')" id="nav-robados" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-car-burst text-red-400 w-4 text-center"></i> Vehículos Robados LPR</span>
+                        <span id="badge-robados" class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">0</span>
+                    </button>
+                    <button type="button" onclick="switchTab('calle')" id="nav-calle" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-person-shelter text-cyan-400 w-4 text-center"></i> Situación de Calle</span>
+                        <span id="badge-calle" class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">0</span>
+                    </button>
+                    <button type="button" onclick="switchTab('calor')" id="nav-calor" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-fire text-orange-400 w-4 text-center"></i> Mapa de Calor / Puntos</span>
+                        <span id="badge-calor" class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="pt-3 border-t border-slate-700/60 space-y-2">
+                <button type="button" onclick="syncCloudData(true)" class="w-full py-2.5 rounded-xl bg-blue-600/80 hover:bg-blue-500 text-white text-xs font-black flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-rotate"></i> Actualizar Datos Nube
+                </button>
+                <button type="button" onclick="logoutPolicia()" class="w-full py-2 rounded-xl bg-slate-800/80 hover:bg-red-900/60 text-slate-300 hover:text-red-200 border border-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 min-w-0 p-4 sm:p-6 space-y-5">
+            <!-- Toast -->
+            <div id="toast" class="hidden fixed bottom-5 right-5 z-[1000] px-4 py-3 rounded-2xl shadow-2xl text-xs font-black text-white border border-white/15"></div>
+
+            <!-- ========================================================== -->
+            <!-- TAB 1: MAPA DE CUADRANTES Y ESTADÍSTICAS                   -->
+            <!-- ========================================================== -->
+            <section id="tab-cuadrantes" class="tab-panel space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-draw-polygon text-emerald-400"></i> Mapa de Cuadrantes y Estadísticas Operativas</h2>
+                        <p class="text-xs text-slate-300">Haz clic en cualquier cuadrante en el mapa o en las tarjetas para inspeccionar sus estadísticas y todos sus reportes correspondientes.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="quad-selector" onchange="selectQuadrantFocus(this.value)" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Todos los Cuadrantes (Comuna)</option>
+                            <option value="252A">252A — Cuadrante 252A</option>
+                            <option value="252B">252B — Cuadrante 252B</option>
+                            <option value="252C">252C — Sector Peñaflor</option>
+                            <option value="253A">253A — Cuadrante Malloco</option>
+                            <option value="253B">253B — Cuadrante Malloco Sur</option>
+                            <option value="SRA">SRA — Sector Rural Pelvín</option>
+                            <option value="SRB">SRB — Sector Rural Peñaflor Alto</option>
+                            <option value="SRA1">SRA1 — Sector Rural Mallarauco</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- KPIs Globales -->
+                <div id="quad-global-kpis" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+
+                <!-- Tarjetas de los 8 Cuadrantes -->
+                <div id="quad-cards-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5"></div>
+
+                <!-- Mapa + Reportes del Cuadrante Seleccionado -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <div class="lg:col-span-7 glass-card rounded-2xl overflow-hidden flex flex-col min-h-[480px]">
+                        <div class="px-4 py-2.5 border-b border-slate-700/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span class="font-black text-white"><i class="fa-solid fa-map text-emerald-400 mr-1"></i> División Oficial de Cuadrantes — Peñaflor</span>
+                            <div class="flex items-center gap-2 text-[10px]">
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-qmap-sosafe" checked onchange="renderQuadrantsTab()"> <span class="text-amber-300 font-bold">SOSAFE</span></label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-qmap-calor" checked onchange="renderQuadrantsTab()"> <span class="text-orange-400 font-bold">Puntos Críticos</span></label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-qmap-heat" checked onchange="renderQuadrantsTab()"> <span class="text-red-400 font-bold">Calor</span></label>
+                            </div>
+                        </div>
+                        <div id="quad-map" class="flex-1 min-h-[430px] z-10"></div>
+                    </div>
+
+                    <div class="lg:col-span-5 glass-card rounded-2xl p-4 flex flex-col max-h-[520px]">
+                        <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-700/70">
+                            <div>
+                                <h3 id="quad-detail-title" class="text-sm font-black text-white">Reportes de la Comuna</h3>
+                                <p id="quad-detail-sub" class="text-[11px] text-slate-400">SOSAFE, Puntos Críticos e Inteligencia asociados</p>
+                            </div>
+                            <button type="button" id="btn-quad-reset" onclick="selectQuadrantFocus('ALL')" class="hidden px-2.5 py-1 rounded-lg bg-slate-800 text-amber-300 text-[10px] font-bold">Ver Todos</button>
+                        </div>
+                        <div id="quad-detail-stats" class="grid grid-cols-3 gap-2 py-2.5 border-b border-slate-800 text-center"></div>
+                        <div id="quad-detail-reports" class="flex-1 overflow-y-auto space-y-2 pt-2.5 pr-1"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 2: SOSAFE PEÑAFLOR (ESTADÍSTICAS Y REPORTES)           -->
+            <!-- ========================================================== -->
+            <section id="tab-sosafe" class="tab-panel hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-people-roof text-amber-400"></i> SOSAFE Peñaflor — Estadísticas y Reportes Ciudadanos</h2>
+                        <p class="text-xs text-slate-300">Reportes vecinales verificados con evidencia fotográfica, cuadrante asignado y estado de atención municipal.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="sosafe-filter-quad" onchange="renderSosafeTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Cuadrante: Todos</option>
+                            <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                            <option value="253A">253A</option><option value="253B">253B</option>
+                            <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                        </select>
+                        <select id="sosafe-filter-estado" onchange="renderSosafeTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Estado: Todos</option>
+                            <option value="RECIBIDO">🟡 Recibidos</option>
+                            <option value="EN_PROCESO">🔵 En Proceso</option>
+                            <option value="RESUELTO">🟢 Resueltos</option>
+                            <option value="RECHAZADO">🔴 Rechazados</option>
+                        </select>
+                        <input type="text" id="sosafe-search" oninput="renderSosafeTab()" placeholder="Buscar dirección, categoría..." class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs w-48">
+                    </div>
+                </div>
+
+                <div id="sosafe-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                <div id="sosafe-categories-bars" class="glass-card rounded-2xl p-4"></div>
+                <div id="sosafe-reports-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 3: INTELIGENCIA — MECHEROS Y HURTADORES                -->
+            <!-- ========================================================== -->
+            <section id="tab-mecheros" class="tab-panel hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-user-secret text-rose-400"></i> Inteligencia LPR — Mecheros y Hurtadores</h2>
+                        <p class="text-xs text-slate-300">Catálogo compartido entre Carabineros, PDI y CENCO 1410. Puedes consultar e ingresar nuevos registros.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="mech-search" oninput="renderMecherosTab()" placeholder="Buscar alias, sector o señas..." class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs w-52">
+                        <select id="mech-filter-quad" onchange="renderMecherosTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Cuadrante: Todos</option>
+                            <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                            <option value="253A">253A</option><option value="253B">253B</option>
+                            <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <form id="form-mechero" onsubmit="saveMechero(event)" class="lg:col-span-4 glass-card rounded-2xl p-4 space-y-3 text-xs h-fit">
+                        <div class="flex items-center justify-between border-b border-slate-700/70 pb-2">
+                            <h3 class="font-black text-rose-300 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> Ingresar / Editar Mechero</h3>
+                            <button type="button" onclick="resetMecheroForm()" class="text-[10px] text-cyan-300 hover:underline">Limpiar</button>
+                        </div>
+                        <input type="hidden" id="mech-id">
+                        <input type="hidden" id="mech-foto-existing">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Nombre / Alias <span class="text-red-400">*</span></label>
+                            <input type="text" id="mech-alias" required placeholder="Ej: El Flaco / Juan Pérez" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Cuadrante <span class="text-red-400">*</span></label>
+                                <select id="mech-cuadrante" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                                    <option value="253A">253A</option><option value="253B">253B</option>
+                                    <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Nivel de Riesgo</label>
+                                <select id="mech-riesgo" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="ALTO">🔴 ALTO</option>
+                                    <option value="CRÍTICO">🟣 CRÍTICO</option>
+                                    <option value="MEDIO">🟡 MEDIO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Sector / Comercio Habitual</label>
+                            <input type="text" id="mech-sector" placeholder="Ej: Supermercado Líder / Centro Peñaflor" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Señas Particulares / Vestimenta</label>
+                            <input type="text" id="mech-senas" placeholder="Ej: Tatuaje cuello, gorro negro, mochila azul" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Estado</label>
+                                <select id="mech-estado" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="ACTIVO">ACTIVO</option>
+                                    <option value="DETENIDO">DETENIDO</option>
+                                    <option value="INACTIVO">INACTIVO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Fotografía (opcional)</label>
+                                <input type="file" id="mech-foto-file" accept="image/*" onchange="handleFilePreview(this, 'mech')" class="w-full text-[10px] text-slate-300">
+                            </div>
+                        </div>
+                        <div id="mech-foto-preview" class="text-[10px] text-emerald-300"></div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Modus Operandi / Observaciones</label>
+                            <textarea id="mech-obs" rows="2" placeholder="Detalles relevantes para patrullaje..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white"></textarea>
+                        </div>
+                        <button type="submit" id="btn-save-mech" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black shadow">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar en Inteligencia 1410
+                        </button>
+                    </form>
+
+                    <div id="mecheros-list" class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-3 content-start"></div>
+                </div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 4: INTELIGENCIA — VEHÍCULOS ROBADOS / LPR              -->
+            <!-- ========================================================== -->
+            <section id="tab-robados" class="tab-panel hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-car-burst text-red-400"></i> Vehículos Robados y Encargo LPR</h2>
+                        <p class="text-xs text-slate-300">Patentes con encargo vigente sincronizadas con lectores LPR y patrullaje municipal.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="rob-search" oninput="renderRobadosTab()" placeholder="Buscar PATENTE, marca o modelo..." class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-mono uppercase w-56">
+                        <select id="rob-filter-estado" onchange="renderRobadosTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Estado: Todos</option>
+                            <option value="ENCARGO VIGENTE">🔴 Encargo Vigente</option>
+                            <option value="RECUPERADO">🟢 Recuperado</option>
+                            <option value="ANULADO">⚪ Anulado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <form id="form-robado" onsubmit="saveRobado(event)" class="lg:col-span-4 glass-card rounded-2xl p-4 space-y-3 text-xs h-fit">
+                        <div class="flex items-center justify-between border-b border-slate-700/70 pb-2">
+                            <h3 class="font-black text-red-300 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> Ingresar / Editar Encargo LPR</h3>
+                            <button type="button" onclick="resetRobadoForm()" class="text-[10px] text-cyan-300 hover:underline">Limpiar</button>
+                        </div>
+                        <input type="hidden" id="rob-id">
+                        <input type="hidden" id="rob-foto-existing">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Patente (PPU) <span class="text-red-400">*</span></label>
+                                <input type="text" id="rob-patente" required maxlength="8" placeholder="ABCD12" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-amber-300 font-mono font-black uppercase">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Cuadrante / Lugar</label>
+                                <select id="rob-cuadrante" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                                    <option value="253A">253A</option><option value="253B">253B</option>
+                                    <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Marca / Modelo</label>
+                                <input type="text" id="rob-marca" placeholder="Ej: Kia Rio 5" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Color</label>
+                                <input type="text" id="rob-color" placeholder="Ej: Gris grafito" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Tipo de Encargo</label>
+                                <select id="rob-tipo" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="ROBO VEHÍCULO">ROBO VEHÍCULO</option>
+                                    <option value="PORTONAZO / ENCERRONA">PORTONAZO / ENCERRONA</option>
+                                    <option value="ENCARGO POLICIAL">ENCARGO POLICIAL</option>
+                                    <option value="DELITO FLAGRANTE">DELITO FLAGRANTE</option>
+                                    <option value="CLONADO / SOSPECHOSO">CLONADO / SOSPECHOSO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Estado</label>
+                                <select id="rob-estado" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="ENCARGO VIGENTE">ENCARGO VIGENTE</option>
+                                    <option value="RECUPERADO">RECUPERADO</option>
+                                    <option value="ANULADO">ANULADO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Fotografía (opcional)</label>
+                            <input type="file" id="rob-foto-file" accept="image/*" onchange="handleFilePreview(this, 'rob')" class="w-full text-[10px] text-slate-300">
+                            <div id="rob-foto-preview" class="text-[10px] text-emerald-300 mt-1"></div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Observaciones / N° Parte</label>
+                            <textarea id="rob-obs" rows="2" placeholder="N° parte, ruta de huida, ocupantes..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white"></textarea>
+                        </div>
+                        <button type="submit" id="btn-save-rob" class="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black shadow">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Encargo Vehicular
+                        </button>
+                    </form>
+
+                    <div id="robados-list" class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-3 content-start"></div>
+                </div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 5: INTELIGENCIA — PERSONAS EN SITUACIÓN DE CALLE       -->
+            <!-- ========================================================== -->
+            <section id="tab-calle" class="tab-panel hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-person-shelter text-cyan-400"></i> Catastro — Personas en Situación de Calle</h2>
+                        <p class="text-xs text-slate-300">Registro georreferenciado para coordinación policial, social y preventiva en la comuna.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="calle-search" oninput="renderCalleTab()" placeholder="Buscar nombre, ubicación..." class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs w-52">
+                        <select id="calle-filter-quad" onchange="renderCalleTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Cuadrante: Todos</option>
+                            <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                            <option value="253A">253A</option><option value="253B">253B</option>
+                            <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <form id="form-calle" onsubmit="saveCalle(event)" class="lg:col-span-4 glass-card rounded-2xl p-4 space-y-3 text-xs h-fit">
+                        <div class="flex items-center justify-between border-b border-slate-700/70 pb-2">
+                            <h3 class="font-black text-cyan-300 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> Ingresar / Editar Catastro</h3>
+                            <button type="button" onclick="resetCalleForm()" class="text-[10px] text-cyan-300 hover:underline">Limpiar</button>
+                        </div>
+                        <input type="hidden" id="calle-id">
+                        <input type="hidden" id="calle-foto-existing">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Nombre / Apodo <span class="text-red-400">*</span></label>
+                                <input type="text" id="calle-nombre" required placeholder="Nombre o apodo" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">RUT / Edad</label>
+                                <input type="text" id="calle-rut" placeholder="Ej: 12.345.678-9 / 45 años" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Cuadrante</label>
+                                <select id="calle-cuadrante" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                                    <option value="253A">253A</option><option value="253B">253B</option>
+                                    <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Estado</label>
+                                <select id="calle-estado" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="EN SEGUIMIENTO">EN SEGUIMIENTO</option>
+                                    <option value="DERIVADO SOCIAL">DERIVADO SOCIAL</option>
+                                    <option value="REUBICADO">REUBICADO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Ubicación Habitual</label>
+                            <input type="text" id="calle-ubicacion" placeholder="Ej: Plaza Peñaflor / Bajo puente..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">GPS (opcional)</label>
+                                <input type="text" id="calle-gps" placeholder="-33.6063, -70.8768" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-emerald-300 font-mono text-[11px]">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Perfil / Riesgo</label>
+                                <input type="text" id="calle-perfil" placeholder="Ej: Adulto mayor / Consumo" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Fotografía (opcional)</label>
+                            <input type="file" id="calle-foto-file" accept="image/*" onchange="handleFilePreview(this, 'calle')" class="w-full text-[10px] text-slate-300">
+                            <div id="calle-foto-preview" class="text-[10px] text-emerald-300 mt-1"></div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Observaciones</label>
+                            <textarea id="calle-obs" rows="2" placeholder="Antecedentes, derivaciones o alertas..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white"></textarea>
+                        </div>
+                        <button type="submit" id="btn-save-calle" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black shadow">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar en Catastro Calle
+                        </button>
+                    </form>
+
+                    <div id="calle-list" class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-3 content-start"></div>
+                </div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 6: MAPA DE CALOR Y PUNTOS CRÍTICOS                     -->
+            <!-- ========================================================== -->
+            <section id="tab-calor" class="tab-panel hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-fire text-orange-400"></i> Mapa de Calor y Puntos Críticos</h2>
+                        <p class="text-xs text-slate-300">Haz clic en cualquier punto del mapa para marcar un foco delictual o incivilidad; el cuadrante se detecta automáticamente.</p>
+                    </div>
+                    <select id="calor-filter-quad" onchange="renderCalorTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                        <option value="ALL">Cuadrante: Todos</option>
+                        <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                        <option value="253A">253A</option><option value="253B">253B</option>
+                        <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <form id="form-calor" onsubmit="savePuntoCalor(event)" class="lg:col-span-4 glass-card rounded-2xl p-4 space-y-3 text-xs h-fit">
+                        <div class="flex items-center justify-between border-b border-slate-700/70 pb-2">
+                            <h3 class="font-black text-orange-300 uppercase"><i class="fa-solid fa-location-crosshairs mr-1"></i> Ingresar Punto Crítico</h3>
+                            <button type="button" onclick="resetCalorForm()" class="text-[10px] text-cyan-300 hover:underline">Limpiar</button>
+                        </div>
+                        <input type="hidden" id="calor-id">
+                        <input type="hidden" id="calor-foto-existing">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Tipo de Punto <span class="text-red-400">*</span></label>
+                                <select id="calor-tipo" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="MICROTRÁFICO">MICROTRÁFICO</option>
+                                    <option value="ROBO / ASALTO">ROBO / ASALTO</option>
+                                    <option value="INCIVILIDAD">INCIVILIDAD</option>
+                                    <option value="RIÑA / DESORDEN">RIÑA / DESORDEN</option>
+                                    <option value="RUKO / TOMA">RUKO / TOMA</option>
+                                    <option value="LUMINARIA / PUNTO OSCURO">PUNTO OSCURO</option>
+                                    <option value="OTRO">OTRO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Cuadrante</label>
+                                <select id="calor-cuadrante" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="252A">252A</option><option value="252B">252B</option><option value="252C">252C</option>
+                                    <option value="253A">253A</option><option value="253B">253B</option>
+                                    <option value="SRA">SRA</option><option value="SRB">SRB</option><option value="SRA1">SRA1</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Dirección / Intersección <span class="text-red-400">*</span></label>
+                            <input type="text" id="calor-direccion" required placeholder="Ej: Av. Vicuña Mackenna con Bilbao" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">GPS (clic en mapa &rarr;)</label>
+                                <input type="text" id="calor-gps" placeholder="-33.6063, -70.8768" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-emerald-300 font-mono text-[11px]">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Estado</label>
+                                <select id="calor-estado" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="ACTIVO">ACTIVO</option>
+                                    <option value="INTERVENIDO">INTERVENIDO</option>
+                                    <option value="CONTROLADO">CONTROLADO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Fotografía (opcional)</label>
+                            <input type="file" id="calor-foto-file" accept="image/*" onchange="handleFilePreview(this, 'calor')" class="w-full text-[10px] text-slate-300">
+                            <div id="calor-foto-preview" class="text-[10px] text-emerald-300 mt-1"></div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Descripción / Horario Crítico</label>
+                            <textarea id="calor-desc" rows="2" placeholder="Detalles del foco, horarios, vehículos frecuentes..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white"></textarea>
+                        </div>
+                        <button type="submit" id="btn-save-calor" class="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black shadow">
+                            <i class="fa-solid fa-fire-flame-curved mr-1"></i> Guardar Punto en Mapa de Calor
+                        </button>
+                    </form>
+
+                    <div class="lg:col-span-8 space-y-4">
+                        <div class="glass-card rounded-2xl overflow-hidden flex flex-col min-h-[380px]">
+                            <div class="px-4 py-2 border-b border-slate-700/70 flex items-center justify-between text-xs">
+                                <span class="font-black text-white"><i class="fa-solid fa-map-pin text-orange-400 mr-1"></i> Mapa de Calor Interactivo (Toca para ubicar nuevo punto)</span>
+                                <span id="calor-pick-status" class="text-[10px] text-slate-400">Listo</span>
+                            </div>
+                            <div id="calor-map" class="flex-1 min-h-[340px] z-10"></div>
+                        </div>
+                        <div id="calor-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzA-qJkVTWhnL_0YKPb3uA3k_-Pr7Wlp-gQUZXxQJjBacM5eHTJ7PiCh7eeTKN2LjxroA/exec';
+        const SESSION_KEY = 'pena_seguro_policia_session_v1';
+
+        // Polígono Comunal Oficial y 8 Cuadrantes Registrados de Peñaflor
+        const PENAFLOR_COMMUNE_BOUNDARY = [
+            [-33.569689, -70.873485], [-33.572908, -70.866102], [-33.578057, -70.848923],
+            [-33.583039, -70.831182], [-33.596058, -70.836844], [-33.603739, -70.839017],
+            [-33.608672, -70.839714], [-33.609914, -70.823999], [-33.610542, -70.838204],
+            [-33.615109, -70.842840], [-33.613920, -70.851670], [-33.631079, -70.866866],
+            [-33.627077, -70.883088], [-33.630194, -70.910591], [-33.634660, -70.914540],
+            [-33.634231, -70.929045], [-33.631857, -70.926095], [-33.618514, -70.934421],
+            [-33.612667, -70.947975], [-33.605990, -70.933236], [-33.589513, -70.920365],
+            [-33.594616, -70.909525], [-33.581867, -70.892695], [-33.569689, -70.873485]
+        ];
+
+        const CARABINEROS_QUADRANTS_GEO = [
+            { id: '253B', desc: 'CUADRANTE MALLOCO SUR', color: '#097138', center: [-33.617459, -70.868915], coords: [[-33.627077,-70.883088],[-33.631079,-70.866866],[-33.620604,-70.859105],[-33.615401,-70.85544],[-33.610056,-70.852119],[-33.610418,-70.874949],[-33.610678,-70.87512],[-33.610626,-70.874972],[-33.621196,-70.878576],[-33.627077,-70.883088]] },
+            { id: '252C', desc: 'SECTOR PEÑAFLOR', color: '#0288D1', center: [-33.618123, -70.902217], coords: [[-33.627077,-70.883088],[-33.621196,-70.878576],[-33.610556,-70.875165],[-33.611718,-70.898918],[-33.610288,-70.906986],[-33.607858,-70.908617],[-33.606643,-70.908617],[-33.604927,-70.910248],[-33.634231,-70.929045],[-33.63466,-70.91454],[-33.630194,-70.910591],[-33.627077,-70.883088]] },
+            { id: '253A', desc: 'CUADRANTE MALLOCO', color: '#0097A7', center: [-33.602291, -70.860437], coords: [[-33.610378,-70.875143],[-33.61002,-70.857247],[-33.610056,-70.852119],[-33.605427,-70.849394],[-33.596938,-70.845875],[-33.594665,-70.850101],[-33.592094,-70.861153],[-33.5912,-70.86111],[-33.600084,-70.867268],[-33.606893,-70.871925],[-33.607447,-70.873469],[-33.610378,-70.875143]] },
+            { id: '252B', desc: 'CUADRANTE 252B', color: '#9C27B0', center: [-33.601990, -70.883797], coords: [[-33.611671,-70.898984],[-33.610476,-70.875036],[-33.607526,-70.873535],[-33.606972,-70.871947],[-33.591369,-70.861154],[-33.595801,-70.87184],[-33.594926,-70.884972],[-33.597035,-70.884779],[-33.597282,-70.886169],[-33.597384,-70.886584],[-33.59746,-70.886998],[-33.598102,-70.887323],[-33.598995,-70.885585],[-33.604916,-70.888963],[-33.605935,-70.892611],[-33.608706,-70.893309],[-33.609277,-70.894757],[-33.611671,-70.898984]] },
+            { id: '252A', desc: 'CUADRANTE 252A', color: '#475569', center: [-33.601079, -70.896743], coords: [[-33.594899,-70.885058],[-33.597526,-70.893085],[-33.591699,-70.895403],[-33.592986,-70.896776],[-33.594702,-70.897034],[-33.598884,-70.90287],[-33.59892,-70.905187],[-33.599849,-70.906089],[-33.604927,-70.910248],[-33.606643,-70.908617],[-33.607858,-70.908617],[-33.610288,-70.906986],[-33.611718,-70.898918],[-33.608607,-70.893416],[-33.605854,-70.892699],[-33.604675,-70.888923],[-33.599013,-70.885617],[-33.598075,-70.887409],[-33.597455,-70.887034],[-33.597008,-70.884865],[-33.594899,-70.885058]] },
+            { id: 'SRA', desc: 'SECTOR RURAL PELVÍN', color: '#ca8a04', center: [-33.5865, -70.8895], coords: [[-33.569689,-70.873485],[-33.581867,-70.892695],[-33.594616,-70.909525],[-33.598884,-70.90287],[-33.594702,-70.897034],[-33.592986,-70.896776],[-33.591699,-70.895403],[-33.597526,-70.893085],[-33.594899,-70.885058],[-33.595801,-70.87184],[-33.569689,-70.873485]] },
+            { id: 'SRB', desc: 'SECTOR RURAL PEÑAFLOR ALTO', color: '#db2777', center: [-33.5890, -70.8540], coords: [[-33.61392,-70.85167],[-33.615109,-70.84284],[-33.610542,-70.838204],[-33.609914,-70.823999],[-33.608672,-70.839714],[-33.603739,-70.839017],[-33.596058,-70.836844],[-33.583039,-70.831182],[-33.578057,-70.848923],[-33.572908,-70.866102],[-33.569689,-70.873485],[-33.595801,-70.87184],[-33.591369,-70.861154],[-33.592094,-70.861153],[-33.594665,-70.850101],[-33.596938,-70.845875],[-33.605427,-70.849394],[-33.610056,-70.852119],[-33.61392,-70.85167]] },
+            { id: 'SRA1', desc: 'SECTOR RURAL MALLARAUCO', color: '#ea580c', center: [-33.6095, -70.9230], coords: [[-33.594616,-70.909525],[-33.589513,-70.920365],[-33.594881,-70.924861],[-33.602577,-70.928291],[-33.60599,-70.933236],[-33.608074,-70.938857],[-33.612667,-70.947975],[-33.612544,-70.941457],[-33.615552,-70.937427],[-33.618514,-70.934421],[-33.631857,-70.926095],[-33.631967,-70.919353],[-33.604927,-70.910248],[-33.599849,-70.906089],[-33.59892,-70.905187],[-33.598884,-70.90287],[-33.594616,-70.909525]] }
+        ];
+
+        const FALLBACK_POLICE_ACCOUNTS = [
+            { rut: 'CARABINEROS', pass: '1410', nombre: 'Carabineros de Chile — 56ª Comisaría Peñaflor', rol: 'CARABINEROS', estado: 'ACTIVO' },
+            { rut: 'PDI', pass: '1410', nombre: 'PDI Chile — BICRIM Peñaflor', rol: 'PDI', estado: 'ACTIVO' },
+            { rut: 'ADMIN', pass: '1410', nombre: 'Administrador Seguridad Pública', rol: 'ADMIN', estado: 'ACTIVO' }
+        ];
+
+        const State = {
+            selectedInst: 'CARABINEROS',
+            session: null,
+            activeTab: 'cuadrantes',
+            selectedQuad: 'ALL',
+            users: [],
+            mecheros: [],
+            robados: [],
+            calle: [],
+            calor: [],
+            sosafe: [],
+            pendingPhotos: { mech: '', rob: '', calle: '', calor: '' }
+        };
+
+        let _quadMap = null, _quadLayer = null, _quadHeat = null;
+        let _calorMap = null, _calorLayer = null, _calorHeat = null, _calorPickMarker = null;
+
+        const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        function showToast(msg, cls = 'bg-emerald-600') {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.className = `fixed bottom-5 right-5 z-[1000] px-4 py-3 rounded-2xl shadow-2xl text-xs font-black text-white border border-white/15 ${cls}`;
+            t.innerText = msg;
+            t.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => t.classList.add('hidden'), 3600);
+        }
+
+        function isPointInPolygon(lat, lon, poly) {
+            let inside = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+                const intersect = ((yi > lon) !== (yj > lon)) && (lat < (xj - xi) * (lon - yi) / (yj - yi + 1e-12) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function detectQuadrantForPoint(lat, lon) {
+            for (const q of CARABINEROS_QUADRANTS_GEO) {
+                if (isPointInPolygon(lat, lon, q.coords)) return q.id;
+            }
+            let best = '252A', minD = Infinity;
+            CARABINEROS_QUADRANTS_GEO.forEach(q => {
+                const d = Math.hypot(lat - q.center[0], lon - q.center[1]);
+                if (d < minD) { minD = d; best = q.id; }
+            });
+            return best;
+        }
+
+        function resolveQuadrant(item) {
+            const valid = CARABINEROS_QUADRANTS_GEO.map(q => q.id);
+            const raw = String(item?.cuadrante || '').trim().toUpperCase();
+            if (valid.includes(raw)) return raw;
+            if (item?.gps) {
+                const m = String(item.gps).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                if (m) return detectQuadrantForPoint(parseFloat(m[1]), parseFloat(m[2]));
+            }
+            return '252A';
+        }
+
+        function parseCoords(gpsStr, qId, idx = 0) {
+            if (gpsStr) {
+                const m = String(gpsStr).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                if (m) return [parseFloat(m[1]), parseFloat(m[2])];
+            }
+            const q = CARABINEROS_QUADRANTS_GEO.find(x => x.id === qId) || CARABINEROS_QUADRANTS_GEO[4];
+            const jitterLat = ((idx % 7) - 3) * 0.00055;
+            const jitterLon = (((idx * 3) % 7) - 3) * 0.00055;
+            return [q.center[0] + jitterLat, q.center[1] + jitterLon];
+        }
+
+        function selectInstitution(inst) {
+            State.selectedInst = inst;
+            const bCar = document.getElementById('btn-inst-carabineros');
+            const bPdi = document.getElementById('btn-inst-pdi');
+            if (inst === 'CARABINEROS') {
+                bCar.className = 'p-3 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-white font-black flex items-center justify-center gap-2 transition';
+                bPdi.className = 'p-3 rounded-xl border border-slate-700 bg-slate-900/70 text-slate-300 font-black flex items-center justify-center gap-2 transition hover:border-blue-500';
+            } else {
+                bPdi.className = 'p-3 rounded-xl border-2 border-blue-500 bg-blue-600/25 text-white font-black flex items-center justify-center gap-2 transition';
+                bCar.className = 'p-3 rounded-xl border border-slate-700 bg-slate-900/70 text-slate-300 font-black flex items-center justify-center gap-2 transition hover:border-emerald-500';
+            }
+        }
+
+        async function fetchBootstrap() {
+            const res = await fetch(`${APPS_SCRIPT_URL}?action=bootstrap&t=${Date.now()}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (!data || data.ok === false) throw new Error(data?.error || 'Error cargando datos');
+            State.users = Array.isArray(data.users) ? data.users : [];
+            State.mecheros = Array.isArray(data.intelMecheros) ? data.intelMecheros : [];
+            State.robados = Array.isArray(data.intelRobados) ? data.intelRobados : [];
+            State.calle = Array.isArray(data.intelCalle) ? data.intelCalle : [];
+            State.calor = Array.isArray(data.intelPuntosCalor) ? data.intelPuntosCalor : [];
+            State.sosafe = Array.isArray(data.sosafeReports) ? data.sosafeReports : [];
+            return data;
+        }
+
+        async function postAction(action, payload) {
+            const res = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action, payload })
+            });
+            const data = await res.json();
+            if (!data || data.ok === false) throw new Error(data?.error || 'Error en servidor');
+            return data;
+        }
+
+        async function handlePoliciaLogin(e) {
+            e.preventDefault();
+            const uRaw = document.getElementById('login-user').value.trim();
+            const pRaw = document.getElementById('login-pass').value.trim();
+            const officer = document.getElementById('login-officer').value.trim();
+            const errEl = document.getElementById('login-error');
+            const btn = document.getElementById('btn-login-submit');
+            errEl.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando credenciales...';
+
+            try {
+                await fetchBootstrap();
+                const norm = (v) => String(v || '').replace(/\./g, '').replace(/\s+/g, '').toUpperCase();
+                const allAccounts = [...State.users, ...FALLBACK_POLICE_ACCOUNTS];
+                const allowedRoles = ['CARABINEROS', 'PDI', 'ADMIN', 'CENCO_SUPERVISOR'];
+                const found = allAccounts.find(u =>
+                    norm(u.rut) === norm(uRaw) &&
+                    String(u.pass || '').trim() === pRaw &&
+                    String(u.estado || 'ACTIVO').toUpperCase() === 'ACTIVO' &&
+                    allowedRoles.includes(String(u.rol || '').toUpperCase())
+                );
+                if (!found) {
+                    throw new Error('Credenciales inválidas o sin rol policial habilitado (CARABINEROS, PDI o ADMIN).');
+                }
+                const inst = (found.rol === 'CARABINEROS' || found.rol === 'PDI') ? found.rol : State.selectedInst;
+                State.session = {
+                    rut: found.rut,
+                    rol: found.rol,
+                    institucion: inst,
+                    nombre: officer || found.nombre || inst
+                };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(State.session));
+                enterPortal();
+            } catch (err) {
+                errEl.innerText = err.message || 'No se pudo iniciar sesión.';
+                errEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> INGRESAR AL PORTAL POLICIAL';
+            }
+        }
+
+        function enterPortal() {
+            document.getElementById('screen-login').classList.add('hidden');
+            document.getElementById('screen-portal').classList.remove('hidden');
+            const s = State.session;
+            const isPdi = s.institucion === 'PDI';
+            document.getElementById('side-inst-label').innerText = isPdi ? 'ENLACE PDI CHILE' : 'ENLACE CARABINEROS';
+            document.getElementById('side-inst-label').className = `text-[10px] font-black uppercase truncate ${isPdi ? 'text-blue-400' : 'text-emerald-400'}`;
+            document.getElementById('mob-inst-badge').innerText = isPdi ? 'PDI CHILE • BICRIM' : 'CARABINEROS DE CHILE';
+            const pill = document.getElementById('side-role-pill');
+            pill.innerText = s.institucion;
+            pill.className = `px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${isPdi ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'}`;
+            document.getElementById('side-officer-name').innerText = s.nombre;
+            document.getElementById('side-last-sync').innerText = `Actualizado: ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+            renderAll();
+            switchTab('cuadrantes');
+        }
+
+        function logoutPolicia() {
+            localStorage.removeItem(SESSION_KEY);
+            State.session = null;
+            document.getElementById('screen-portal').classList.add('hidden');
+            document.getElementById('screen-login').classList.remove('hidden');
+        }
+
+        async function syncCloudData(showFeedback = false) {
+            try {
+                await fetchBootstrap();
+                document.getElementById('side-last-sync').innerText = `Actualizado: ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+                renderAll();
+                if (showFeedback) showToast('✅ Datos sincronizados con Central 1410');
+            } catch (err) {
+                if (showFeedback) showToast('⚠️ Error al sincronizar: ' + err.message, 'bg-red-600');
+            }
+        }
+
+        function toggleMobileSidebar(open) {
+            const sb = document.getElementById('policia-sidebar');
+            const bd = document.getElementById('sidebar-backdrop');
+            if (open) {
+                sb.classList.remove('-translate-x-full');
+                bd.classList.remove('hidden');
+            } else {
+                sb.classList.add('-translate-x-full');
+                bd.classList.add('hidden');
+            }
+        }
+
+        function switchTab(tab) {
+            State.activeTab = tab;
+            ['cuadrantes', 'sosafe', 'mecheros', 'robados', 'calle', 'calor'].forEach(t => {
+                document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== tab);
+                const nav = document.getElementById(`nav-${t}`);
+                if (nav) {
+                    nav.classList.toggle('active', t === tab);
+                    nav.classList.toggle('text-slate-300', t !== tab);
+                }
+            });
+            toggleMobileSidebar(false);
+            if (tab === 'cuadrantes') setTimeout(renderQuadrantsTab, 80);
+            if (tab === 'sosafe') renderSosafeTab();
+            if (tab === 'mecheros') renderMecherosTab();
+            if (tab === 'robados') renderRobadosTab();
+            if (tab === 'calle') renderCalleTab();
+            if (tab === 'calor') setTimeout(renderCalorTab, 80);
+        }
+
+        function updateBadges() {
+            document.getElementById('badge-sosafe').innerText = State.sosafe.length;
+            document.getElementById('badge-mecheros').innerText = State.mecheros.length;
+            document.getElementById('badge-robados').innerText = State.robados.filter(r => String(r.estado || '').toUpperCase().includes('VIGENTE')).length;
+            document.getElementById('badge-calle').innerText = State.calle.length;
+            document.getElementById('badge-calor').innerText = State.calor.length;
+        }
+
+        function renderAll() {
+            updateBadges();
+            renderQuadrantsTab();
+            renderSosafeTab();
+            renderMecherosTab();
+            renderRobadosTab();
+            renderCalleTab();
+            renderCalorTab();
+        }
+
+        // ====================================================================
+        // TAB 1: MAPA DE CUADRANTES Y ESTADÍSTICAS CON REPORTES
+        // ====================================================================
+        function selectQuadrantFocus(qId) {
+            State.selectedQuad = qId || 'ALL';
+            const sel = document.getElementById('quad-selector');
+            if (sel) sel.value = State.selectedQuad;
+            renderQuadrantsTab();
+            if (_quadMap && State.selectedQuad !== 'ALL') {
+                const q = CARABINEROS_QUADRANTS_GEO.find(x => x.id === State.selectedQuad);
+                if (q) _quadMap.flyTo(q.center, 14, { duration: 0.6 });
+            } else if (_quadMap) {
+                _quadMap.flyTo([-33.6063, -70.8768], 13, { duration: 0.6 });
+            }
+        }
+
+        function renderQuadrantsTab() {
+            const qFocus = State.selectedQuad;
+            const sosAll = State.sosafe;
+            const calAll = State.calor;
+            const mechAll = State.mecheros;
+            const robAll = State.robados;
+            const calleAll = State.calle;
+
+            const kpiEl = document.getElementById('quad-global-kpis');
+            if (kpiEl) {
+                const sosPend = sosAll.filter(r => r.estado === 'RECIBIDO').length;
+                const robVig = robAll.filter(r => String(r.estado || '').toUpperCase().includes('VIGENTE')).length;
+                kpiEl.innerHTML = `
+                    <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Reportes SOSAFE</div><div class="text-2xl font-black text-amber-400 mt-0.5">${sosAll.length}</div><div class="text-[10px] text-slate-400">${sosPend} pendientes</div></div>
+                    <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Puntos Críticos</div><div class="text-2xl font-black text-orange-400 mt-0.5">${calAll.length}</div><div class="text-[10px] text-slate-400">Mapa de calor</div></div>
+                    <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Mecheros</div><div class="text-2xl font-black text-rose-400 mt-0.5">${mechAll.length}</div><div class="text-[10px] text-slate-400">Catálogo LPR</div></div>
+                    <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Vehículos Robados</div><div class="text-2xl font-black text-red-400 mt-0.5">${robVig}</div><div class="text-[10px] text-slate-400">Encargo vigente</div></div>
+                    <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Situación Calle</div><div class="text-2xl font-black text-cyan-400 mt-0.5">${calleAll.length}</div><div class="text-[10px] text-slate-400">Catastro activo</div></div>
+                    <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Cuadrantes</div><div class="text-2xl font-black text-emerald-400 mt-0.5">8</div><div class="text-[10px] text-slate-400">Cobertura Peñaflor</div></div>
+                `;
+            }
+
+            const cardsEl = document.getElementById('quad-cards-grid');
+            if (cardsEl) {
+                cardsEl.innerHTML = CARABINEROS_QUADRANTS_GEO.map(q => {
+                    const cSos = sosAll.filter(r => resolveQuadrant(r) === q.id).length;
+                    const cCal = calAll.filter(r => resolveQuadrant(r) === q.id).length;
+                    const cInt = mechAll.filter(r => resolveQuadrant(r) === q.id).length + robAll.filter(r => resolveQuadrant(r) === q.id).length;
+                    const total = cSos + cCal + cInt;
+                    const active = qFocus === q.id;
+                    return `
+                        <button type="button" onclick="selectQuadrantFocus('${active ? 'ALL' : q.id}')" class="text-left rounded-xl p-2.5 border transition ${active ? 'bg-emerald-600/25 border-emerald-400 ring-1 ring-emerald-400' : 'glass-card hover:border-slate-500'}">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="flex items-center gap-1.5 text-xs font-black text-white"><span style="width:8px;height:8px;border-radius:999px;background:${q.color};display:inline-block;"></span>${q.id}</span>
+                                <span class="text-xs font-black text-amber-300">${total}</span>
+                            </div>
+                            <div class="text-[9px] text-slate-400 mt-1">SOS: ${cSos} • Cal: ${cCal} • Int: ${cInt}</div>
+                        </button>
+                    `;
+                }).join('');
+            }
+
+            // Panel lateral de detalle y reportes del cuadrante
+            const inFocus = (arr) => qFocus === 'ALL' ? arr : arr.filter(x => resolveQuadrant(x) === qFocus);
+            const fSos = inFocus(sosAll);
+            const fCal = inFocus(calAll);
+            const fMech = inFocus(mechAll);
+            const fRob = inFocus(robAll);
+            const fCalle = inFocus(calleAll);
+
+            const qObj = CARABINEROS_QUADRANTS_GEO.find(x => x.id === qFocus);
+            document.getElementById('quad-detail-title').innerText = qObj ? `Cuadrante ${qObj.id} — ${qObj.desc}` : 'Reportes de toda la Comuna';
+            document.getElementById('quad-detail-sub').innerText = `${fSos.length} SOSAFE • ${fCal.length} Puntos Críticos • ${fMech.length + fRob.length + fCalle.length} Inteligencia`;
+            document.getElementById('btn-quad-reset').classList.toggle('hidden', qFocus === 'ALL');
+
+            document.getElementById('quad-detail-stats').innerHTML = `
+                <div class="rounded-lg bg-slate-900/70 p-2"><div class="text-[9px] text-slate-400 uppercase font-bold">SOSAFE</div><div class="text-base font-black text-amber-400">${fSos.length}</div></div>
+                <div class="rounded-lg bg-slate-900/70 p-2"><div class="text-[9px] text-slate-400 uppercase font-bold">P. Críticos</div><div class="text-base font-black text-orange-400">${fCal.length}</div></div>
+                <div class="rounded-lg bg-slate-900/70 p-2"><div class="text-[9px] text-slate-400 uppercase font-bold">Intel/LPR</div><div class="text-base font-black text-rose-400">${fMech.length + fRob.length + fCalle.length}</div></div>
+            `;
+
+            const repContainer = document.getElementById('quad-detail-reports');
+            const combined = [
+                ...fSos.map(r => ({ kind: 'SOSAFE', badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40', title: r.categoria, sub: `${r.id} • ${resolveQuadrant(r)} • ${r.estado}`, desc: `${r.direccion || 'Peñaflor'} — ${r.descripcion}`, fecha: r.fecha })),
+                ...fCal.map(c => ({ kind: 'PUNTO CRÍTICO', badge: 'bg-orange-500/20 text-orange-300 border-orange-500/40', title: c.tipo, sub: `${c.id} • ${resolveQuadrant(c)} • ${c.estado}`, desc: `${c.direccion} — ${c.descripcion}`, fecha: c.fecha })),
+                ...fRob.map(v => ({ kind: 'VEHÍCULO LPR', badge: 'bg-red-500/20 text-red-300 border-red-500/40', title: `${v.patente} (${v.marcaModelo || 'Vehículo'})`, sub: `${v.tipoEncargo} • ${resolveQuadrant(v)} • ${v.estado}`, desc: v.observaciones || v.color, fecha: v.fecha })),
+                ...fMech.map(m => ({ kind: 'MECHERO', badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40', title: m.alias, sub: `Riesgo ${m.riesgo} • ${resolveQuadrant(m)} • ${m.estado}`, desc: `${m.sector || ''} ${m.senas || ''}`, fecha: m.fecha }))
+            ];
+            if (combined.length === 0) {
+                repContainer.innerHTML = `<div class="rounded-xl border border-dashed border-slate-700 p-6 text-center text-xs text-slate-400">Sin reportes registrados en este cuadrante.</div>`;
+            } else {
+                repContainer.innerHTML = combined.slice(0, 60).map(item => `
+                    <div class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2.5 text-xs space-y-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="px-2 py-0.5 rounded-full border text-[9px] font-black ${item.badge}">${item.kind}</span>
+                            <span class="text-[10px] font-mono text-slate-400">${esc(item.fecha)}</span>
+                        </div>
+                        <div class="font-bold text-white">${esc(item.title)}</div>
+                        <div class="text-[10px] text-cyan-300 font-semibold">${esc(item.sub)}</div>
+                        <div class="text-[11px] text-slate-300">${esc(item.desc)}</div>
+                    </div>
+                `).join('');
+            }
+
+            // Mapa de Cuadrantes
+            const mapEl = document.getElementById('quad-map');
+            if (!mapEl || typeof L === 'undefined') return;
+            if (!_quadMap) {
+                _quadMap = L.map('quad-map', { zoomControl: true }).setView([-33.6063, -70.8768], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(_quadMap);
+                _quadLayer = L.layerGroup().addTo(_quadMap);
+            }
+            _quadMap.invalidateSize();
+            _quadLayer.clearLayers();
+            if (_quadHeat) { _quadMap.removeLayer(_quadHeat); _quadHeat = null; }
+
+            L.polygon(PENAFLOR_COMMUNE_BOUNDARY, { color: '#f59e0b', weight: 2.5, dashArray: '6,4', fillOpacity: 0.02 }).addTo(_quadLayer);
+            CARABINEROS_QUADRANTS_GEO.forEach(q => {
+                const cSos = sosAll.filter(r => resolveQuadrant(r) === q.id).length;
+                const cCal = calAll.filter(r => resolveQuadrant(r) === q.id).length;
+                const cInt = mechAll.filter(r => resolveQuadrant(r) === q.id).length + robAll.filter(r => resolveQuadrant(r) === q.id).length;
+                const tot = cSos + cCal + cInt;
+                const isSel = qFocus === q.id;
+                L.polygon(q.coords, {
+                    color: q.color, weight: isSel ? 3.5 : 2, opacity: 0.92, fillColor: q.color, fillOpacity: isSel ? 0.30 : 0.14
+                }).bindPopup(`
+                    <div class="text-xs font-sans space-y-1">
+                        <div class="font-black" style="color:${q.color}">Cuadrante ${q.id}</div>
+                        <div class="font-semibold text-slate-700">${q.desc}</div>
+                        <div>SOSAFE: <strong>${cSos}</strong> • P. Críticos: <strong>${cCal}</strong> • Intel: <strong>${cInt}</strong></div>
+                        <button onclick="selectQuadrantFocus('${isSel ? 'ALL' : q.id}')" style="background:${q.color};color:#fff;padding:4px 8px;border-radius:6px;font-weight:700;font-size:11px;margin-top:4px;cursor:pointer;">${isSel ? 'Ver toda la comuna' : 'Ver reportes de ' + q.id}</button>
+                    </div>
+                `).addTo(_quadLayer);
+
+                const lbl = L.divIcon({
+                    className: '',
+                    html: `<div style="background:${q.color}ee;color:#fff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:900;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;">${q.id} (${tot})</div>`,
+                    iconSize: [70, 20], iconAnchor: [35, 10]
+                });
+                L.marker(q.center, { icon: lbl, interactive: false }).addTo(_quadLayer);
+            });
+
+            const showSos = document.getElementById('chk-qmap-sosafe')?.checked !== false;
+            const showCal = document.getElementById('chk-qmap-calor')?.checked !== false;
+            const showHeat = document.getElementById('chk-qmap-heat')?.checked !== false;
+            const heatPts = [];
+
+            if (showSos) {
+                fSos.forEach((r, i) => {
+                    const qId = resolveQuadrant(r);
+                    const c = parseCoords(r.gps, qId, i);
+                    heatPts.push([c[0], c[1], 0.75]);
+                    const bg = r.estado === 'RESUELTO' ? '#10b981' : (r.estado === 'EN_PROCESO' ? '#0ea5e9' : '#f59e0b');
+                    const ic = L.divIcon({ className: '', html: `<div style="background:${bg};color:#fff;width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;font-size:10px;box-shadow:0 2px 6px rgba(0,0,0,0.45);"><i class="fa-solid fa-bullhorn"></i></div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+                    L.marker(c, { icon: ic }).bindPopup(`<div class="text-xs font-sans"><strong>${esc(r.id)} (${qId})</strong><br>${esc(r.categoria)}<br>${esc(r.direccion || 'Peñaflor')}<br>Estado: <b>${esc(r.estado)}</b></div>`).addTo(_quadLayer);
+                });
+            }
+            if (showCal) {
+                fCal.forEach((p, i) => {
+                    const qId = resolveQuadrant(p);
+                    const c = parseCoords(p.gps, qId, i + 10);
+                    heatPts.push([c[0], c[1], 1.0]);
+                    const ic = L.divIcon({ className: '', html: `<div style="background:#ea580c;color:#fff;width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.5);"><i class="fa-solid fa-fire"></i></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+                    L.marker(c, { icon: ic }).bindPopup(`<div class="text-xs font-sans"><strong>${esc(p.tipo)} (${qId})</strong><br>${esc(p.direccion)}<br>${esc(p.descripcion)}</div>`).addTo(_quadLayer);
+                });
+            }
+            if (showHeat && heatPts.length > 0 && typeof L.heatLayer === 'function') {
+                _quadHeat = L.heatLayer(heatPts, { radius: 26, blur: 18, maxZoom: 16 }).addTo(_quadMap);
+            }
+        }
+
+        // ====================================================================
+        // TAB 2: SOSAFE PEÑAFLOR
+        // ====================================================================
+        function renderSosafeTab() {
+            const all = State.sosafe;
+            const fQ = document.getElementById('sosafe-filter-quad')?.value || 'ALL';
+            const fE = document.getElementById('sosafe-filter-estado')?.value || 'ALL';
+            const qTxt = (document.getElementById('sosafe-search')?.value || '').trim().toLowerCase();
+
+            const filtered = all.filter(r => {
+                if (fQ !== 'ALL' && resolveQuadrant(r) !== fQ) return false;
+                if (fE !== 'ALL' && String(r.estado || '').toUpperCase() !== fE) return false;
+                if (qTxt && !`${r.id} ${r.categoria} ${r.direccion} ${r.descripcion} ${r.cuadrante}`.toLowerCase().includes(qTxt)) return false;
+                return true;
+            });
+
+            const tot = all.length, rec = all.filter(r => r.estado === 'RECIBIDO').length, proc = all.filter(r => r.estado === 'EN_PROCESO').length, res = all.filter(r => r.estado === 'RESUELTO').length;
+            const pct = tot > 0 ? Math.round((res / tot) * 100) : 0;
+            document.getElementById('sosafe-kpis').innerHTML = `
+                <div class="glass-card rounded-2xl p-4"><div class="text-[10px] uppercase text-slate-400 font-bold">Total Reportes</div><div class="text-2xl font-black text-white mt-1">${tot}</div></div>
+                <div class="glass-card rounded-2xl p-4"><div class="text-[10px] uppercase text-slate-400 font-bold">Recibidos</div><div class="text-2xl font-black text-amber-400 mt-1">${rec}</div></div>
+                <div class="glass-card rounded-2xl p-4"><div class="text-[10px] uppercase text-slate-400 font-bold">En Proceso</div><div class="text-2xl font-black text-cyan-400 mt-1">${proc}</div></div>
+                <div class="glass-card rounded-2xl p-4"><div class="text-[10px] uppercase text-slate-400 font-bold">Resueltos</div><div class="text-2xl font-black text-emerald-400 mt-1">${res} <span class="text-xs">(${pct}%)</span></div></div>
+            `;
+
+            const catCounts = {};
+            all.forEach(r => { const c = r.categoria || 'Otros'; catCounts[c] = (catCounts[c] || 0) + 1; });
+            const sortedCats = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            const maxC = sortedCats[0]?.[1] || 1;
+            document.getElementById('sosafe-categories-bars').innerHTML = `
+                <div class="text-xs font-black text-white mb-2.5"><i class="fa-solid fa-chart-bar text-amber-400 mr-1.5"></i> Principales Incivilidades Reportadas</div>
+                ${sortedCats.length === 0 ? '<div class="text-xs text-slate-400">Sin datos aún.</div>' : `<div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">${sortedCats.map(([cat, cnt]) => `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[11px]"><span class="font-semibold text-slate-200 truncate">${esc(cat)}</span><span class="font-black text-amber-300">${cnt}</span></div>
+                        <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500" style="width:${Math.round((cnt / maxC) * 100)}%"></div></div>
+                    </div>
+                `).join('')}</div>`}
+            `;
+
+            const badgeCls = (est) => est === 'RESUELTO' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : (est === 'EN_PROCESO' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : (est === 'RECHAZADO' ? 'bg-red-500/20 text-red-300 border-red-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40'));
+            const grid = document.getElementById('sosafe-reports-grid');
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full glass-card rounded-2xl p-8 text-center text-xs text-slate-400">No hay reportes SOSAFE con los filtros seleccionados.</div>`;
+            } else {
+                grid.innerHTML = filtered.map(r => {
+                    const qId = resolveQuadrant(r);
+                    return `
+                        <div class="glass-card rounded-2xl p-4 space-y-2 text-xs">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-mono font-black text-amber-300">${esc(r.id)} • Cuadrante ${esc(qId)}</span>
+                                <span class="px-2 py-0.5 rounded-full border text-[10px] font-black ${badgeCls(r.estado)}">${esc(r.estado)}</span>
+                            </div>
+                            <div class="font-black text-white text-sm">${esc(r.categoria)}</div>
+                            <div class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-blue-400 mr-1"></i>${esc(r.direccion || r.gps || 'Peñaflor')} • ${esc(r.fecha)}</div>
+                            <p class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2.5 text-[11px] text-slate-200">${esc(r.descripcion)}</p>
+                            <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                                ${(r.fotosVecino || []).map((u, i) => `<a href="${esc(u)}" target="_blank" class="px-2.5 py-1 rounded-lg bg-blue-600/25 border border-blue-500/40 text-blue-200 font-bold text-[10px]"><i class="fa-solid fa-image mr-1"></i>Evidencia #${i + 1}</a>`).join('')}
+                                ${r.fotoSolucion && String(r.fotoSolucion).startsWith('http') ? `<a href="${esc(r.fotoSolucion)}" target="_blank" class="px-2.5 py-1 rounded-lg bg-emerald-600/25 border border-emerald-500/40 text-emerald-200 font-bold text-[10px]"><i class="fa-solid fa-check-double mr-1"></i>Respaldo Solución</a>` : ''}
+                            </div>
+                            ${r.respuestaOficial ? `<div class="text-[10px] text-emerald-200 bg-emerald-950/50 border border-emerald-500/30 rounded-lg p-2"><strong>Respuesta Municipal:</strong> ${esc(r.respuestaOficial)}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ====================================================================
+        // COMPRESIÓN DE IMÁGENES PARA INTELIGENCIA
+        // ====================================================================
+        function handleFilePreview(input, key) {
+            const file = input.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxDim = 1024;
+                    let w = img.width, h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        const r = Math.min(maxDim / w, maxDim / h);
+                        w = Math.round(w * r); h = Math.round(h * r);
+                    }
+                    const c = document.createElement('canvas');
+                    c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    State.pendingPhotos[key] = c.toDataURL('image/jpeg', 0.78);
+                    const prev = document.getElementById(`${key}-foto-preview`);
+                    if (prev) prev.innerHTML = `<span class="text-emerald-300 font-bold">✓ Foto lista (${Math.round(State.pendingPhotos[key].length / 1024)} KB)</span>`;
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function officerStamp() {
+            const s = State.session;
+            return s ? `[${s.institucion}] ${s.nombre}` : '[POLICIA]';
+        }
+
+        // ====================================================================
+        // TAB 3: MECHEROS
+        // ====================================================================
+        function resetMecheroForm() {
+            document.getElementById('form-mechero').reset();
+            document.getElementById('mech-id').value = '';
+            document.getElementById('mech-foto-existing').value = '';
+            document.getElementById('mech-foto-preview').innerHTML = '';
+            State.pendingPhotos.mech = '';
+        }
+
+        function editMechero(id) {
+            const m = State.mecheros.find(x => x.id === id);
+            if (!m) return;
+            document.getElementById('mech-id').value = m.id;
+            document.getElementById('mech-alias').value = m.alias || '';
+            document.getElementById('mech-cuadrante').value = resolveQuadrant(m);
+            document.getElementById('mech-riesgo').value = m.riesgo || 'ALTO';
+            document.getElementById('mech-sector').value = m.sector || '';
+            document.getElementById('mech-senas').value = m.senas || '';
+            document.getElementById('mech-estado').value = m.estado || 'ACTIVO';
+            document.getElementById('mech-obs').value = m.observaciones || '';
+            document.getElementById('mech-foto-existing').value = m.foto || '';
+            document.getElementById('mech-foto-preview').innerHTML = m.foto && m.foto.startsWith('http') ? `<a href="${esc(m.foto)}" target="_blank" class="underline text-cyan-300">Foto actual guardada</a>` : '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function saveMechero(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-mech');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
+            try {
+                await postAction('INTEL_SAVE_MECHERO', {
+                    id: document.getElementById('mech-id').value || '',
+                    alias: document.getElementById('mech-alias').value.trim(),
+                    cuadrante: document.getElementById('mech-cuadrante').value,
+                    riesgo: document.getElementById('mech-riesgo').value,
+                    sector: document.getElementById('mech-sector').value.trim(),
+                    senas: document.getElementById('mech-senas').value.trim(),
+                    estado: document.getElementById('mech-estado').value,
+                    observaciones: document.getElementById('mech-obs').value.trim(),
+                    foto: document.getElementById('mech-foto-existing').value || 'Sin foto',
+                    fotoBase64: State.pendingPhotos.mech || '',
+                    registradoPor: officerStamp()
+                });
+                resetMecheroForm();
+                await syncCloudData(false);
+                showToast('✅ Ficha de mechero guardada en Inteligencia 1410');
+            } catch (err) {
+                showToast('⚠️ Error: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Guardar en Inteligencia 1410';
+            }
+        }
+
+        function renderMecherosTab() {
+            const qTxt = (document.getElementById('mech-search')?.value || '').trim().toLowerCase();
+            const fQ = document.getElementById('mech-filter-quad')?.value || 'ALL';
+            const list = State.mecheros.filter(m => {
+                if (fQ !== 'ALL' && resolveQuadrant(m) !== fQ) return false;
+                if (qTxt && !`${m.alias} ${m.sector} ${m.senas} ${m.observaciones} ${m.cuadrante}`.toLowerCase().includes(qTxt)) return false;
+                return true;
+            });
+            const el = document.getElementById('mecheros-list');
+            if (list.length === 0) {
+                el.innerHTML = `<div class="col-span-full glass-card rounded-2xl p-8 text-center text-xs text-slate-400">Sin registros de mecheros en este filtro.</div>`;
+                return;
+            }
+            el.innerHTML = list.map(m => `
+                <div class="glass-card rounded-2xl p-4 space-y-2 text-xs">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="font-mono text-[10px] text-rose-300 font-black">${esc(m.id)} • Cuadrante ${esc(resolveQuadrant(m))}</span>
+                            <h4 class="text-sm font-black text-white">${esc(m.alias)}</h4>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40">${esc(m.riesgo)} • ${esc(m.estado)}</span>
+                    </div>
+                    <div class="text-[11px] text-slate-300"><strong>Sector:</strong> ${esc(m.sector || '-')}</div>
+                    <div class="text-[11px] text-slate-300"><strong>Señas:</strong> ${esc(m.senas || '-')}</div>
+                    ${m.observaciones ? `<p class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2 text-[11px] text-slate-200">${esc(m.observaciones)}</p>` : ''}
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-700/60 text-[10px] text-slate-400">
+                        <span class="truncate">${esc(m.registradoPor || 'CENCO')} • ${esc(m.fecha)}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${m.foto && m.foto.startsWith('http') ? `<a href="${esc(m.foto)}" target="_blank" class="px-2 py-1 rounded-lg bg-blue-600/25 text-blue-200 font-bold">📷 Foto</a>` : ''}
+                            <button type="button" onclick="editMechero('${esc(m.id)}')" class="px-2 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold">✏️ Editar</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ====================================================================
+        // TAB 4: VEHÍCULOS ROBADOS / LPR
+        // ====================================================================
+        function resetRobadoForm() {
+            document.getElementById('form-robado').reset();
+            document.getElementById('rob-id').value = '';
+            document.getElementById('rob-foto-existing').value = '';
+            document.getElementById('rob-foto-preview').innerHTML = '';
+            State.pendingPhotos.rob = '';
+        }
+
+        function editRobado(id) {
+            const v = State.robados.find(x => x.id === id);
+            if (!v) return;
+            document.getElementById('rob-id').value = v.id;
+            document.getElementById('rob-patente').value = v.patente || '';
+            document.getElementById('rob-cuadrante').value = resolveQuadrant(v);
+            document.getElementById('rob-marca').value = v.marcaModelo || '';
+            document.getElementById('rob-color').value = v.color || '';
+            document.getElementById('rob-tipo').value = v.tipoEncargo || 'ROBO VEHÍCULO';
+            document.getElementById('rob-estado').value = v.estado || 'ENCARGO VIGENTE';
+            document.getElementById('rob-obs').value = v.observaciones || '';
+            document.getElementById('rob-foto-existing').value = v.foto || '';
+            document.getElementById('rob-foto-preview').innerHTML = v.foto && v.foto.startsWith('http') ? `<a href="${esc(v.foto)}" target="_blank" class="underline text-cyan-300">Foto actual guardada</a>` : '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function saveRobado(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-rob');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
+            try {
+                await postAction('INTEL_SAVE_ROBADO', {
+                    id: document.getElementById('rob-id').value || '',
+                    patente: document.getElementById('rob-patente').value.trim().toUpperCase(),
+                    cuadrante: document.getElementById('rob-cuadrante').value,
+                    marcaModelo: document.getElementById('rob-marca').value.trim(),
+                    color: document.getElementById('rob-color').value.trim(),
+                    tipoEncargo: document.getElementById('rob-tipo').value,
+                    estado: document.getElementById('rob-estado').value,
+                    observaciones: document.getElementById('rob-obs').value.trim(),
+                    foto: document.getElementById('rob-foto-existing').value || 'Sin foto',
+                    fotoBase64: State.pendingPhotos.rob || '',
+                    registradoPor: officerStamp()
+                });
+                resetRobadoForm();
+                await syncCloudData(false);
+                showToast('✅ Encargo vehicular LPR guardado correctamente');
+            } catch (err) {
+                showToast('⚠️ Error: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Encargo Vehicular';
+            }
+        }
+
+        function renderRobadosTab() {
+            const qTxt = (document.getElementById('rob-search')?.value || '').trim().toLowerCase();
+            const fE = document.getElementById('rob-filter-estado')?.value || 'ALL';
+            const list = State.robados.filter(v => {
+                if (fE !== 'ALL' && String(v.estado || '').toUpperCase() !== fE) return false;
+                if (qTxt && !`${v.patente} ${v.marcaModelo} ${v.color} ${v.tipoEncargo} ${v.observaciones}`.toLowerCase().includes(qTxt)) return false;
+                return true;
+            });
+            const el = document.getElementById('robados-list');
+            if (list.length === 0) {
+                el.innerHTML = `<div class="col-span-full glass-card rounded-2xl p-8 text-center text-xs text-slate-400">Sin vehículos con encargo en este filtro.</div>`;
+                return;
+            }
+            el.innerHTML = list.map(v => {
+                const vig = String(v.estado || '').toUpperCase().includes('VIGENTE');
+                return `
+                    <div class="glass-card rounded-2xl p-4 space-y-2 text-xs border ${vig ? 'border-red-500/40' : 'border-slate-700/60'}">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <span class="inline-block px-2.5 py-0.5 rounded-lg bg-amber-400 text-slate-950 font-mono font-black text-sm tracking-widest">${esc(v.patente)}</span>
+                                <div class="text-[11px] font-bold text-white mt-1">${esc(v.marcaModelo || 'Vehículo')} ${v.color ? `• ${esc(v.color)}` : ''}</div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${vig ? 'bg-red-500/20 text-red-300 border-red-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'}">${esc(v.estado)}</span>
+                        </div>
+                        <div class="text-[11px] text-cyan-300 font-semibold">${esc(v.tipoEncargo)} • Cuadrante ${esc(resolveQuadrant(v))}</div>
+                        ${v.observaciones ? `<p class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2 text-[11px] text-slate-200">${esc(v.observaciones)}</p>` : ''}
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-700/60 text-[10px] text-slate-400">
+                            <span class="truncate">${esc(v.registradoPor || 'CENCO')} • ${esc(v.fecha)}</span>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                ${v.foto && v.foto.startsWith('http') ? `<a href="${esc(v.foto)}" target="_blank" class="px-2 py-1 rounded-lg bg-blue-600/25 text-blue-200 font-bold">📷 Foto</a>` : ''}
+                                <button type="button" onclick="editRobado('${esc(v.id)}')" class="px-2 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold">✏️ Editar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ====================================================================
+        // TAB 5: SITUACIÓN DE CALLE
+        // ====================================================================
+        function resetCalleForm() {
+            document.getElementById('form-calle').reset();
+            document.getElementById('calle-id').value = '';
+            document.getElementById('calle-foto-existing').value = '';
+            document.getElementById('calle-foto-preview').innerHTML = '';
+            State.pendingPhotos.calle = '';
+        }
+
+        function editCalle(id) {
+            const c = State.calle.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById('calle-id').value = c.id;
+            document.getElementById('calle-nombre').value = c.nombre || '';
+            document.getElementById('calle-rut').value = c.rutEdad || '';
+            document.getElementById('calle-cuadrante').value = resolveQuadrant(c);
+            document.getElementById('calle-estado').value = c.estado || 'EN SEGUIMIENTO';
+            document.getElementById('calle-ubicacion').value = c.ubicacion || '';
+            document.getElementById('calle-gps').value = c.gps || '';
+            document.getElementById('calle-perfil').value = c.perfil || '';
+            document.getElementById('calle-obs').value = c.observaciones || '';
+            document.getElementById('calle-foto-existing').value = c.foto || '';
+            document.getElementById('calle-foto-preview').innerHTML = c.foto && c.foto.startsWith('http') ? `<a href="${esc(c.foto)}" target="_blank" class="underline text-cyan-300">Foto actual guardada</a>` : '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function saveCalle(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-calle');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
+            try {
+                await postAction('INTEL_SAVE_CALLE', {
+                    id: document.getElementById('calle-id').value || '',
+                    nombre: document.getElementById('calle-nombre').value.trim(),
+                    rutEdad: document.getElementById('calle-rut').value.trim(),
+                    cuadrante: document.getElementById('calle-cuadrante').value,
+                    estado: document.getElementById('calle-estado').value,
+                    ubicacion: document.getElementById('calle-ubicacion').value.trim(),
+                    gps: document.getElementById('calle-gps').value.trim(),
+                    perfil: document.getElementById('calle-perfil').value.trim(),
+                    observaciones: document.getElementById('calle-obs').value.trim(),
+                    foto: document.getElementById('calle-foto-existing').value || 'Sin foto',
+                    fotoBase64: State.pendingPhotos.calle || '',
+                    registradoPor: officerStamp()
+                });
+                resetCalleForm();
+                await syncCloudData(false);
+                showToast('✅ Registro de Situación de Calle guardado');
+            } catch (err) {
+                showToast('⚠️ Error: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Guardar en Catastro Calle';
+            }
+        }
+
+        function renderCalleTab() {
+            const qTxt = (document.getElementById('calle-search')?.value || '').trim().toLowerCase();
+            const fQ = document.getElementById('calle-filter-quad')?.value || 'ALL';
+            const list = State.calle.filter(c => {
+                if (fQ !== 'ALL' && resolveQuadrant(c) !== fQ) return false;
+                if (qTxt && !`${c.nombre} ${c.rutEdad} ${c.ubicacion} ${c.perfil} ${c.observaciones}`.toLowerCase().includes(qTxt)) return false;
+                return true;
+            });
+            const el = document.getElementById('calle-list');
+            if (list.length === 0) {
+                el.innerHTML = `<div class="col-span-full glass-card rounded-2xl p-8 text-center text-xs text-slate-400">Sin registros en este filtro.</div>`;
+                return;
+            }
+            el.innerHTML = list.map(c => `
+                <div class="glass-card rounded-2xl p-4 space-y-2 text-xs">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="font-mono text-[10px] text-cyan-300 font-black">${esc(c.id)} • Cuadrante ${esc(resolveQuadrant(c))}</span>
+                            <h4 class="text-sm font-black text-white">${esc(c.nombre)} ${c.rutEdad ? `<span class="text-xs font-normal text-slate-400">(${esc(c.rutEdad)})</span>` : ''}</h4>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">${esc(c.estado)}</span>
+                    </div>
+                    <div class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-blue-400 mr-1"></i>${esc(c.ubicacion || '-')}</div>
+                    ${c.perfil ? `<div class="text-[11px] text-amber-200"><strong>Perfil:</strong> ${esc(c.perfil)}</div>` : ''}
+                    ${c.observaciones ? `<p class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2 text-[11px] text-slate-200">${esc(c.observaciones)}</p>` : ''}
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-700/60 text-[10px] text-slate-400">
+                        <span class="truncate">${esc(c.registradoPor || 'CENCO')} • ${esc(c.fecha)}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${c.foto && c.foto.startsWith('http') ? `<a href="${esc(c.foto)}" target="_blank" class="px-2 py-1 rounded-lg bg-blue-600/25 text-blue-200 font-bold">📷 Foto</a>` : ''}
+                            <button type="button" onclick="editCalle('${esc(c.id)}')" class="px-2 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold">✏️ Editar</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ====================================================================
+        // TAB 6: MAPA DE CALOR Y PUNTOS CRÍTICOS
+        // ====================================================================
+        function resetCalorForm() {
+            document.getElementById('form-calor').reset();
+            document.getElementById('calor-id').value = '';
+            document.getElementById('calor-foto-existing').value = '';
+            document.getElementById('calor-foto-preview').innerHTML = '';
+            State.pendingPhotos.calor = '';
+            if (_calorPickMarker && _calorMap) { _calorMap.removeLayer(_calorPickMarker); _calorPickMarker = null; }
+        }
+
+        function editPuntoCalor(id) {
+            const p = State.calor.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('calor-id').value = p.id;
+            document.getElementById('calor-tipo').value = p.tipo || 'INCIVILIDAD';
+            document.getElementById('calor-cuadrante').value = resolveQuadrant(p);
+            document.getElementById('calor-direccion').value = p.direccion || '';
+            document.getElementById('calor-gps').value = p.gps || '';
+            document.getElementById('calor-estado').value = p.estado || 'ACTIVO';
+            document.getElementById('calor-desc').value = p.descripcion || '';
+            document.getElementById('calor-foto-existing').value = p.foto || '';
+            document.getElementById('calor-foto-preview').innerHTML = p.foto && p.foto.startsWith('http') ? `<a href="${esc(p.foto)}" target="_blank" class="underline text-cyan-300">Foto actual guardada</a>` : '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function savePuntoCalor(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-calor');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
+            try {
+                await postAction('INTEL_SAVE_PUNTO_CALOR', {
+                    id: document.getElementById('calor-id').value || '',
+                    tipo: document.getElementById('calor-tipo').value,
+                    cuadrante: document.getElementById('calor-cuadrante').value,
+                    direccion: document.getElementById('calor-direccion').value.trim(),
+                    gps: document.getElementById('calor-gps').value.trim(),
+                    estado: document.getElementById('calor-estado').value,
+                    descripcion: document.getElementById('calor-desc').value.trim(),
+                    foto: document.getElementById('calor-foto-existing').value || 'Sin foto',
+                    fotoBase64: State.pendingPhotos.calor || '',
+                    registradoPor: officerStamp()
+                });
+                resetCalorForm();
+                await syncCloudData(false);
+                showToast('✅ Punto Crítico guardado en Mapa de Calor');
+            } catch (err) {
+                showToast('⚠️ Error: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-fire-flame-curved mr-1"></i> Guardar Punto en Mapa de Calor';
+            }
+        }
+
+        function renderCalorTab() {
+            const fQ = document.getElementById('calor-filter-quad')?.value || 'ALL';
+            const list = State.calor.filter(p => fQ === 'ALL' || resolveQuadrant(p) === fQ);
+            const el = document.getElementById('calor-list');
+            if (list.length === 0) {
+                el.innerHTML = `<div class="col-span-full glass-card rounded-2xl p-6 text-center text-xs text-slate-400">Sin puntos críticos en este filtro.</div>`;
+            } else {
+                el.innerHTML = list.map(p => `
+                    <div class="glass-card rounded-2xl p-3.5 space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-mono text-[10px] text-orange-300 font-black">${esc(p.id)} • Cuadrante ${esc(resolveQuadrant(p))}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-500/20 text-orange-300 border border-orange-500/40">${esc(p.estado)}</span>
+                        </div>
+                        <div class="font-black text-white">${esc(p.tipo)}</div>
+                        <div class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-orange-400 mr-1"></i>${esc(p.direccion)}</div>
+                        ${p.descripcion ? `<p class="text-[11px] text-slate-300 bg-slate-900/70 rounded-lg p-2">${esc(p.descripcion)}</p>` : ''}
+                        <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-700/60 text-[10px] text-slate-400">
+                            <span class="truncate">${esc(p.registradoPor || 'CENCO')} • ${esc(p.fecha)}</span>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                ${p.foto && p.foto.startsWith('http') ? `<a href="${esc(p.foto)}" target="_blank" class="px-2 py-0.5 rounded bg-blue-600/25 text-blue-200 font-bold">📷 Foto</a>` : ''}
+                                <button type="button" onclick="editPuntoCalor('${esc(p.id)}')" class="px-2 py-0.5 rounded bg-slate-700 text-white font-bold">✏️ Editar</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const mapEl = document.getElementById('calor-map');
+            if (!mapEl || typeof L === 'undefined') return;
+            if (!_calorMap) {
+                _calorMap = L.map('calor-map', { zoomControl: true }).setView([-33.6063, -70.8768], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(_calorMap);
+                _calorLayer = L.layerGroup().addTo(_calorMap);
+                _calorMap.on('click', (ev) => {
+                    const { lat, lng } = ev.latlng;
+                    const qId = detectQuadrantForPoint(lat, lng);
+                    document.getElementById('calor-gps').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    document.getElementById('calor-cuadrante').value = qId;
+                    document.getElementById('calor-pick-status').innerText = `✓ Punto marcado • Cuadrante ${qId}`;
+                    if (_calorPickMarker) _calorMap.removeLayer(_calorPickMarker);
+                    _calorPickMarker = L.marker([lat, lng]).addTo(_calorMap).bindPopup(`Nuevo punto • Cuadrante ${qId}`).openPopup();
+                });
+            }
+            _calorMap.invalidateSize();
+            _calorLayer.clearLayers();
+            if (_calorHeat) { _calorMap.removeLayer(_calorHeat); _calorHeat = null; }
+
+            L.polygon(PENAFLOR_COMMUNE_BOUNDARY, { color: '#f59e0b', weight: 2, dashArray: '6,4', fillOpacity: 0.02 }).addTo(_calorLayer);
+            CARABINEROS_QUADRANTS_GEO.forEach(q => {
+                L.polygon(q.coords, { color: q.color, weight: 1.8, opacity: 0.85, fillColor: q.color, fillOpacity: 0.12 }).addTo(_calorLayer);
+                L.marker(q.center, {
+                    icon: L.divIcon({ className: '', html: `<div style="background:${q.color}dd;color:#fff;padding:1px 6px;border-radius:999px;font-size:9px;font-weight:900;border:1px solid #fff;pointer-events:none;">${q.id}</div>`, iconSize: [44, 18], iconAnchor: [22, 9] }),
+                    interactive: false
+                }).addTo(_calorLayer);
+            });
+
+            const heatPts = [];
+            list.forEach((p, i) => {
+                const qId = resolveQuadrant(p);
+                const c = parseCoords(p.gps, qId, i);
+                heatPts.push([c[0], c[1], 1.0]);
+                const ic = L.divIcon({ className: '', html: `<div style="background:#ea580c;color:#fff;width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.5);"><i class="fa-solid fa-fire"></i></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+                L.marker(c, { icon: ic }).bindPopup(`<div class="text-xs font-sans"><strong>${esc(p.tipo)} (${qId})</strong><br>${esc(p.direccion)}<br>${esc(p.descripcion)}</div>`).addTo(_calorLayer);
+            });
+            if (heatPts.length > 0 && typeof L.heatLayer === 'function') {
+                _calorHeat = L.heatLayer(heatPts, { radius: 28, blur: 18, maxZoom: 16 }).addTo(_calorMap);
+            }
+        }
+
+        // Auto-resume saved session
+        (async function init() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+                if (saved && saved.rut) {
+                    State.session = saved;
+                    enterPortal();
+                    await syncCloudData(false);
+                }
+            } catch (e) {}
+            setInterval(() => {
+                if (State.session && document.visibilityState === 'visible') syncCloudData(false);
+            }, 60000);
+        })();
+    </script>
+</body>
+</html>
