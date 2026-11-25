@@ -22,29 +22,28 @@
         }
         .bg-muni-blur {
             position: fixed;
-            inset: -24px;
+            inset: 0;
             z-index: -2;
             background-image: url('./fondo-policia-collage.jpg');
             background-size: cover;
             background-position: center;
-            filter: blur(8px) saturate(1.12) brightness(0.40);
-            transform: scale(1.05);
+            background-repeat: no-repeat;
+            filter: none;
         }
         .bg-muni-overlay {
             position: fixed;
             inset: 0;
             z-index: -1;
-            background: radial-gradient(circle at 16% 12%, rgba(16, 185, 129, 0.20), transparent 45%),
-                        radial-gradient(circle at 86% 84%, rgba(37, 99, 235, 0.26), transparent 48%),
-                        linear-gradient(180deg, rgba(4, 10, 24, 0.72) 0%, rgba(6, 15, 34, 0.86) 100%);
+            background: transparent;
+            pointer-events: none;
         }
         .glass-card {
-            background: linear-gradient(160deg, rgba(13, 25, 48, 0.80), rgba(8, 17, 34, 0.74));
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(148, 163, 184, 0.20);
-            border-top: 1px solid rgba(255, 255, 255, 0.18);
-            box-shadow: 0 22px 54px rgba(0, 0, 0, 0.50);
+            background: linear-gradient(160deg, rgba(10, 20, 40, 0.82), rgba(7, 15, 32, 0.78));
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-top: 1px solid rgba(255, 255, 255, 0.30);
+            box-shadow: 0 22px 54px rgba(0, 0, 0, 0.55);
         }
         .inst-badge-card {
             background: rgba(15, 23, 42, 0.68);
@@ -91,25 +90,21 @@
     <!-- ================================================================== -->
     <main id="screen-login" class="min-h-screen flex items-center justify-center p-4 py-8">
         <div class="max-w-5xl w-full space-y-5">
-            <!-- Barra de 4 Logos Institucionales -->
+            <!-- Barra de 4 Logos Institucionales Oficiales -->
             <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-around gap-3">
                 <!-- 1. I. Municipalidad de Peñaflor -->
                 <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
-                    <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-700 to-indigo-900 border border-amber-300/60 flex items-center justify-center shadow">
-                        <svg viewBox="0 0 40 44" class="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20 3L35 8V22C35 31.5 28.5 38.2 20 41C11.5 38.2 5 31.5 5 22V8L20 3Z" fill="#1e3a8a" stroke="#fbbf24" stroke-width="2.2"/>
-                            <path d="M12 24H28M14 24V16H26V24M17 16V13H23V16M13 28H27" stroke="#fde68a" stroke-width="1.8" stroke-linecap="round"/>
-                            <circle cx="20" cy="10" r="1.8" fill="#fbbf24"/>
-                        </svg>
+                    <div class="h-12 w-12 rounded-xl bg-white p-0.5 flex items-center justify-center shadow overflow-hidden shrink-0">
+                        <img src="logo-municipalidad-penaflor.jpg" alt="Municipalidad de Peñaflor" class="w-full h-full object-contain">
                     </div>
                     <div class="leading-tight">
-                        <div class="text-[9px] font-black uppercase tracking-widest text-amber-300">I. Municipalidad</div>
+                        <div class="text-[9px] font-black uppercase tracking-widest text-sky-300">I. Municipalidad</div>
                         <div class="text-xs font-black text-white">PEÑAFLOR</div>
                     </div>
                 </div>
                 <!-- 2. Seguridad Pública 1410 -->
                 <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
-                    <div class="h-10 w-10 rounded-lg bg-white p-1 flex items-center justify-center shadow">
+                    <div class="h-12 w-12 rounded-xl bg-white p-1 flex items-center justify-center shadow overflow-hidden shrink-0">
                         <img src="logo-pena-seguro-1410.png" alt="Peña Seguro 1410" class="w-full h-full object-contain">
                     </div>
                     <div class="leading-tight">
@@ -119,12 +114,8 @@
                 </div>
                 <!-- 3. Carabineros de Chile -->
                 <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
-                    <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-800 to-green-950 border border-emerald-400/60 flex items-center justify-center shadow">
-                        <svg viewBox="0 0 40 44" class="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20 3L35 8V22C35 31.5 28.5 38.2 20 41C11.5 38.2 5 31.5 5 22V8L20 3Z" fill="#065f46" stroke="#fbbf24" stroke-width="2.2"/>
-                            <path d="M12 13L28 29M28 13L12 29" stroke="#fde68a" stroke-width="2.4" stroke-linecap="round"/>
-                            <circle cx="20" cy="21" r="4" fill="#064e3b" stroke="#fbbf24" stroke-width="1.8"/>
-                        </svg>
+                    <div class="h-12 w-12 rounded-xl bg-black p-0.5 border border-emerald-500/60 flex items-center justify-center shadow overflow-hidden shrink-0">
+                        <img src="logo-carabineros.jpg" alt="Carabineros de Chile" class="w-full h-full object-contain">
                     </div>
                     <div class="leading-tight">
                         <div class="text-[9px] font-black uppercase tracking-widest text-emerald-300">Orden y Patria</div>
@@ -133,15 +124,11 @@
                 </div>
                 <!-- 4. PDI Chile -->
                 <div class="inst-badge-card rounded-xl px-3 py-2 flex items-center gap-2.5">
-                    <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-900 to-slate-950 border border-amber-400/70 flex items-center justify-center shadow">
-                        <svg viewBox="0 0 40 40" class="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <polygon points="20,3 24,13 35,14 27,21 29,32 20,26 11,32 13,21 5,14 16,13" fill="#1d4ed8" stroke="#fbbf24" stroke-width="2"/>
-                            <circle cx="20" cy="19" r="5" fill="#0f172a" stroke="#fbbf24" stroke-width="1.6"/>
-                            <text x="20" y="21.5" text-anchor="middle" fill="#fde68a" font-size="6.5" font-weight="900" font-family="Inter,sans-serif">PDI</text>
-                        </svg>
+                    <div class="h-12 w-12 rounded-xl bg-[#00007a] p-0.5 border border-amber-400/70 flex items-center justify-center shadow overflow-hidden shrink-0">
+                        <img src="logo-pdi.webp" alt="PDI Chile" class="w-full h-full object-contain">
                     </div>
                     <div class="leading-tight">
-                        <div class="text-[9px] font-black uppercase tracking-widest text-blue-300">Policía de Investigaciones</div>
+                        <div class="text-[9px] font-black uppercase tracking-widest text-amber-300">Policía de Investigaciones</div>
                         <div class="text-xs font-black text-white">PDI CHILE</div>
                     </div>
                 </div>
@@ -200,11 +187,11 @@
                     <div>
                         <label class="block text-[11px] font-bold text-slate-300 mb-1">Institución</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <button type="button" id="btn-inst-carabineros" onclick="selectInstitution('CARABINEROS')" class="p-3 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-white font-black flex items-center justify-center gap-2 transition">
-                                <i class="fa-solid fa-shield-halved text-emerald-400"></i> CARABINEROS
+                            <button type="button" id="btn-inst-carabineros" onclick="selectInstitution('CARABINEROS')" class="p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-600/20 text-white font-black flex items-center justify-center gap-2 transition">
+                                <img src="logo-carabineros.jpg" alt="Carabineros" class="w-6 h-6 rounded object-contain bg-black"> CARABINEROS
                             </button>
-                            <button type="button" id="btn-inst-pdi" onclick="selectInstitution('PDI')" class="p-3 rounded-xl border border-slate-700 bg-slate-900/70 text-slate-300 font-black flex items-center justify-center gap-2 transition hover:border-blue-500">
-                                <i class="fa-solid fa-magnifying-glass-chart text-blue-400"></i> PDI CHILE
+                            <button type="button" id="btn-inst-pdi" onclick="selectInstitution('PDI')" class="p-2.5 rounded-xl border border-slate-700 bg-slate-900/70 text-slate-300 font-black flex items-center justify-center gap-2 transition hover:border-blue-500">
+                                <img src="logo-pdi.webp" alt="PDI" class="w-6 h-6 rounded object-contain bg-[#00007a]"> PDI CHILE
                             </button>
                         </div>
                     </div>
@@ -343,23 +330,23 @@
             <!-- Toast -->
             <div id="toast" class="hidden fixed bottom-5 right-5 z-[1000] px-4 py-3 rounded-2xl shadow-2xl text-xs font-black text-white border border-white/15"></div>
 
-            <!-- Barra Institucional Compacta (4 Logos) -->
+            <!-- Barra Institucional Compacta (4 Logos Oficiales) -->
             <div class="glass-card rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex flex-wrap items-center gap-2.5">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-950/70 border border-amber-400/35 text-[10px] font-black text-amber-200">
-                        <i class="fa-solid fa-landmark text-amber-400"></i> I. MUNICIPALIDAD DE PEÑAFLOR
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/80 border border-sky-400/40 text-[10px] font-black text-white">
+                        <img src="logo-municipalidad-penaflor.jpg" alt="Municipalidad de Peñaflor" class="w-6 h-6 rounded-md object-contain bg-white p-0.5"> I. MUNICIPALIDAD DE PEÑAFLOR
                     </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-cyan-400/35 text-[10px] font-black text-cyan-200">
-                        <img src="logo-pena-seguro-1410.png" alt="1410" class="w-4 h-4 object-contain bg-white rounded-xs p-0.5"> SEGURIDAD PÚBLICA 1410
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/80 border border-cyan-400/40 text-[10px] font-black text-cyan-200">
+                        <img src="logo-pena-seguro-1410.png" alt="1410" class="w-6 h-6 rounded-md object-contain bg-white p-0.5"> SEGURIDAD PÚBLICA 1410
                     </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-400/40 text-[10px] font-black text-emerald-200">
-                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> CARABINEROS DE CHILE
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-emerald-950/80 border border-emerald-400/50 text-[10px] font-black text-emerald-200">
+                        <img src="logo-carabineros.jpg" alt="Carabineros" class="w-6 h-6 rounded-md object-contain bg-black"> CARABINEROS DE CHILE
                     </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-blue-400/40 text-[10px] font-black text-blue-200">
-                        <i class="fa-solid fa-star text-amber-400"></i> PDI CHILE
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-[#00005c]/85 border border-amber-400/50 text-[10px] font-black text-amber-200">
+                        <img src="logo-pdi.webp" alt="PDI" class="w-6 h-6 rounded-md object-contain bg-[#00007a]"> PDI CHILE
                     </span>
                 </div>
-                <button type="button" onclick="switchTab('video')" class="px-3 py-1.5 rounded-xl bg-sky-600/25 hover:bg-sky-600 text-sky-200 hover:text-white border border-sky-400/40 text-[11px] font-black flex items-center gap-1.5 transition">
+                <button type="button" onclick="switchTab('video')" class="px-3 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600 text-sky-100 hover:text-white border border-sky-400/50 text-[11px] font-black flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-video"></i> Solicitar Respaldo Video CCTV
                 </button>
             </div>
