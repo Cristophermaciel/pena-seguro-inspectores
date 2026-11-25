@@ -1738,7 +1738,7 @@
                                         </div>
 
                                         <!-- Bloque 2: Registrar emergencia (Réplica exacta Governa + Cadena CAD) -->
-                                        <form id="form-cenco-telefonista" class="space-y-2.5">
+                                        <form id="form-cenco-telefonista" autocomplete="off" class="space-y-2.5">
                                             <div class="flex items-center justify-between">
                                                 <h3 class="text-xs font-bold cad-text">Registrar emergencia</h3>
                                                 <span id="cad-role-chain-hint" class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30">Cadena 1410 → Despacho</span>
@@ -1748,7 +1748,7 @@
                                             <div>
                                                 <label class="block text-[11px] font-semibold cad-text mb-1">Dirección <span class="text-red-400">*</span></label>
                                                 <div class="flex items-center cad-input p-0 overflow-hidden">
-                                                    <input type="text" id="tel-direccion" class="flex-1 bg-transparent px-2.5 py-2 text-xs cad-text outline-none" placeholder="Ej: Av. Vicuña Mackenna 2450" required>
+                                                    <input type="text" id="tel-direccion" name="cad_direccion_evento" value="" autocomplete="off" class="flex-1 bg-transparent px-2.5 py-2 text-xs cad-text outline-none" placeholder="Ej: Av. Vicuña Mackenna 2450" required>
                                                     <span class="px-2.5 py-2 text-[11px] cad-muted border-l cad-border shrink-0 select-none">, Peñaflor, Chile</span>
                                                 </div>
                                             </div>
@@ -10789,6 +10789,10 @@
         }
 
         function populateTelEmailCheckboxes() {
+            const dirEl = document.getElementById('tel-direccion');
+            if (dirEl && /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(dirEl.value.trim())) {
+                dirEl.value = '';
+            }
             const wrap = document.getElementById('tel-email-recipients-list');
             if (!wrap) return;
             const prevChecked = new Set(
