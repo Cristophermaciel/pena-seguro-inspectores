@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SOSAFE Peñaflor — Portal Vecinal Peña Seguro 1410</title>
+    <link rel="icon" type="image/png" href="./logo-pena-seguro-1410.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0b1120; color: #f8fafc; }
+        .glass-card { background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(51, 65, 85, 0.85); backdrop-filter: blur(10px); }
+        .leaflet-container { background: #0f172a; font-family: 'Inter', sans-serif; }
+        .sos-pin { width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; border: 2.5px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.45); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header Institucional -->
+    <header class="bg-gradient-to-r from-[#0a2463] via-blue-900 to-slate-900 border-b border-blue-500/30 sticky top-0 z-[500] shadow-xl">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <img src="./logo-pena-seguro-1410.png" alt="Peña Seguro 1410" class="w-10 h-10 rounded-xl bg-white p-1 shadow shrink-0" onerror="this.style.display='none'">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-sm sm:text-base font-black tracking-tight text-white truncate">SOSAFE PEÑAFLOR</h1>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black">1410</span>
+                    </div>
+                    <p class="text-[11px] text-blue-200 truncate">Portal Ciudadano de Incivilidades • I. Municipalidad de Peñaflor</p>
+                </div>
+            </div>
+            <div id="vecino-header-user" class="hidden items-center gap-2.5 shrink-0">
+                <div class="text-right hidden sm:block">
+                    <div id="hdr-vecino-nombre" class="text-xs font-bold text-white max-w-[170px] truncate"></div>
+                    <div id="hdr-vecino-rut" class="text-[10px] font-mono text-emerald-300"></div>
+                </div>
+                <button type="button" onclick="logoutVecino()" class="px-2.5 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-400/30 text-xs font-bold transition" title="Cerrar sesión">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Salir</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- PANTALLA 1: VERIFICACIÓN OBLIGATORIA CON CARNET DE IDENTIDAD -->
+    <main id="view-verify" class="flex-1 flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4">
+            <div class="text-center space-y-1.5">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-600/20 border border-blue-400/40 flex items-center justify-center text-cyan-400 text-2xl">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <h2 class="text-lg font-black text-white">Verificación Ciudadana Obligatoria</h2>
+                <p class="text-xs text-slate-300">Para reportar incivilidades en Peñaflor y evitar denuncias falsas, verifica tu identidad con tu <strong>RUT</strong> y una <strong>fotografía de tu Cédula de Identidad</strong>.</p>
+            </div>
+
+            <form id="form-verify-vecino" onsubmit="submitVecinoVerification(event)" class="space-y-3 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold text-cyan-300 mb-1">RUT Chileno <span class="text-red-400">*</span></label>
+                        <input type="text" id="ver-rut" oninput="onRutInputLive(this)" placeholder="Ej: 15.432.876-K" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono font-bold">
+                        <p id="ver-rut-hint" class="text-[10px] mt-1 text-slate-400">Con dígito verificador válido</p>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-cyan-300 mb-1">Teléfono Celular <span class="text-red-400">*</span></label>
+                        <input type="tel" id="ver-telefono" placeholder="+56 9 1234 5678" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-cyan-300 mb-1">Nombre Completo <span class="text-red-400">*</span></label>
+                    <input type="text" id="ver-nombre" placeholder="Nombres y Apellidos tal como figuran en tu carnet" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-cyan-300 mb-1">Correo Electrónico (opcional)</label>
+                    <input type="email" id="ver-correo" placeholder="tu.correo@ejemplo.cl" class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white">
+                </div>
+
+                <!-- Captura / Carga Fotográfica de Carnet de Identidad -->
+                <div class="rounded-xl border-2 border-dashed border-cyan-500/50 bg-slate-950/70 p-3.5 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <label class="font-black text-cyan-300 text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-camera"></i> Fotografía de Carnet de Identidad (Anverso) <span class="text-red-400">*</span>
+                        </label>
+                        <span id="ver-carnet-badge" class="hidden px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black">✓ Cargado</span>
+                    </div>
+                    <label class="block w-full py-3 px-4 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 border border-blue-400/40 text-center text-blue-200 font-bold cursor-pointer transition">
+                        <i class="fa-solid fa-id-card-clip mr-1.5"></i> Tomar foto o seleccionar imagen del Carnet
+                        <input type="file" id="ver-carnet-input" accept="image/*" capture="environment" onchange="handleCarnetPhotoSelect(event)" class="hidden">
+                    </label>
+                    <div id="ver-carnet-preview-wrap" class="hidden relative rounded-xl overflow-hidden border border-emerald-500/40 bg-black">
+                        <img id="ver-carnet-preview" src="" alt="Vista previa carnet" class="w-full max-h-44 object-contain">
+                    </div>
+                    <p class="text-[10px] text-slate-400 flex items-start gap-1.5">
+                        <i class="fa-solid fa-lock text-emerald-400 mt-0.5"></i>
+                        <span><strong>Privacidad garantizada:</strong> Tu RUT, teléfono y foto de carnet son estrictamente confidenciales para uso interno de Seguridad Pública Peñaflor y <strong>jamás</strong> aparecen en el mapa comunitario.</span>
+                    </p>
+                </div>
+
+                <button type="submit" id="btn-verify-enter" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-shield-check"></i> VERIFICAR IDENTIDAD E INGRESAR
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- PANTALLA 2: PORTAL CIUDADANO SOSAFE PEÑAFLOR -->
+    <main id="view-portal" class="hidden flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-4 space-y-4">
+        <!-- Navegación 3 pestañas -->
+        <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="switchPortalTab('reportar')" id="tab-btn-reportar" class="py-2.5 px-3 rounded-xl font-black text-xs bg-blue-600 text-white shadow flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-bullhorn"></i> <span>Reportar</span>
+            </button>
+            <button type="button" onclick="switchPortalTab('mapa')" id="tab-btn-mapa" class="py-2.5 px-3 rounded-xl font-bold text-xs bg-slate-800/90 text-slate-300 border border-slate-700 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-map-location-dot text-emerald-400"></i> <span>Mapa y Estadísticas</span>
+            </button>
+            <button type="button" onclick="switchPortalTab('mis')" id="tab-btn-mis" class="py-2.5 px-3 rounded-xl font-bold text-xs bg-slate-800/90 text-slate-300 border border-slate-700 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-list-check text-amber-400"></i> <span>Mis Reportes (<span id="my-reports-count">0</span>)</span>
+            </button>
+        </div>
+
+        <!-- TAB A: FORMULARIO REPORTAR INCIVILIDAD -->
+        <section id="portal-tab-reportar" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div class="lg:col-span-6 glass-card rounded-2xl p-4 sm:p-5 space-y-3">
+                <h2 class="text-sm font-black uppercase text-cyan-300 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Reportar Incivilidad en Peñaflor
+                </h2>
+                <form id="form-sosafe-report" onsubmit="submitSosafeReport(event)" class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">Tipo de Incivilidad <span class="text-red-400">*</span></label>
+                        <select id="rep-categoria" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-semibold">
+                            <option value="">-- Selecciona una categoría --</option>
+                            <option value="Microbasural / Basura en vía pública">🗑️ Microbasural / Basura en vía pública</option>
+                            <option value="Luminaria apagada / Falla eléctrica">💡 Luminaria apagada / Falla eléctrica</option>
+                            <option value="Ruco / Situación de calle">⛺ Ruco / Situación de calle</option>
+                            <option value="Vehículo abandonado">🚗 Vehículo abandonado</option>
+                            <option value="Consumo de alcohol / drogas en vía pública">🍷 Consumo de alcohol / drogas en vía pública</option>
+                            <option value="Ruidos molestos / Fiesta clandestina">🔊 Ruidos molestos / Fiesta clandestina</option>
+                            <option value="Daño a mobiliario urbano / Área verde">🌳 Daño a mobiliario urbano / Área verde</option>
+                            <option value="Animales sueltos / Riesgo vial">🐕 Animales sueltos / Riesgo vial</option>
+                            <option value="Comercio ilegal / Ocupación indebida">🏪 Comercio ilegal / Ocupación indebida</option>
+                            <option value="Otra incivilidad">📌 Otra incivilidad</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="font-bold text-slate-300">Dirección o Referencia <span class="text-red-400">*</span></label>
+                            <span id="rep-geo-status" class="text-[10px] font-bold text-slate-400"></span>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <input type="text" id="rep-direccion" required placeholder="Ej: Av. Vicuña Mackenna 2450, esquina..." class="flex-1 px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white">
+                            <button type="button" onclick="locateReportAddress()" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shrink-0" title="Buscar dirección en Peñaflor">
+                                <i class="fa-solid fa-magnifying-glass-location"></i>
+                            </button>
+                            <button type="button" onclick="useMyGpsForReport()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shrink-0" title="Usar mi GPS actual">
+                                <i class="fa-solid fa-location-crosshairs"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5">Cuadrante Detectado</label>
+                                <select id="rep-cuadrante" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-bold">
+                                    <option value="252A">252A — Peñaflor Centro</option>
+                                    <option value="252B">252B — Peñaflor Norte</option>
+                                    <option value="252C">252C — Peñaflor Sur</option>
+                                    <option value="253A">253A — Malloco</option>
+                                    <option value="253B">253B — Malloco Sur / Pelvín</option>
+                                    <option value="SRA">SRA — Sector Rural A</option>
+                                    <option value="SRB">SRB — Sector Rural B</option>
+                                    <option value="SRA1">SRA1 — Sector Rural A1</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5">Coordenadas GPS</label>
+                                <input type="text" id="rep-gps" readonly placeholder="Toca el mapa →" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-emerald-300 font-mono text-[11px]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">Descripción de lo ocurrido <span class="text-red-400">*</span></label>
+                        <textarea id="rep-descripcion" rows="3" required placeholder="Describe el problema, horario habitual, referencias visibles..." class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-300 mb-1">Fotografías de Respaldo (opcional, máx. 3)</label>
+                        <label class="block w-full py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-700 text-center text-cyan-300 font-bold cursor-pointer">
+                            <i class="fa-solid fa-camera mr-1.5"></i> Adjuntar fotos del problema
+                            <input type="file" id="rep-fotos-input" accept="image/*" multiple onchange="handleReportPhotosSelect(event)" class="hidden">
+                        </label>
+                        <div id="rep-fotos-preview" class="flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+
+                    <button type="submit" id="btn-submit-report" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-paper-plane"></i> ENVIAR REPORTE A SEGURIDAD PÚBLICA 1410
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mapa interactivo para elegir el punto exacto -->
+            <div class="lg:col-span-6 glass-card rounded-2xl overflow-hidden flex flex-col min-h-[380px]">
+                <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-700 flex items-center justify-between text-xs">
+                    <span class="font-bold text-cyan-300"><i class="fa-solid fa-map-pin mr-1"></i> Toca o arrastra el pin en el mapa de Peñaflor</span>
+                    <span class="text-[10px] text-slate-400">Ubicación exacta</span>
+                </div>
+                <div id="picker-map" class="flex-1 min-h-[360px]"></div>
+            </div>
+        </section>
+
+        <!-- TAB B: MAPA COMUNITARIO SOSAFE PEÑAFLOR & ESTADÍSTICAS -->
+        <section id="portal-tab-mapa" class="hidden space-y-4">
+            <div id="sosafe-kpi-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-8 glass-card rounded-2xl overflow-hidden relative min-h-[460px] flex flex-col">
+                    <div class="px-3.5 py-2.5 bg-slate-900/95 border-b border-slate-700 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button type="button" onclick="setPublicMapFilter('ALL')" id="flt-ALL" class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-[11px]">Todos</button>
+                            <button type="button" onclick="setPublicMapFilter('RECIBIDO')" id="flt-RECIBIDO" class="px-2.5 py-1 rounded-lg bg-slate-800 text-amber-300 font-bold text-[11px]">🟡 Recibidos</button>
+                            <button type="button" onclick="setPublicMapFilter('EN_PROCESO')" id="flt-EN_PROCESO" class="px-2.5 py-1 rounded-lg bg-slate-800 text-cyan-300 font-bold text-[11px]">🔵 En Proceso</button>
+                            <button type="button" onclick="setPublicMapFilter('RESUELTO')" id="flt-RESUELTO" class="px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-300 font-bold text-[11px]">🟢 Resueltos</button>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="togglePublicHeatmap()" id="btn-pub-heat" class="px-2.5 py-1 rounded-lg bg-orange-600/25 border border-orange-400/50 text-orange-300 font-bold text-[11px]">🔥 Calor</button>
+                            <button type="button" onclick="loadSosafePublicData(true)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px]"><i class="fa-solid fa-rotate"></i></button>
+                        </div>
+                    </div>
+                    <div id="public-sosafe-map" class="flex-1 min-h-[420px]"></div>
+                </div>
+
+                <div class="lg:col-span-4 space-y-3">
+                    <div class="glass-card rounded-2xl p-4 space-y-2.5">
+                        <h3 class="text-xs font-black uppercase text-cyan-300"><i class="fa-solid fa-chart-bar mr-1"></i> Reportes por Cuadrante</h3>
+                        <div id="sosafe-stats-quadrants" class="space-y-2 text-xs"></div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 space-y-2.5">
+                        <h3 class="text-xs font-black uppercase text-amber-300"><i class="fa-solid fa-tags mr-1"></i> Principales Incivilidades</h3>
+                        <div id="sosafe-stats-categories" class="space-y-1.5 text-xs"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB C: MIS REPORTES (SEGUIMIENTO PERSONAL) -->
+        <section id="portal-tab-mis" class="hidden space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-black uppercase text-cyan-300"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Seguimiento de Mis Reportes</h2>
+                <button type="button" onclick="loadSosafePublicData(true)" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i> Actualizar Estado</button>
+            </div>
+            <div id="my-reports-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </section>
+    </main>
+
+    <!-- Toast -->
+    <div id="sos-toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-[999] px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-2xl"></div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzA-qJkVTWhnL_0YKPb3uA3k_-Pr7Wlp-gQUZXxQJjBacM5eHTJ7PiCh7eeTKN2LjxroA/exec';
+
+        const QUAD_CENTERS = {
+            '252A': [-33.6085, -70.9005],
+            '252B': [-33.6005, -70.8810],
+            '252C': [-33.6135, -70.8920],
+            '253A': [-33.6048, -70.8555],
+            '253B': [-33.6165, -70.8620],
+            'SRA':  [-33.5880, -70.8700],
+            'SRB':  [-33.6300, -70.8750],
+            'SRA1': [-33.5950, -70.9150]
+        };
+
+        const State = {
+            vecino: null,
+            carnetBase64: '',
+            reportFotos: [],
+            publicReports: [],
+            myReports: [],
+            mapFilter: 'ALL',
+            showHeat: true,
+            pickerMap: null,
+            pickerMarker: null,
+            publicMap: null,
+            publicLayer: null,
+            publicHeat: null
+        };
+
+        function showToast(msg, cls = 'bg-emerald-600') {
+            const el = document.getElementById('sos-toast');
+            if (!el) return;
+            el.className = `fixed bottom-5 left-1/2 -translate-x-1/2 z-[999] px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-2xl ${cls}`;
+            el.innerText = msg;
+            el.classList.remove('hidden');
+            clearTimeout(window._sosToastT);
+            window._sosToastT = setTimeout(() => el.classList.add('hidden'), 4200);
+        }
+
+        // --- Validación Matemática RUT Chileno (Módulo 11) ---
+        function formatChileanRut(raw) {
+            const clean = String(raw || '').replace(/[^0-9kK]/g, '').toUpperCase();
+            if (clean.length <= 1) return clean;
+            const body = clean.slice(0, -1);
+            const dv = clean.slice(-1);
+            const withDots = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return `${withDots}-${dv}`;
+        }
+
+        function isValidChileanRut(raw) {
+            const clean = String(raw || '').replace(/[^0-9kK]/g, '').toUpperCase();
+            if (clean.length < 8 || clean.length > 9) return false;
+            const body = clean.slice(0, -1);
+            const dv = clean.slice(-1);
+            if (!/^\d+$/.test(body)) return false;
+            let sum = 0, mul = 2;
+            for (let i = body.length - 1; i >= 0; i--) {
+                sum += Number(body[i]) * mul;
+                mul = mul === 7 ? 2 : mul + 1;
+            }
+            const res = 11 - (sum % 11);
+            const expected = res === 11 ? '0' : (res === 10 ? 'K' : String(res));
+            return dv === expected;
+        }
+
+        function onRutInputLive(inp) {
+            const formatted = formatChileanRut(inp.value);
+            inp.value = formatted;
+            const hint = document.getElementById('ver-rut-hint');
+            if (!hint) return;
+            if (formatted.length < 8) {
+                hint.className = 'text-[10px] mt-1 text-slate-400';
+                hint.innerText = 'Con dígito verificador válido';
+            } else if (isValidChileanRut(formatted)) {
+                hint.className = 'text-[10px] mt-1 text-emerald-400 font-bold';
+                hint.innerText = '✓ RUT chileno válido';
+            } else {
+                hint.className = 'text-[10px] mt-1 text-red-400 font-bold';
+                hint.innerText = '✕ RUT inválido, revisa el dígito verificador';
+            }
+        }
+
+        function compressImageFile(file, maxW = 900, quality = 0.72) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(1, maxW / Math.max(img.width, img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.round(img.width * scale);
+                        canvas.height = Math.round(img.height * scale);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = () => resolve('');
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleCarnetPhotoSelect(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            showToast('Procesando foto del carnet...', 'bg-blue-600');
+            const b64 = await compressImageFile(file, 900, 0.72);
+            if (!b64) { showToast('No se pudo leer la imagen.', 'bg-red-600'); return; }
+            State.carnetBase64 = b64;
+            document.getElementById('ver-carnet-preview').src = b64;
+            document.getElementById('ver-carnet-preview-wrap').classList.remove('hidden');
+            document.getElementById('ver-carnet-badge').classList.remove('hidden');
+            showToast('✓ Fotografía de carnet lista para verificación', 'bg-emerald-600');
+        }
+
+        function submitVecinoVerification(e) {
+            e.preventDefault();
+            const rut = formatChileanRut(document.getElementById('ver-rut').value);
+            const nombre = document.getElementById('ver-nombre').value.trim();
+            const telefono = document.getElementById('ver-telefono').value.trim();
+            const correo = document.getElementById('ver-correo').value.trim();
+
+            if (!isValidChileanRut(rut)) {
+                showToast('⚠️ Ingresa un RUT chileno válido.', 'bg-red-600');
+                return;
+            }
+            if (!State.carnetBase64) {
+                showToast('⚠️ Debes adjuntar una fotografía de tu Carnet de Identidad para continuar.', 'bg-red-600');
+                return;
+            }
+            State.vecino = { rut, nombre, telefono, correo, fotoCarnetBase64: State.carnetBase64 };
+            try { sessionStorage.setItem('sosafe_vecino_session', JSON.stringify(State.vecino)); } catch (ignore) {}
+            enterPortal();
+        }
+
+        function enterPortal() {
+            document.getElementById('view-verify').classList.add('hidden');
+            document.getElementById('view-portal').classList.remove('hidden');
+            const hdr = document.getElementById('vecino-header-user');
+            hdr.classList.remove('hidden');
+            hdr.classList.add('flex');
+            document.getElementById('hdr-vecino-nombre').innerText = State.vecino.nombre;
+            document.getElementById('hdr-vecino-rut').innerText = `${State.vecino.rut} • ✓ Verificado`;
+
+            initPickerMap();
+            loadSosafePublicData(false);
+        }
+
+        function logoutVecino() {
+            sessionStorage.removeItem('sosafe_vecino_session');
+            State.vecino = null;
+            State.carnetBase64 = '';
+            location.reload();
+        }
+
+        function switchPortalTab(tab) {
+            ['reportar', 'mapa', 'mis'].forEach(t => {
+                document.getElementById(`portal-tab-${t}`).classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                btn.className = t === tab
+                    ? 'py-2.5 px-3 rounded-xl font-black text-xs bg-blue-600 text-white shadow flex items-center justify-center gap-1.5'
+                    : 'py-2.5 px-3 rounded-xl font-bold text-xs bg-slate-800/90 text-slate-300 border border-slate-700 flex items-center justify-center gap-1.5';
+            });
+            if (tab === 'reportar' && State.pickerMap) setTimeout(() => State.pickerMap.invalidateSize(), 100);
+            if (tab === 'mapa') setTimeout(() => renderPublicSosafeMapAndStats(), 120);
+            if (tab === 'mis') renderMyReportsList();
+        }
+
+        function detectApproxQuadrant(lat, lon) {
+            let bestQ = '252A', bestD = Infinity;
+            Object.keys(QUAD_CENTERS).forEach(q => {
+                const [qlat, qlon] = QUAD_CENTERS[q];
+                const d = Math.hypot(lat - qlat, lon - qlon);
+                if (d < bestD) { bestD = d; bestQ = q; }
+            });
+            return bestQ;
+        }
+
+        function setPickerCoords(lat, lon) {
+            document.getElementById('rep-gps').value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+            document.getElementById('rep-cuadrante').value = detectApproxQuadrant(lat, lon);
+            if (!State.pickerMap) return;
+            if (!State.pickerMarker) {
+                State.pickerMarker = L.marker([lat, lon], { draggable: true }).addTo(State.pickerMap);
+                State.pickerMarker.on('dragend', (ev) => {
+                    const p = ev.target.getLatLng();
+                    document.getElementById('rep-gps').value = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
+                    document.getElementById('rep-cuadrante').value = detectApproxQuadrant(p.lat, p.lng);
+                });
+            } else {
+                State.pickerMarker.setLatLng([lat, lon]);
+            }
+            State.pickerMap.setView([lat, lon], 16, { animate: true });
+        }
+
+        function initPickerMap() {
+            if (State.pickerMap) { setTimeout(() => State.pickerMap.invalidateSize(), 100); return; }
+            State.pickerMap = L.map('picker-map').setView([-33.6063, -70.8768], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(State.pickerMap);
+            State.pickerMap.on('click', (e) => {
+                setPickerCoords(e.latlng.lat, e.latlng.lng);
+                const st = document.getElementById('rep-geo-status');
+                if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = '✓ Punto marcado en mapa'; }
+            });
+            setTimeout(() => State.pickerMap.invalidateSize(), 150);
+        }
+
+        function useMyGpsForReport() {
+            if (!navigator.geolocation) { showToast('Tu navegador no soporta GPS.', 'bg-amber-600'); return; }
+            showToast('Obteniendo ubicación GPS...', 'bg-blue-600');
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    setPickerCoords(pos.coords.latitude, pos.coords.longitude);
+                    const st = document.getElementById('rep-geo-status');
+                    if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = '✓ GPS exacto capturado'; }
+                    showToast('✓ Ubicación GPS capturada', 'bg-emerald-600');
+                },
+                () => showToast('No se pudo obtener el GPS. Puedes tocar el mapa o buscar tu dirección.', 'bg-amber-600'),
+                { enableHighAccuracy: true, timeout: 8000 }
+            );
+        }
+
+        async function locateReportAddress() {
+            const raw = document.getElementById('rep-direccion').value.trim();
+            if (!raw || raw.length < 3) return;
+            const st = document.getElementById('rep-geo-status');
+            if (st) { st.className = 'text-[10px] font-bold text-blue-400'; st.innerText = 'Buscando en Peñaflor...'; }
+            try {
+                const q = raw.replace(/\bav\.?\s+/gi, 'Avenida ') + ', Peñaflor, Región Metropolitana, Chile';
+                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=3&countrycodes=cl&bounded=1&viewbox=-70.965,-33.545,-70.815,-33.665&q=${encodeURIComponent(q)}`;
+                const resp = await fetch(url);
+                const arr = await resp.json();
+                if (Array.isArray(arr) && arr.length > 0) {
+                    setPickerCoords(parseFloat(arr[0].lat), parseFloat(arr[0].lon));
+                    if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = '✓ Ubicado en Peñaflor'; }
+                } else {
+                    if (st) { st.className = 'text-[10px] font-bold text-amber-400'; st.innerText = 'Toca el punto en el mapa'; }
+                }
+            } catch (e) {
+                if (st) { st.className = 'text-[10px] font-bold text-amber-400'; st.innerText = 'Toca el punto en el mapa'; }
+            }
+        }
+
+        async function handleReportPhotosSelect(e) {
+            const files = Array.from(e.target.files || []).slice(0, 3);
+            State.reportFotos = [];
+            for (const f of files) {
+                const b64 = await compressImageFile(f, 960, 0.72);
+                if (b64) State.reportFotos.push(b64);
+            }
+            const wrap = document.getElementById('rep-fotos-preview');
+            wrap.innerHTML = State.reportFotos.map((b, i) => `
+                <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-600">
+                    <img src="${b}" class="w-full h-full object-cover">
+                    <button type="button" onclick="State.reportFotos.splice(${i},1);document.getElementById('rep-fotos-preview').children[${i}].remove()" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-black">✕</button>
+                </div>
+            `).join('');
+        }
+
+        async function submitSosafeReport(e) {
+            e.preventDefault();
+            if (!State.vecino || !State.vecino.fotoCarnetBase64) {
+                showToast('⚠️ Debes verificar tu identidad primero.', 'bg-red-600');
+                return;
+            }
+            const btn = document.getElementById('btn-submit-report');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ENVIANDO REPORTE...';
+            try {
+                const payload = {
+                    action: 'SOSAFE_CREAR_REPORTE',
+                    rut: State.vecino.rut,
+                    nombre: State.vecino.nombre,
+                    telefono: State.vecino.telefono,
+                    correo: State.vecino.correo,
+                    fotoCarnetBase64: State.vecino.fotoCarnetBase64,
+                    categoria: document.getElementById('rep-categoria').value,
+                    cuadrante: document.getElementById('rep-cuadrante').value,
+                    direccion: document.getElementById('rep-direccion').value.trim(),
+                    gps: document.getElementById('rep-gps').value.trim(),
+                    descripcion: document.getElementById('rep-descripcion').value.trim(),
+                    fotosBase64: State.reportFotos
+                };
+                const resp = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const json = await resp.json();
+                if (json && json.ok) {
+                    showToast(`✅ ¡Reporte ${json.id} enviado a Seguridad Pública 1410!`, 'bg-emerald-600');
+                    e.target.reset();
+                    State.reportFotos = [];
+                    document.getElementById('rep-fotos-preview').innerHTML = '';
+                    document.getElementById('rep-gps').value = '';
+                    await loadSosafePublicData(false);
+                    switchPortalTab('mis');
+                } else {
+                    showToast(`⚠️ Error: ${json?.error || 'No se pudo enviar'}`, 'bg-red-600');
+                }
+            } catch (err) {
+                showToast('⚠️ Error de conexión al enviar reporte. Intenta nuevamente.', 'bg-red-600');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ENVIAR REPORTE A SEGURIDAD PÚBLICA 1410';
+            }
+        }
+
+        async function loadSosafePublicData(notify = false) {
+            try {
+                const rutQ = State.vecino ? `&rut=${encodeURIComponent(State.vecino.rut)}` : '';
+                const resp = await fetch(`${API_URL}?action=sosafePublic${rutQ}`);
+                const data = await resp.json();
+                if (data && data.ok) {
+                    State.publicReports = Array.isArray(data.reports) ? data.reports : [];
+                    State.myReports = Array.isArray(data.myReports) ? data.myReports : [];
+                    document.getElementById('my-reports-count').innerText = State.myReports.length;
+                    if (!document.getElementById('portal-tab-mapa').classList.contains('hidden')) {
+                        renderPublicSosafeMapAndStats();
+                    }
+                    if (!document.getElementById('portal-tab-mis').classList.contains('hidden')) {
+                        renderMyReportsList();
+                    }
+                    if (notify) showToast('✓ Datos actualizados', 'bg-blue-600');
+                }
+            } catch (ignore) {}
+        }
+
+        function setPublicMapFilter(flt) {
+            State.mapFilter = flt;
+            ['ALL', 'RECIBIDO', 'EN_PROCESO', 'RESUELTO'].forEach(k => {
+                const b = document.getElementById(`flt-${k}`);
+                if (!b) return;
+                b.className = k === flt
+                    ? 'px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-[11px]'
+                    : 'px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold text-[11px]';
+            });
+            renderPublicSosafeMapAndStats();
+        }
+
+        function togglePublicHeatmap() {
+            State.showHeat = !State.showHeat;
+            const b = document.getElementById('btn-pub-heat');
+            if (b) b.style.opacity = State.showHeat ? '1' : '0.45';
+            renderPublicSosafeMapAndStats();
+        }
+
+        function parseCoords(gpsStr, quad, idx) {
+            const m = String(gpsStr || '').match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            if (m) return [parseFloat(m[1]), parseFloat(m[2])];
+            const base = QUAD_CENTERS[String(quad || '252A').toUpperCase()] || [-33.6063, -70.8768];
+            const a = idx * 2.39996;
+            const r = 0.0016 * ((idx % 4) + 0.5);
+            return [base[0] + Math.cos(a) * r, base[1] + Math.sin(a) * r];
+        }
+
+        function renderPublicSosafeMapAndStats() {
+            const all = State.publicReports || [];
+            const tot = all.length;
+            const res = all.filter(r => r.estado === 'RESUELTO').length;
+            const proc = all.filter(r => r.estado === 'EN_PROCESO').length;
+            const rec = all.filter(r => r.estado === 'RECIBIDO').length;
+            const pct = tot > 0 ? Math.round((res / tot) * 100) : 0;
+
+            document.getElementById('sosafe-kpi-grid').innerHTML = `
+                <div class="glass-card rounded-xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Total Reportes Vecinos</div><div class="text-2xl font-black text-white mt-1">${tot}</div></div>
+                <div class="glass-card rounded-xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Resueltos</div><div class="text-2xl font-black text-emerald-400 mt-1">${res} <span class="text-xs font-bold">(${pct}%)</span></div></div>
+                <div class="glass-card rounded-xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">En Proceso</div><div class="text-2xl font-black text-cyan-400 mt-1">${proc}</div></div>
+                <div class="glass-card rounded-xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Pendientes / Recibidos</div><div class="text-2xl font-black text-amber-400 mt-1">${rec}</div></div>
+            `;
+
+            // Estadísticas por Cuadrante
+            const byQuad = {};
+            all.forEach(r => { const q = r.cuadrante || '252A'; byQuad[q] = (byQuad[q] || 0) + 1; });
+            const quadEntries = Object.entries(byQuad).sort((a, b) => b[1] - a[1]);
+            document.getElementById('sosafe-stats-quadrants').innerHTML = quadEntries.length === 0
+                ? '<p class="text-slate-400">Sin reportes registrados aún.</p>'
+                : quadEntries.map(([q, cnt]) => {
+                    const w = Math.max(8, Math.round((cnt / Math.max(1, tot)) * 100));
+                    return `<div><div class="flex justify-between font-bold mb-0.5"><span>Cuadrante ${q}</span><span class="text-cyan-300">${cnt}</span></div><div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" style="width:${w}%"></div></div></div>`;
+                }).join('');
+
+            // Estadísticas por Categoría
+            const byCat = {};
+            all.forEach(r => { byCat[r.categoria] = (byCat[r.categoria] || 0) + 1; });
+            const catEntries = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            document.getElementById('sosafe-stats-categories').innerHTML = catEntries.length === 0
+                ? '<p class="text-slate-400">Sin reportes registrados aún.</p>'
+                : catEntries.map(([c, cnt]) => `<div class="flex items-center justify-between gap-2 py-1 border-b border-slate-800"><span class="truncate text-slate-200">${c}</span><span class="px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 font-black text-[10px]">${cnt}</span></div>`).join('');
+
+            // Mapa Público SOSAFE Peñaflor
+            if (!State.publicMap) {
+                State.publicMap = L.map('public-sosafe-map').setView([-33.6063, -70.8768], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(State.publicMap);
+                State.publicLayer = L.layerGroup().addTo(State.publicMap);
+            }
+            State.publicMap.invalidateSize();
+            State.publicLayer.clearLayers();
+            if (State.publicHeat) { State.publicMap.removeLayer(State.publicHeat); State.publicHeat = null; }
+
+            const filtered = State.mapFilter === 'ALL' ? all : all.filter(r => r.estado === State.mapFilter);
+            const heatPts = [];
+            filtered.forEach((r, idx) => {
+                const coords = parseCoords(r.gps, r.cuadrante, idx);
+                heatPts.push([coords[0], coords[1], r.estado === 'RESUELTO' ? 0.35 : 0.9]);
+                const bg = r.estado === 'RESUELTO' ? '#10b981' : (r.estado === 'EN_PROCESO' ? '#0ea5e9' : '#f59e0b');
+                const icon = L.divIcon({
+                    className: '',
+                    html: `<div class="sos-pin" style="background:${bg};"><i class="fa-solid ${r.estado === 'RESUELTO' ? 'fa-check' : 'fa-exclamation'}"></i></div>`,
+                    iconSize: [28, 28], iconAnchor: [14, 14]
+                });
+                const fotoSolHtml = r.fotoSolucion && r.fotoSolucion.startsWith('http')
+                    ? `<div class="mt-1"><a href="${r.fotoSolucion}" target="_blank" style="color:#059669;font-weight:700;">📸 Ver foto de solución</a></div>` : '';
+                L.marker(coords, { icon }).bindPopup(`
+                    <div class="text-xs font-sans space-y-1 max-w-[230px]">
+                        <div class="font-black text-slate-900">${r.id} • ${r.cuadrante}</div>
+                        <div class="font-bold text-blue-700">${r.categoria}</div>
+                        <div class="text-slate-600">${r.direccion || 'Peñaflor'}</div>
+                        <div class="text-slate-700">${r.descripcion}</div>
+                        <div class="font-bold" style="color:${bg}">Estado: ${r.estado}</div>
+                        ${r.respuestaOficial ? `<div class="bg-emerald-50 border border-emerald-200 rounded p-1 text-[11px] text-emerald-900"><strong>Respuesta 1410:</strong> ${r.respuestaOficial}</div>` : ''}
+                        ${fotoSolHtml}
+                    </div>
+                `).addTo(State.publicLayer);
+            });
+            if (State.showHeat && heatPts.length > 0 && typeof L.heatLayer === 'function') {
+                State.publicHeat = L.heatLayer(heatPts, { radius: 26, blur: 18, maxZoom: 16 }).addTo(State.publicMap);
+            }
+        }
+
+        function renderMyReportsList() {
+            const wrap = document.getElementById('my-reports-list');
+            const list = State.myReports || [];
+            if (list.length === 0) {
+                wrap.innerHTML = `<div class="md:col-span-2 glass-card rounded-2xl p-8 text-center text-slate-400 text-xs">Aún no tienes reportes ingresados con tu RUT (${State.vecino?.rut || ''}).</div>`;
+                return;
+            }
+            const badge = (est) => {
+                if (est === 'RESUELTO') return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                if (est === 'EN_PROCESO') return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+                if (est === 'RECHAZADO') return 'bg-red-500/20 text-red-300 border-red-500/40';
+                return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+            };
+            wrap.innerHTML = list.map(r => `
+                <div class="glass-card rounded-2xl p-4 space-y-2 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-mono font-black text-cyan-300">${r.id}</span>
+                        <span class="px-2.5 py-0.5 rounded-full border text-[10px] font-black ${badge(r.estado)}">${r.estado}</span>
+                    </div>
+                    <div class="font-bold text-white text-sm">${r.categoria}</div>
+                    <div class="text-slate-400 text-[11px]"><i class="fa-solid fa-location-dot text-blue-400 mr-1"></i>[${r.cuadrante}] ${r.direccion || 'Peñaflor'} • ${r.fecha}</div>
+                    <p class="text-slate-200 bg-slate-950/60 rounded-lg p-2.5">${r.descripcion}</p>
+                    ${r.fotosVecino && r.fotosVecino.length > 0 ? `<div class="flex flex-wrap gap-2 text-[11px]">${r.fotosVecino.map((u, i) => `<a href="${u}" target="_blank" class="text-blue-400 hover:underline font-bold"><i class="fa-solid fa-image mr-1"></i>Tu foto #${i + 1}</a>`).join('')}</div>` : ''}
+                    ${r.respuestaOficial || r.fotoSolucion ? `
+                        <div class="rounded-xl bg-emerald-950/60 border border-emerald-500/40 p-3 space-y-1">
+                            <div class="text-[10px] font-black uppercase text-emerald-300"><i class="fa-solid fa-shield-check mr-1"></i> Respuesta Seguridad Pública Peñaflor ${r.fechaResolucion ? `(${r.fechaResolucion})` : ''}</div>
+                            ${r.respuestaOficial ? `<p class="text-emerald-100">${r.respuestaOficial}</p>` : ''}
+                            ${r.fotoSolucion && r.fotoSolucion.startsWith('http') ? `<a href="${r.fotoSolucion}" target="_blank" class="inline-flex items-center gap-1 mt-1 px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[11px]"><i class="fa-solid fa-camera-retro"></i> Ver Foto de Respaldo de Solución</a>` : ''}
+                        </div>
+                    ` : `<div class="text-[10px] text-slate-400 italic">Tu reporte está siendo gestionado por Central 1410.</div>`}
+                </div>
+            `).join('');
+        }
+
+        // Restaurar sesión verificada si sigue en la misma pestaña
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const saved = JSON.parse(sessionStorage.getItem('sosafe_vecino_session') || 'null');
+                if (saved && saved.rut && saved.fotoCarnetBase64) {
+                    State.vecino = saved;
+                    State.carnetBase64 = saved.fotoCarnetBase64;
+                    enterPortal();
+                }
+            } catch (ignore) {}
+        });
+    </script>
+</body>
+</html>
