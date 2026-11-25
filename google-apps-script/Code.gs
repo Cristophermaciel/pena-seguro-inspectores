@@ -2454,6 +2454,7 @@ function apiHandleAction(payload) {
       if (rowIndex < 0) return { ok: false, error: "Folio CAD no encontrado: " + folioId };
 
       const currentRow = shBit.getRange(rowIndex, 1, 1, 24).getValues()[0];
+      const prevEstado = String(currentRow[3] || "").trim().toUpperCase();
       const newEstado = (payload.estado || currentRow[3] || "DESPACHADO").toUpperCase();
       const newDespachador = payload.despachador !== undefined && payload.despachador !== "" ? payload.despachador : currentRow[14];
       const newMoviles = payload.movilesAsignados !== undefined ? String(payload.movilesAsignados).trim() : String(currentRow[15] || "").trim();
@@ -2521,6 +2522,30 @@ function apiHandleAction(payload) {
             ]);
           });
         }
+      }
+
+      // Notificación automática a Telegram cuando un procedimiento pasa a FINALIZADO o CANCELADO
+      if ((newEstado === "FINALIZADO" || newEstado === "CANCELADO") && prevEstado !== newEstado) {
+        const catStr = String(currentRow[5] || "Procedimiento").trim();
+        const subStr = String(currentRow[6] || "").trim();
+        const detalleCierre = [
+          newEstado === "FINALIZADO" ? "✅ PROCEDIMIENTO CERRADO / FINALIZADO" : "🚫 PROCEDIMIENTO CANCELADO",
+          "📋 Relato inicial: " + String(currentRow[12] || "-"),
+          "🏁 Resolución / Resultado: " + String(newResolucion || (payload.eventoHistorial && payload.eventoHistorial.accion) || "Finalizado sin observaciones adicionales")
+        ].join("\n");
+        enviarRespaldoTelegram({
+          titulo: newEstado === "FINALIZADO" ? "PROCEDIMIENTO FINALIZADO" : "PROCEDIMIENTO CANCELADO",
+          folio: folioId,
+          fecha: newHoraCierre || nowFormatted,
+          tipo: catStr + (subStr ? " — " + subStr : ""),
+          cuadrante: String(currentRow[7] || "-"),
+          lugar: String(currentRow[8] || "-"),
+          movil: newMoviles || "Sin móvil asignado",
+          responsable: (payload.eventoHistorial && payload.eventoHistorial.usuario) || newDespachador || String(currentRow[13] || "Operador CENCO"),
+          detalle: detalleCierre,
+          urlFotoDrive: allImgs[0] || "",
+          imagenesBase64: Array.isArray(payload.nuevasImagenesBase64) ? payload.nuevasImagenesBase64 : []
+        });
       }
 
       return { ok: true, action: action, folioId: folioId, estado: newEstado, imagenes: allImgs, nuevasImagenes: newlySavedUrls };
