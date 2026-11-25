@@ -2150,31 +2150,20 @@ function apiHandleAction(payload) {
         closedSummaryLines.push("• " + v.movil + " (" + (v.rut || "-") + "): Km " + kmIni + " → " + kmTerm + " (+" + kmRec + " km)");
       });
 
-      // 2. Finalizar TODOS los procedimientos de Geocerca GPS abiertos en CENCO_Bitacora_CAD
+      // 2. Eliminar del registro TODAS las salidas de geocerca GPS al cerrar turno (deja la bitácora limpia y alineada para el turno entrante, manteniendo los procedimientos reales abiertos)
       const shBit = ss.getSheetByName(SHEETS.CENCO_BITACORA);
       let closedGeofencesCount = 0;
       if (shBit && shBit.getLastRow() > 1) {
         const lastRowB = shBit.getLastRow();
-        const scanB = Math.min(150, lastRowB - 1);
-        const startRowB = lastRowB - scanB + 1;
-        const rowsB = shBit.getRange(startRowB, 1, scanB, 24).getValues();
-        for (let i = 0; i < rowsB.length; i++) {
+        const rowsB = shBit.getRange(2, 1, lastRowB - 1, 6).getValues();
+        for (let i = rowsB.length - 1; i >= 0; i--) {
           const r = rowsB[i];
-          const fId = String(r[0] || "").trim();
+          const fId = String(r[0] || "").trim().toUpperCase();
           const orig = String(r[2] || "").trim().toUpperCase();
-          const est = String(r[3] || "").trim().toUpperCase();
           const cat = String(r[5] || "").trim().toUpperCase();
           const isGeo = fId.indexOf("CAD-GPS-") === 0 || orig === "ALERTA GPS GEOCERCA" || cat.indexOf("GEOCERCA") >= 0;
           if (!isGeo) continue;
-          if (est === "FINALIZADO" || est === "CANCELADO" || est === "DESCARTADA") continue;
-
-          const prevRes = String(r[19] || "").trim();
-          const newRes = prevRes
-            ? (prevRes + " | Finalizado al Cierre de Turno CENCO (" + turnoCencoId + ")")
-            : ("Finalizado automáticamente al Cierre de Turno CENCO (" + turnoCencoId + ")");
-          shBit.getRange(startRowB + i, 4).setValue("FINALIZADO");
-          shBit.getRange(startRowB + i, 19).setValue(fechaCierre);
-          shBit.getRange(startRowB + i, 20).setValue(newRes);
+          shBit.deleteRow(i + 2);
           closedGeofencesCount++;
         }
       }
