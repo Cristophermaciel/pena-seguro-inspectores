@@ -1857,6 +1857,22 @@
                                             </div>
                                             <div id="tel-images-preview" class="flex flex-wrap gap-1.5"></div>
 
+                                            <!-- Enviar copia automática por correo electrónico (Directorio Admin) -->
+                                            <div class="rounded-lg border cad-border bg-slate-900/50 p-2 space-y-1.5">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <label class="text-[11px] font-bold text-indigo-300 flex items-center gap-1.5">
+                                                        <i class="fa-solid fa-envelope-open-text"></i> Enviar copia por correo
+                                                        <span id="tel-email-selected-badge" class="hidden px-1.5 py-0.5 rounded-full bg-indigo-600 text-white text-[9px] font-black">0</span>
+                                                    </label>
+                                                    <div class="flex items-center gap-1.5 text-[10px]">
+                                                        <button type="button" onclick="toggleTelEmailCheckboxes(true)" class="text-blue-400 hover:underline font-bold">Todos</button>
+                                                        <span class="text-slate-600">|</span>
+                                                        <button type="button" onclick="toggleTelEmailCheckboxes(false)" class="text-slate-400 hover:underline font-bold">Limpiar</button>
+                                                    </div>
+                                                </div>
+                                                <div id="tel-email-recipients-list" class="max-h-28 overflow-y-auto space-y-1 pr-0.5"></div>
+                                            </div>
+
                                             <!-- Botón Registrar (alineado a la derecha como Governa) -->
                                             <div class="flex items-center justify-between pt-1">
                                                 <label class="inline-flex items-center gap-1.5 text-[11px] cad-muted cursor-pointer">
@@ -9655,6 +9671,7 @@
         }
 
         function populateCentralActiveVehiclesSelect() {
+            populateTelEmailCheckboxes();
             const sel = document.getElementById('tel-vehiculo-asignar');
             if (!sel) return;
             const prev = sel.value;
@@ -10771,6 +10788,44 @@
             showToast(`✓ Excel (.CSV) descargado (${filtered.length} registros)`, 'bg-emerald-600');
         }
 
+        function populateTelEmailCheckboxes() {
+            const wrap = document.getElementById('tel-email-recipients-list');
+            if (!wrap) return;
+            const prevChecked = new Set(
+                Array.from(wrap.querySelectorAll('.tel-email-chk:checked')).map(cb => String(cb.value || '').toLowerCase())
+            );
+            const activeEmails = getEmailDirectoryDB()
+                .filter(e => String(e.estado || 'ACTIVO').toUpperCase() !== 'INACTIVO')
+                .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+            if (activeEmails.length === 0) {
+                wrap.innerHTML = `<p class="text-[10px] cad-muted italic py-0.5">Sin correos aún. Agrégalos en Panel Admin → Correos.</p>`;
+                updateTelEmailSelectedBadge();
+                return;
+            }
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            wrap.innerHTML = activeEmails.map(item => `
+                <label class="flex items-center gap-2 px-2 py-1 rounded bg-slate-950/70 border border-slate-800 hover:border-indigo-500/60 cursor-pointer text-[11px]">
+                    <input type="checkbox" value="${esc(item.email)}" ${prevChecked.has(String(item.email || '').toLowerCase()) ? 'checked' : ''} onchange="updateTelEmailSelectedBadge()" class="tel-email-chk accent-indigo-500 shrink-0">
+                    <span class="truncate font-semibold text-slate-200">${esc(item.nombre)}</span>
+                    <span class="truncate text-[10px] text-slate-400 font-mono ml-auto">${esc(item.email)}</span>
+                </label>
+            `).join('');
+            updateTelEmailSelectedBadge();
+        }
+
+        function updateTelEmailSelectedBadge() {
+            const badge = document.getElementById('tel-email-selected-badge');
+            if (!badge) return;
+            const cnt = document.querySelectorAll('#tel-email-recipients-list .tel-email-chk:checked').length;
+            badge.innerText = `${cnt} selec.`;
+            badge.classList.toggle('hidden', cnt === 0);
+        }
+
+        function toggleTelEmailCheckboxes(checked) {
+            document.querySelectorAll('#tel-email-recipients-list .tel-email-chk').forEach(cb => { cb.checked = Boolean(checked); });
+            updateTelEmailSelectedBadge();
+        }
+
         function openCencoSendEmailModal() {
             const inc = getCencoIncidentsDB().find(i => i.folioId === CencoState.currentModalFolioId);
             if (!inc) return;
@@ -10993,6 +11048,9 @@
                 const movAsignado = document.getElementById('tel-vehiculo-asignar')?.value || '';
                 const estadoInit = movAsignado ? 'DESPACHADO' : 'PENDIENTE_DESPACHO';
                 const imgsB64 = [...(CencoState.tempImages.tel || [])];
+                const selectedEmails = Array.from(document.querySelectorAll('#tel-email-recipients-list .tel-email-chk:checked'))
+                    .map(cb => String(cb.value || '').trim().toLowerCase())
+                    .filter(Boolean);
 
                 const payload = {
                     action: 'CENCO_CREAR_INCIDENTE',
@@ -11021,11 +11079,36 @@
                 };
 
                 const res = await sendPayloadToGoogleSheets(payload);
-                const list = getCencoIncidentsDB();
-                list.unshift(Object.assign({}, payload, {
+                const savedInc = Object.assign({}, payload, {
                     imagenes: (res && Array.isArray(res.imagenes) && res.imagenes.length > 0) ? res.imagenes : imgsB64
-                }));
+                });
+                const list = getCencoIncidentsDB();
+                list.unshift(savedInc);
                 saveCencoIncidentsDB(list);
+
+                let emailMsg = '';
+                if (selectedEmails.length > 0) {
+                    const mailRes = await sendPayloadToGoogleSheets({
+                        action: 'CENCO_ENVIAR_CORREO_PROCEDIMIENTO',
+                        folioId,
+                        recipients: selectedEmails,
+                        notaAdicional: '',
+                        enviadoPor: AppState.userName || AppState.userRut || 'Central 1410',
+                        incident: savedInc
+                    });
+                    if (mailRes && mailRes.ok) {
+                        savedInc.historial.push({
+                            fecha: new Date().toLocaleString('es-CL'),
+                            rol: 'CORREO_OFICIAL',
+                            usuario: AppState.userName || AppState.userRut || 'Central 1410',
+                            accion: `📧 Copia enviada por correo a: ${selectedEmails.join(', ')}`
+                        });
+                        saveCencoIncidentsDB(list);
+                        emailMsg = ` + 📧 enviado a ${selectedEmails.length} correo(s)`;
+                    } else {
+                        emailMsg = ` (⚠️ correo pendiente: ${mailRes?.error || 'revisa puente'})`;
+                    }
+                }
 
                 e.target.reset();
                 document.getElementById('cad-fecha-ahora').checked = true;
@@ -11033,10 +11116,11 @@
                 populateCencoSubcategories('tel-categoria', 'tel-subcategoria');
                 onCencoQuadrantChange('tel');
                 clearCencoTempImages('tel');
+                toggleTelEmailCheckboxes(false);
                 if (btn) btn.disabled = false;
 
                 renderAllCencoPanels();
-                showToast(`✓ Folio ${folioId} registrado${movAsignado ? ' y despachado a ' + movAsignado : ' en cola de Despacho'}`, 'bg-emerald-600');
+                showToast(`✓ Folio ${folioId} registrado${movAsignado ? ' y despachado a ' + movAsignado : ' en cola de Despacho'}${emailMsg}`, 'bg-emerald-600');
             });
 
             // 3. Composer tipo Chat de la Bitácora Drawer (texto + fotos a Drive)
