@@ -12798,7 +12798,12 @@
                     <button type="button" onclick="this.closest('.conf-unit-row').remove()" class="px-2 py-1.5 rounded bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white text-[11px] font-bold" title="Quitar">✕</button>
                 </div>
             `;
-            wrap.appendChild(row);
+            if (!data && wrap.firstChild) {
+                wrap.prepend(row);
+                row.querySelector('.conf-u-movil')?.focus();
+            } else {
+                wrap.appendChild(row);
+            }
         }
 
         function collectConformacionUnits(wrapId) {
