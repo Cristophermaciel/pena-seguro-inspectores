@@ -10,12 +10,32 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background: #0b1120; color: #f8fafc; }
         .glass-card { background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(51, 65, 85, 0.85); backdrop-filter: blur(10px); }
         .leaflet-container { background: #0f172a; font-family: 'Inter', sans-serif; }
         .sos-pin { width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; border: 2.5px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.45); }
+        /* Marco horizontal oficial formato Cédula de Identidad (ISO ID-1: 1.586:1) */
+        .id-frame-guide {
+            position: relative;
+            width: 86%;
+            max-width: 410px;
+            aspect-ratio: 1.586 / 1;
+            border: 3px solid #38bdf8;
+            border-radius: 14px;
+            box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.72);
+        }
+        .id-frame-corner { position: absolute; width: 22px; height: 22px; border-color: #10b981; border-style: solid; }
+        .id-scan-line {
+            position: absolute; left: 6%; right: 6%; height: 2px;
+            background: linear-gradient(90deg, transparent, #38bdf8, #10b981, transparent);
+            box-shadow: 0 0 10px #38bdf8;
+            animation: idScanMove 2.2s ease-in-out infinite;
+        }
+        @keyframes idScanMove { 0%, 100% { top: 10%; } 50% { top: 88%; } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -45,23 +65,59 @@
         </div>
     </header>
 
-    <!-- PANTALLA 1: VERIFICACIÓN OBLIGATORIA CON CARNET DE IDENTIDAD -->
+    <!-- PANTALLA 1: VERIFICACIÓN OBLIGATORIA DE CARNET REAL (QR REGISTRO CIVIL O MARCO HORIZONTAL + OCR) -->
     <main id="view-verify" class="flex-1 flex items-center justify-center p-4">
         <div class="glass-card rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4">
             <div class="text-center space-y-1.5">
                 <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-600/20 border border-blue-400/40 flex items-center justify-center text-cyan-400 text-2xl">
                     <i class="fa-solid fa-id-card"></i>
                 </div>
-                <h2 class="text-lg font-black text-white">Verificación Ciudadana Obligatoria</h2>
-                <p class="text-xs text-slate-300">Para reportar incivilidades en Peñaflor y evitar denuncias falsas, verifica tu identidad con tu <strong>RUT</strong> y una <strong>fotografía de tu Cédula de Identidad</strong>.</p>
+                <h2 class="text-lg font-black text-white">Verificación Real de Carnet de Identidad</h2>
+                <p class="text-xs text-slate-300">Para evitar denuncias falsas, escanea el <strong>código QR del reverso de tu Carnet</strong> (Registro Civil) o captura el <strong>anverso derecho dentro del recuadro</strong>.</p>
             </div>
 
             <form id="form-verify-vecino" onsubmit="submitVecinoVerification(event)" class="space-y-3 text-xs">
+                <!-- Escáner / Verificador Real de Carnet -->
+                <div class="rounded-xl border-2 border-dashed border-cyan-500/50 bg-slate-950/75 p-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-black text-cyan-300 text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved"></i> Paso 1: Validar Cédula Chilena <span class="text-red-400">*</span>
+                        </span>
+                        <span id="ver-carnet-badge" class="hidden px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black">✓ Verificado</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button type="button" onclick="openCarnetCamera('QR')" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-qrcode text-sm"></i> Escanear QR Carnet
+                        </button>
+                        <button type="button" onclick="openCarnetCamera('FRAME')" class="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-id-card-clip text-sm"></i> Cámara con Marco
+                        </button>
+                    </div>
+
+                    <label class="block w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-center text-slate-300 font-semibold cursor-pointer transition text-[11px]">
+                        <i class="fa-solid fa-upload mr-1.5 text-cyan-400"></i> O subir foto horizontal del Carnet / QR desde galería
+                        <input type="file" id="ver-carnet-input" accept="image/*" onchange="handleCarnetFileUpload(event)" class="hidden">
+                    </label>
+
+                    <div id="ver-carnet-status" class="hidden rounded-lg px-3 py-2 text-[11px] font-bold"></div>
+
+                    <div id="ver-carnet-preview-wrap" class="hidden relative rounded-xl overflow-hidden border border-emerald-500/40 bg-black">
+                        <img id="ver-carnet-preview" src="" alt="Vista previa carnet" class="w-full max-h-44 object-contain">
+                    </div>
+
+                    <p class="text-[10px] text-slate-400 flex items-start gap-1.5">
+                        <i class="fa-solid fa-lock text-emerald-400 mt-0.5"></i>
+                        <span><strong>Privacidad garantizada:</strong> Solo se aceptan cédulas reales (QR oficial de <code>registrocivil.cl</code> o anverso horizontal validado). Tu RUT y foto de carnet son privados y <strong>nunca</strong> aparecen en el mapa comunitario.</span>
+                    </p>
+                </div>
+
+                <!-- Paso 2: Datos del Vecino -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                         <label class="block font-bold text-cyan-300 mb-1">RUT Chileno <span class="text-red-400">*</span></label>
                         <input type="text" id="ver-rut" oninput="onRutInputLive(this)" placeholder="Ej: 15.432.876-K" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono font-bold">
-                        <p id="ver-rut-hint" class="text-[10px] mt-1 text-slate-400">Con dígito verificador válido</p>
+                        <p id="ver-rut-hint" class="text-[10px] mt-1 text-slate-400">Se completa solo al escanear el QR</p>
                     </div>
                     <div>
                         <label class="block font-bold text-cyan-300 mb-1">Teléfono Celular <span class="text-red-400">*</span></label>
@@ -79,37 +135,53 @@
                     <input type="email" id="ver-correo" placeholder="tu.correo@ejemplo.cl" class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white">
                 </div>
 
-                <!-- Captura / Carga Fotográfica de Carnet de Identidad -->
-                <div class="rounded-xl border-2 border-dashed border-cyan-500/50 bg-slate-950/70 p-3.5 space-y-2">
-                    <div class="flex items-center justify-between gap-2">
-                        <label class="font-black text-cyan-300 text-xs flex items-center gap-1.5">
-                            <i class="fa-solid fa-camera"></i> Fotografía de Carnet de Identidad (Anverso) <span class="text-red-400">*</span>
-                        </label>
-                        <span id="ver-carnet-badge" class="hidden px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black">✓ Cargado</span>
-                    </div>
-                    <label class="block w-full py-3 px-4 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 border border-blue-400/40 text-center text-blue-200 font-bold cursor-pointer transition">
-                        <i class="fa-solid fa-id-card-clip mr-1.5"></i> Tomar foto o seleccionar imagen del Carnet
-                        <input type="file" id="ver-carnet-input" accept="image/*" capture="environment" onchange="handleCarnetPhotoSelect(event)" class="hidden">
-                    </label>
-                    <div id="ver-carnet-preview-wrap" class="hidden relative rounded-xl overflow-hidden border border-emerald-500/40 bg-black">
-                        <img id="ver-carnet-preview" src="" alt="Vista previa carnet" class="w-full max-h-44 object-contain">
-                    </div>
-                    <p class="text-[10px] text-slate-400 flex items-start gap-1.5">
-                        <i class="fa-solid fa-lock text-emerald-400 mt-0.5"></i>
-                        <span><strong>Privacidad garantizada:</strong> Tu RUT, teléfono y foto de carnet son estrictamente confidenciales para uso interno de Seguridad Pública Peñaflor y <strong>jamás</strong> aparecen en el mapa comunitario.</span>
-                    </p>
-                </div>
-
                 <button type="submit" id="btn-verify-enter" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 transition">
-                    <i class="fa-solid fa-shield-check"></i> VERIFICAR IDENTIDAD E INGRESAR
+                    <i class="fa-solid fa-shield-check"></i> INGRESAR AL PORTAL SOSAFE PEÑAFLOR
                 </button>
             </form>
         </div>
     </main>
 
+    <!-- MODAL CÁMARA GUIADA CON MARCO HORIZONTAL DE CARNET Y ESCÁNER QR EN VIVO -->
+    <div id="carnet-camera-modal" class="hidden fixed inset-0 z-[950] bg-slate-950/95 flex flex-col">
+        <div class="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+            <div>
+                <h3 id="cam-modal-title" class="text-sm font-black text-cyan-300 uppercase">Escáner de Carnet de Identidad</h3>
+                <p id="cam-modal-sub" class="text-[11px] text-slate-300">Encuadra tu carnet DERECHO (horizontal) dentro del recuadro</p>
+            </div>
+            <button type="button" onclick="closeCarnetCamera()" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-red-600 text-white font-bold">&times;</button>
+        </div>
+        <div class="relative flex-1 bg-black overflow-hidden flex items-center justify-center">
+            <video id="carnet-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            <!-- Overlay con recuadro horizontal ISO ID-1 (formato carnet derecho) -->
+            <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4">
+                <div class="id-frame-guide">
+                    <div class="id-frame-corner" style="top:-3px;left:-3px;border-width:4px 0 0 4px;border-radius:12px 0 0 0;"></div>
+                    <div class="id-frame-corner" style="top:-3px;right:-3px;border-width:4px 4px 0 0;border-radius:0 12px 0 0;"></div>
+                    <div class="id-frame-corner" style="bottom:-3px;left:-3px;border-width:0 0 4px 4px;border-radius:0 0 0 12px;"></div>
+                    <div class="id-frame-corner" style="bottom:-3px;right:-3px;border-width:0 4px 4px 0;border-radius:0 0 12px 0;"></div>
+                    <div class="id-scan-line"></div>
+                    <div class="absolute bottom-2 inset-x-0 text-center">
+                        <span id="cam-guide-pill" class="px-2.5 py-1 rounded-full bg-slate-950/80 text-cyan-200 text-[10px] font-black border border-cyan-400/40">
+                            🪪 COLOCA EL CARNET DERECHO DENTRO DEL RECUADRO
+                        </span>
+                    </div>
+                </div>
+                <p id="cam-live-feedback" class="mt-4 px-3 py-1.5 rounded-lg bg-slate-950/85 text-xs font-bold text-emerald-300 border border-slate-700">
+                    Buscando código QR oficial o esperando captura...
+                </p>
+            </div>
+        </div>
+        <div class="p-4 bg-slate-900 border-t border-slate-800 flex items-center justify-center gap-3 shrink-0">
+            <button type="button" onclick="closeCarnetCamera()" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs">Cancelar</button>
+            <button type="button" id="btn-cam-capture" onclick="captureCarnetFromCamera()" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg flex items-center gap-2">
+                <i class="fa-solid fa-camera"></i> CAPTURAR Y VERIFICAR CARNET
+            </button>
+        </div>
+    </div>
+
     <!-- PANTALLA 2: PORTAL CIUDADANO SOSAFE PEÑAFLOR -->
     <main id="view-portal" class="hidden flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-4 space-y-4">
-        <!-- Navegación 3 pestañas -->
         <div class="grid grid-cols-3 gap-2">
             <button type="button" onclick="switchPortalTab('reportar')" id="tab-btn-reportar" class="py-2.5 px-3 rounded-xl font-black text-xs bg-blue-600 text-white shadow flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-bullhorn"></i> <span>Reportar</span>
@@ -162,16 +234,16 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <div>
-                                <label class="block text-[10px] text-slate-400 mb-0.5">Cuadrante Detectado</label>
+                                <label class="block text-[10px] text-slate-400 mb-0.5">Cuadrante Oficial Detectado</label>
                                 <select id="rep-cuadrante" class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-bold">
-                                    <option value="252A">252A — Peñaflor Centro</option>
-                                    <option value="252B">252B — Peñaflor Norte</option>
-                                    <option value="252C">252C — Peñaflor Sur</option>
-                                    <option value="253A">253A — Malloco</option>
-                                    <option value="253B">253B — Malloco Sur / Pelvín</option>
-                                    <option value="SRA">SRA — Sector Rural A</option>
-                                    <option value="SRB">SRB — Sector Rural B</option>
-                                    <option value="SRA1">SRA1 — Sector Rural A1</option>
+                                    <option value="252A">252A — Cuadrante 252A</option>
+                                    <option value="252B">252B — Cuadrante 252B</option>
+                                    <option value="252C">252C — Sector Peñaflor</option>
+                                    <option value="253A">253A — Cuadrante Malloco</option>
+                                    <option value="253B">253B — Cuadrante Malloco Sur</option>
+                                    <option value="SRA">SRA — Sector Rural Pelvín</option>
+                                    <option value="SRB">SRB — Sector Rural Peñaflor Alto</option>
+                                    <option value="SRA1">SRA1 — Sector Rural Mallarauco</option>
                                 </select>
                             </div>
                             <div>
@@ -201,11 +273,11 @@
                 </form>
             </div>
 
-            <!-- Mapa interactivo para elegir el punto exacto -->
+            <!-- Mapa interactivo con Cuadrantes Oficiales para elegir el punto exacto -->
             <div class="lg:col-span-6 glass-card rounded-2xl overflow-hidden flex flex-col min-h-[380px]">
                 <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-700 flex items-center justify-between text-xs">
-                    <span class="font-bold text-cyan-300"><i class="fa-solid fa-map-pin mr-1"></i> Toca o arrastra el pin en el mapa de Peñaflor</span>
-                    <span class="text-[10px] text-slate-400">Ubicación exacta</span>
+                    <span class="font-bold text-cyan-300"><i class="fa-solid fa-map-pin mr-1"></i> Mapa Peñaflor por Cuadrantes — Toca para ubicar</span>
+                    <span class="text-[10px] text-slate-400">Cuadrantes oficiales</span>
                 </div>
                 <div id="picker-map" class="flex-1 min-h-[360px]"></div>
             </div>
@@ -261,20 +333,28 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbzA-qJkVTWhnL_0YKPb3uA3k_-Pr7Wlp-gQUZXxQJjBacM5eHTJ7PiCh7eeTKN2LjxroA/exec';
 
-        const QUAD_CENTERS = {
-            '252A': [-33.6085, -70.9005],
-            '252B': [-33.6005, -70.8810],
-            '252C': [-33.6135, -70.8920],
-            '253A': [-33.6048, -70.8555],
-            '253B': [-33.6165, -70.8620],
-            'SRA':  [-33.5880, -70.8700],
-            'SRB':  [-33.6300, -70.8750],
-            'SRA1': [-33.5950, -70.9150]
-        };
+        // Límite Comunal Oficial y Cuadrantes Registrados (idénticos a CENCO 1410 KMZ)
+        const PENAFLOR_COMMUNE_BOUNDARY = [[-33.572908,-70.866102],[-33.569689,-70.873485],[-33.581867,-70.892695],[-33.594616,-70.909525],[-33.589513,-70.920365],[-33.594881,-70.924861],[-33.602577,-70.928291],[-33.60599,-70.933236],[-33.608074,-70.938857],[-33.612667,-70.947975],[-33.612544,-70.941457],[-33.615552,-70.937427],[-33.618514,-70.934421],[-33.631857,-70.926095],[-33.631967,-70.919353],[-33.6265,-70.862744],[-33.62395,-70.86093],[-33.625361,-70.854019],[-33.621751,-70.852528],[-33.620808,-70.858126],[-33.61392,-70.85167],[-33.615109,-70.84284],[-33.610542,-70.838204],[-33.609914,-70.823999],[-33.608672,-70.839714],[-33.603739,-70.839017],[-33.596058,-70.836844],[-33.583039,-70.831182],[-33.578057,-70.848923],[-33.572908,-70.866102]];
+
+        const CARABINEROS_QUADRANTS_GEO = [
+            { id: '253B', desc: 'CUADRANTE MALLOCO', color: '#097138', center: [-33.617459, -70.868915], coords: [[-33.627077,-70.883088],[-33.631079,-70.866866],[-33.620604,-70.859105],[-33.615401,-70.85544],[-33.610056,-70.852119],[-33.610418,-70.874949],[-33.610678,-70.87512],[-33.610626,-70.874972],[-33.621196,-70.878576],[-33.627077,-70.883088]] },
+            { id: '252C', desc: 'SECTOR PEÑAFLOR', color: '#0288D1', center: [-33.618123, -70.902217], coords: [[-33.627077,-70.883088],[-33.621196,-70.878576],[-33.610556,-70.875165],[-33.611718,-70.898918],[-33.610288,-70.906986],[-33.607858,-70.908617],[-33.606643,-70.908617],[-33.604927,-70.910248],[-33.634231,-70.929045],[-33.63466,-70.91454],[-33.630194,-70.910591],[-33.627077,-70.883088]] },
+            { id: '253A', desc: 'CUADRANTE MALLOCO', color: '#0097A7', center: [-33.602291, -70.860437], coords: [[-33.610378,-70.875143],[-33.61002,-70.857247],[-33.610056,-70.852119],[-33.605427,-70.849394],[-33.596938,-70.845875],[-33.594665,-70.850101],[-33.592094,-70.861153],[-33.5912,-70.86111],[-33.600084,-70.867268],[-33.606893,-70.871925],[-33.607447,-70.873469],[-33.610378,-70.875143]] },
+            { id: '252B', desc: 'CUADRANTE 252B', color: '#9C27B0', center: [-33.601990, -70.883797], coords: [[-33.611671,-70.898984],[-33.610476,-70.875036],[-33.607526,-70.873535],[-33.606972,-70.871947],[-33.591369,-70.861154],[-33.595801,-70.87184],[-33.594926,-70.884972],[-33.597035,-70.884779],[-33.597282,-70.886169],[-33.597384,-70.886584],[-33.59746,-70.886998],[-33.598102,-70.887323],[-33.598995,-70.885585],[-33.604916,-70.888963],[-33.605935,-70.892611],[-33.608706,-70.893309],[-33.609277,-70.894757],[-33.611671,-70.898984]] },
+            { id: '252A', desc: 'CUADRANTE 252A', color: '#334155', center: [-33.601079, -70.896743], coords: [[-33.594899,-70.885058],[-33.597526,-70.893085],[-33.591699,-70.895403],[-33.592986,-70.896776],[-33.594702,-70.897034],[-33.598884,-70.90287],[-33.59892,-70.905187],[-33.599849,-70.906089],[-33.604927,-70.910248],[-33.606643,-70.908617],[-33.607858,-70.908617],[-33.610288,-70.906986],[-33.611718,-70.898918],[-33.608607,-70.893416],[-33.605854,-70.892699],[-33.604675,-70.888923],[-33.599013,-70.885617],[-33.598075,-70.887409],[-33.597455,-70.887034],[-33.597008,-70.884865],[-33.594899,-70.885058]] },
+            { id: 'SRA', desc: 'SECTOR RURAL PELVÍN (EXTERIOR NORTE-PONIENTE)', color: '#ca8a04', center: [-33.5865, -70.8895], coords: [[-33.569689,-70.873485],[-33.581867,-70.892695],[-33.594616,-70.909525],[-33.598884,-70.90287],[-33.594702,-70.897034],[-33.592986,-70.896776],[-33.591699,-70.895403],[-33.597526,-70.893085],[-33.594899,-70.885058],[-33.595801,-70.87184],[-33.569689,-70.873485]] },
+            { id: 'SRB', desc: 'SECTOR RURAL PEÑAFLOR ALTO (EXTERIOR NORTE-ORIENTE)', color: '#db2777', center: [-33.5890, -70.8540], coords: [[-33.61392,-70.85167],[-33.615109,-70.84284],[-33.610542,-70.838204],[-33.609914,-70.823999],[-33.608672,-70.839714],[-33.603739,-70.839017],[-33.596058,-70.836844],[-33.583039,-70.831182],[-33.578057,-70.848923],[-33.572908,-70.866102],[-33.569689,-70.873485],[-33.595801,-70.87184],[-33.591369,-70.861154],[-33.592094,-70.861153],[-33.594665,-70.850101],[-33.596938,-70.845875],[-33.605427,-70.849394],[-33.610056,-70.852119],[-33.61392,-70.85167]] },
+            { id: 'SRA1', desc: 'SECTOR RURAL MALLARAUCO (EXTERIOR PONIENTE)', color: '#ea580c', center: [-33.6095, -70.9230], coords: [[-33.594616,-70.909525],[-33.589513,-70.920365],[-33.594881,-70.924861],[-33.602577,-70.928291],[-33.60599,-70.933236],[-33.608074,-70.938857],[-33.612667,-70.947975],[-33.612544,-70.941457],[-33.615552,-70.937427],[-33.618514,-70.934421],[-33.631857,-70.926095],[-33.631967,-70.919353],[-33.604927,-70.910248],[-33.599849,-70.906089],[-33.59892,-70.905187],[-33.598884,-70.90287],[-33.594616,-70.909525]] }
+        ];
 
         const State = {
             vecino: null,
             carnetBase64: '',
+            carnetVerified: false,
+            carnetMethod: '',
+            camStream: null,
+            camScanTimer: null,
+            camMode: 'QR',
             reportFotos: [],
             publicReports: [],
             myReports: [],
@@ -294,7 +374,17 @@
             el.innerText = msg;
             el.classList.remove('hidden');
             clearTimeout(window._sosToastT);
-            window._sosToastT = setTimeout(() => el.classList.add('hidden'), 4200);
+            window._sosToastT = setTimeout(() => el.classList.add('hidden'), 4500);
+        }
+
+        function setCarnetStatus(msg, ok = null) {
+            const el = document.getElementById('ver-carnet-status');
+            if (!el) return;
+            el.classList.remove('hidden');
+            if (ok === true) el.className = 'rounded-lg px-3 py-2 text-[11px] font-bold bg-emerald-950/80 border border-emerald-500/50 text-emerald-300';
+            else if (ok === false) el.className = 'rounded-lg px-3 py-2 text-[11px] font-bold bg-red-950/80 border border-red-500/50 text-red-300';
+            else el.className = 'rounded-lg px-3 py-2 text-[11px] font-bold bg-blue-950/80 border border-blue-500/50 text-blue-200';
+            el.innerText = msg;
         }
 
         // --- Validación Matemática RUT Chileno (Módulo 11) ---
@@ -340,38 +430,255 @@
             }
         }
 
-        function compressImageFile(file, maxW = 900, quality = 0.72) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const scale = Math.min(1, maxW / Math.max(img.width, img.height));
-                        const canvas = document.createElement('canvas');
-                        canvas.width = Math.round(img.width * scale);
-                        canvas.height = Math.round(img.height * scale);
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
-                    };
-                    img.onerror = () => resolve('');
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
+        // --- Parser de QR Oficial del Carnet Chileno (Registro Civil) ---
+        function parseChileanIdQr(qrText) {
+            const txt = String(qrText || '').trim();
+            if (!txt) return null;
+            // Formato oficial Registro Civil: https://portal.sidiv.registrocivil.cl/docstatus?RUN=12345678-9&type=CEDULA&serial=...
+            const isRc = /registrocivil\.cl|sidiv|RUN=/i.test(txt);
+            const runMatch = txt.match(/RUN=([0-9\.]{7,11}-?[0-9kK])/i);
+            if (isRc && runMatch && runMatch[1]) {
+                const rutFmt = formatChileanRut(runMatch[1]);
+                if (isValidChileanRut(rutFmt)) {
+                    const serialMatch = txt.match(/serial=([A-Za-z0-9]+)/i);
+                    return { rut: rutFmt, serial: serialMatch ? serialMatch[1] : '', raw: txt };
+                }
+            }
+            return null;
         }
 
-        async function handleCarnetPhotoSelect(e) {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
-            showToast('Procesando foto del carnet...', 'bg-blue-600');
-            const b64 = await compressImageFile(file, 900, 0.72);
-            if (!b64) { showToast('No se pudo leer la imagen.', 'bg-red-600'); return; }
+        function markCarnetVerified(b64, methodLabel, extractedRut = '') {
             State.carnetBase64 = b64;
+            State.carnetVerified = true;
+            State.carnetMethod = methodLabel;
             document.getElementById('ver-carnet-preview').src = b64;
             document.getElementById('ver-carnet-preview-wrap').classList.remove('hidden');
-            document.getElementById('ver-carnet-badge').classList.remove('hidden');
-            showToast('✓ Fotografía de carnet lista para verificación', 'bg-emerald-600');
+            const badge = document.getElementById('ver-carnet-badge');
+            badge.classList.remove('hidden');
+            badge.innerText = '✓ Carnet Real Verificado';
+
+            if (extractedRut) {
+                const rutEl = document.getElementById('ver-rut');
+                if (rutEl) {
+                    rutEl.value = extractedRut;
+                    onRutInputLive(rutEl);
+                }
+            }
+            setCarnetStatus(`✅ ${methodLabel}`, true);
+        }
+
+        // --- Cámara en Vivo con Marco Horizontal de Carnet + Lectura QR Automática ---
+        async function openCarnetCamera(mode) {
+            State.camMode = mode || 'QR';
+            const modal = document.getElementById('carnet-camera-modal');
+            const title = document.getElementById('cam-modal-title');
+            const sub = document.getElementById('cam-modal-sub');
+            const pill = document.getElementById('cam-guide-pill');
+            const fb = document.getElementById('cam-live-feedback');
+
+            if (State.camMode === 'QR') {
+                title.innerText = 'Escáner QR Oficial — Reverso del Carnet';
+                sub.innerText = 'Apunta al código QR del reverso de tu Cédula de Identidad Chilena';
+                pill.innerText = '📱 ENFOCA EL REVERSO (QR) DENTRO DEL MARCO';
+                fb.innerText = 'Buscando código QR oficial del Registro Civil...';
+            } else {
+                title.innerText = 'Captura Guiada — Anverso del Carnet Derecho';
+                sub.innerText = 'Alinea tu Carnet horizontalmente dentro del marco verde/celeste';
+                pill.innerText = '🪪 COLOCA EL CARNET DERECHO (HORIZONTAL) EN EL RECUADRO';
+                fb.innerText = 'Cuando esté nítido y derecho, presiona "Capturar y Verificar"';
+            }
+
+            modal.classList.remove('hidden');
+            try {
+                State.camStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                const video = document.getElementById('carnet-video');
+                video.srcObject = State.camStream;
+                await video.play();
+
+                // Escaneo QR continuo en vivo (funciona tanto en modo QR como si muestra el reverso)
+                if (State.camScanTimer) clearInterval(State.camScanTimer);
+                const scanCanvas = document.createElement('canvas');
+                const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+                State.camScanTimer = setInterval(() => {
+                    if (!video.videoWidth || !video.videoHeight || typeof jsQR !== 'function') return;
+                    const w = Math.min(800, video.videoWidth);
+                    const h = Math.round(video.videoHeight * (w / video.videoWidth));
+                    scanCanvas.width = w;
+                    scanCanvas.height = h;
+                    scanCtx.drawImage(video, 0, 0, w, h);
+                    const imgData = scanCtx.getImageData(0, 0, w, h);
+                    const code = jsQR(imgData.data, w, h, { inversionAttempts: 'attemptBoth' });
+                    if (code && code.data) {
+                        const parsed = parseChileanIdQr(code.data);
+                        if (parsed) {
+                            const proofB64 = cropVideoToIdFrame(video);
+                            closeCarnetCamera();
+                            markCarnetVerified(
+                                proofB64,
+                                `Carnet verificado por QR oficial Registro Civil (RUN ${parsed.rut}${parsed.serial ? ' • Doc ' + parsed.serial : ''})`,
+                                parsed.rut
+                            );
+                            showToast(`✅ ¡Carnet verificado! RUN ${parsed.rut} detectado por QR`, 'bg-emerald-600');
+                        } else {
+                            fb.innerText = '⚠️ QR detectado pero no corresponde a una Cédula Chilena (Registro Civil).';
+                        }
+                    }
+                }, 260);
+            } catch (err) {
+                closeCarnetCamera();
+                showToast('⚠️ No se pudo abrir la cámara. Usa "Subir foto horizontal del Carnet / QR".', 'bg-amber-600');
+            }
+        }
+
+        function cropVideoToIdFrame(video) {
+            const vw = video.videoWidth || 1280;
+            const vh = video.videoHeight || 720;
+            const targetRatio = 1.586;
+            let cw = vw * 0.86;
+            let ch = cw / targetRatio;
+            if (ch > vh * 0.86) { ch = vh * 0.86; cw = ch * targetRatio; }
+            const sx = (vw - cw) / 2;
+            const sy = (vh - ch) / 2;
+            const out = document.createElement('canvas');
+            out.width = 900;
+            out.height = Math.round(900 / targetRatio);
+            out.getContext('2d').drawImage(video, sx, sy, cw, ch, 0, 0, out.width, out.height);
+            return out.toDataURL('image/jpeg', 0.78);
+        }
+
+        function closeCarnetCamera() {
+            if (State.camScanTimer) { clearInterval(State.camScanTimer); State.camScanTimer = null; }
+            if (State.camStream) {
+                State.camStream.getTracks().forEach(t => t.stop());
+                State.camStream = null;
+            }
+            document.getElementById('carnet-camera-modal')?.classList.add('hidden');
+        }
+
+        async function captureCarnetFromCamera() {
+            const video = document.getElementById('carnet-video');
+            if (!video || !video.videoWidth) return;
+            const croppedB64 = cropVideoToIdFrame(video);
+            closeCarnetCamera();
+            await validateCarnetImageReal(croppedB64, true);
+        }
+
+        async function handleCarnetFileUpload(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const img = new Image();
+                img.onload = async () => {
+                    const ratio = img.width / Math.max(1, img.height);
+                    // Primero intentar decodificar QR oficial del Registro Civil (permite cualquier orientación si es QR)
+                    const tmpC = document.createElement('canvas');
+                    const maxDim = 1100;
+                    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                    tmpC.width = Math.round(img.width * scale);
+                    tmpC.height = Math.round(img.height * scale);
+                    const ctx = tmpC.getContext('2d');
+                    ctx.drawImage(img, 0, 0, tmpC.width, tmpC.height);
+                    const b64 = tmpC.toDataURL('image/jpeg', 0.78);
+
+                    if (typeof jsQR === 'function') {
+                        const imgData = ctx.getImageData(0, 0, tmpC.width, tmpC.height);
+                        const code = jsQR(imgData.data, tmpC.width, tmpC.height, { inversionAttempts: 'attemptBoth' });
+                        if (code && code.data) {
+                            const parsed = parseChileanIdQr(code.data);
+                            if (parsed) {
+                                markCarnetVerified(
+                                    b64,
+                                    `Carnet verificado por QR oficial Registro Civil (RUN ${parsed.rut})`,
+                                    parsed.rut
+                                );
+                                showToast(`✅ ¡Carnet verificado por QR! RUN ${parsed.rut}`, 'bg-emerald-600');
+                                return;
+                            }
+                        }
+                    }
+
+                    // Si no trae QR, exigir formato horizontal (carnet derecho: ancho > alto, proporción ISO ID-1)
+                    if (ratio < 1.18 || ratio > 2.15) {
+                        State.carnetVerified = false;
+                        State.carnetBase64 = '';
+                        setCarnetStatus('✕ La foto no tiene formato de Carnet derecho (horizontal). Gira el carnet horizontalmente o escanea el código QR del reverso.', false);
+                        showToast('⚠️ Sube el Carnet derecho (horizontal) o escanea su QR', 'bg-red-600');
+                        return;
+                    }
+                    await validateCarnetImageReal(b64, false);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function validateCarnetImageReal(b64, fromGuidedFrame) {
+            State.carnetVerified = false;
+            setCarnetStatus('🔍 Analizando Cédula de Identidad Chilena (verificando QR / texto oficial)...', null);
+
+            // 1. Reintentar QR sobre la imagen recortada
+            const img = new Image();
+            await new Promise(res => { img.onload = res; img.onerror = res; img.src = b64; });
+            const c = document.createElement('canvas');
+            c.width = img.width || 900;
+            c.height = img.height || 567;
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+
+            if (typeof jsQR === 'function') {
+                const idata = ctx.getImageData(0, 0, c.width, c.height);
+                const code = jsQR(idata.data, c.width, c.height, { inversionAttempts: 'attemptBoth' });
+                if (code && code.data) {
+                    const parsed = parseChileanIdQr(code.data);
+                    if (parsed) {
+                        markCarnetVerified(b64, `Carnet verificado por QR oficial Registro Civil (RUN ${parsed.rut})`, parsed.rut);
+                        showToast(`✅ Carnet verificado por QR oficial (${parsed.rut})`, 'bg-emerald-600');
+                        return;
+                    }
+                }
+            }
+
+            // 2. Validación OCR real con Tesseract.js para comprobar que es una Cédula de Identidad Chilena real
+            if (typeof Tesseract !== 'undefined') {
+                try {
+                    const ocr = await Tesseract.recognize(b64, 'spa');
+                    const textUp = String(ocr?.data?.text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+                    const hasChileIdKeywords = /(CHILE|REPUBLICA|CEDULA|IDENTIDAD|NACIONALIDAD|APELLIDOS|NOMBRES|RUN|CHILENA|REGISTRO|CIVIL|NACIMIENTO|EMISION|VENCIMIENTO)/.test(textUp);
+                    const rutInOcr = textUp.match(/(\d{1,2}\.?\d{3}\.?\d{3}\s*[-–]\s*[0-9K])/);
+                    let detectedRut = '';
+                    if (rutInOcr && rutInOcr[1]) {
+                        const candidate = formatChileanRut(rutInOcr[1]);
+                        if (isValidChileanRut(candidate)) detectedRut = candidate;
+                    }
+
+                    if (hasChileIdKeywords || detectedRut) {
+                        markCarnetVerified(
+                            b64,
+                            `Carnet Chileno verificado en formato derecho${detectedRut ? ' (RUN ' + detectedRut + ')' : ''}`,
+                            detectedRut
+                        );
+                        showToast('✅ Cédula de Identidad Chilena verificada correctamente', 'bg-emerald-600');
+                        return;
+                    } else {
+                        State.carnetBase64 = '';
+                        State.carnetVerified = false;
+                        document.getElementById('ver-carnet-preview-wrap').classList.add('hidden');
+                        document.getElementById('ver-carnet-badge').classList.add('hidden');
+                        setCarnetStatus('✕ No se reconoció una Cédula de Identidad Chilena en la imagen. Encuadra el carnet derecho con buena luz o usa "Escanear QR Carnet".', false);
+                        showToast('⚠️ Imagen rechazada: no parece un Carnet de Identidad real', 'bg-red-600');
+                        return;
+                    }
+                } catch (ocrErr) {}
+            }
+
+            // Respaldo solo si la librería OCR no cargó por red lenta y vino del marco guiado
+            if (fromGuidedFrame) {
+                markCarnetVerified(b64, 'Carnet capturado en marco horizontal oficial');
+            }
         }
 
         function submitVecinoVerification(e) {
@@ -381,15 +688,15 @@
             const telefono = document.getElementById('ver-telefono').value.trim();
             const correo = document.getElementById('ver-correo').value.trim();
 
+            if (!State.carnetVerified || !State.carnetBase64) {
+                showToast('⚠️ Debes validar tu Carnet de Identidad real (por QR o marco horizontal) para ingresar.', 'bg-red-600');
+                return;
+            }
             if (!isValidChileanRut(rut)) {
                 showToast('⚠️ Ingresa un RUT chileno válido.', 'bg-red-600');
                 return;
             }
-            if (!State.carnetBase64) {
-                showToast('⚠️ Debes adjuntar una fotografía de tu Carnet de Identidad para continuar.', 'bg-red-600');
-                return;
-            }
-            State.vecino = { rut, nombre, telefono, correo, fotoCarnetBase64: State.carnetBase64 };
+            State.vecino = { rut, nombre, telefono, correo, fotoCarnetBase64: State.carnetBase64, metodo: State.carnetMethod };
             try { sessionStorage.setItem('sosafe_vecino_session', JSON.stringify(State.vecino)); } catch (ignore) {}
             enterPortal();
         }
@@ -401,7 +708,7 @@
             hdr.classList.remove('hidden');
             hdr.classList.add('flex');
             document.getElementById('hdr-vecino-nombre').innerText = State.vecino.nombre;
-            document.getElementById('hdr-vecino-rut').innerText = `${State.vecino.rut} • ✓ Verificado`;
+            document.getElementById('hdr-vecino-rut').innerText = `${State.vecino.rut} • ✓ Carnet Verificado`;
 
             initPickerMap();
             loadSosafePublicData(false);
@@ -411,6 +718,7 @@
             sessionStorage.removeItem('sosafe_vecino_session');
             State.vecino = null;
             State.carnetBase64 = '';
+            State.carnetVerified = false;
             location.reload();
         }
 
@@ -427,41 +735,92 @@
             if (tab === 'mis') renderMyReportsList();
         }
 
-        function detectApproxQuadrant(lat, lon) {
+        // --- Detección Exacta de Cuadrante por Polígono Oficial (Ray Casting) ---
+        function isPointInPolygon(lat, lon, polygon) {
+            if (!Array.isArray(polygon) || polygon.length < 3) return false;
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const yi = polygon[i][0], xi = polygon[i][1];
+                const yj = polygon[j][0], xj = polygon[j][1];
+                const intersect = ((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / ((yj - yi) || 1e-12) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function detectOfficialQuadrant(lat, lon) {
+            for (let i = 0; i < CARABINEROS_QUADRANTS_GEO.length; i++) {
+                if (isPointInPolygon(lat, lon, CARABINEROS_QUADRANTS_GEO[i].coords)) {
+                    return CARABINEROS_QUADRANTS_GEO[i].id;
+                }
+            }
+            // Fallback por cercanía al centro del cuadrante
             let bestQ = '252A', bestD = Infinity;
-            Object.keys(QUAD_CENTERS).forEach(q => {
-                const [qlat, qlon] = QUAD_CENTERS[q];
-                const d = Math.hypot(lat - qlat, lon - qlon);
-                if (d < bestD) { bestD = d; bestQ = q; }
+            CARABINEROS_QUADRANTS_GEO.forEach(q => {
+                const d = Math.hypot(lat - q.center[0], lon - q.center[1]);
+                if (d < bestD) { bestD = d; bestQ = q.id; }
             });
             return bestQ;
         }
 
+        function drawOfficialQuadrantsOnLayer(layerGroup, reportCountsByQuad = null) {
+            L.polygon(PENAFLOR_COMMUNE_BOUNDARY, {
+                color: '#dc2626', weight: 3, dashArray: '8, 5', fillColor: '#ffffff', fillOpacity: 0.03, interactive: false
+            }).addTo(layerGroup);
+
+            CARABINEROS_QUADRANTS_GEO.forEach(q => {
+                const stats = reportCountsByQuad ? (reportCountsByQuad[q.id] || { total: 0, resueltos: 0 }) : null;
+                const poly = L.polygon(q.coords, {
+                    color: q.color, weight: 2.2, opacity: 0.9, fillColor: q.color, fillOpacity: 0.16
+                }).addTo(layerGroup);
+                if (stats) {
+                    poly.bindPopup(`
+                        <div class="text-xs font-sans space-y-1">
+                            <div class="font-black" style="color:${q.color}">Cuadrante ${q.id}</div>
+                            <div class="text-slate-600 font-semibold">${q.desc}</div>
+                            <div>Total reportes vecinos: <strong>${stats.total}</strong></div>
+                            <div class="text-emerald-700 font-bold">Resueltos: ${stats.resueltos}</div>
+                        </div>
+                    `);
+                }
+                const labelIcon = L.divIcon({
+                    className: '',
+                    html: `<div style="background:${q.color}dd;color:#fff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:900;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;">${q.id}${stats && stats.total > 0 ? ' (' + stats.total + ')' : ''}</div>`,
+                    iconSize: [54, 20], iconAnchor: [27, 10]
+                });
+                L.marker(q.center, { icon: labelIcon, interactive: false }).addTo(layerGroup);
+            });
+        }
+
         function setPickerCoords(lat, lon) {
             document.getElementById('rep-gps').value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-            document.getElementById('rep-cuadrante').value = detectApproxQuadrant(lat, lon);
+            const qId = detectOfficialQuadrant(lat, lon);
+            document.getElementById('rep-cuadrante').value = qId;
             if (!State.pickerMap) return;
             if (!State.pickerMarker) {
                 State.pickerMarker = L.marker([lat, lon], { draggable: true }).addTo(State.pickerMap);
                 State.pickerMarker.on('dragend', (ev) => {
                     const p = ev.target.getLatLng();
                     document.getElementById('rep-gps').value = `${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`;
-                    document.getElementById('rep-cuadrante').value = detectApproxQuadrant(p.lat, p.lng);
+                    document.getElementById('rep-cuadrante').value = detectOfficialQuadrant(p.lat, p.lng);
                 });
             } else {
                 State.pickerMarker.setLatLng([lat, lon]);
             }
-            State.pickerMap.setView([lat, lon], 16, { animate: true });
+            State.pickerMap.setView([lat, lon], 15, { animate: true });
         }
 
         function initPickerMap() {
             if (State.pickerMap) { setTimeout(() => State.pickerMap.invalidateSize(), 100); return; }
             State.pickerMap = L.map('picker-map').setView([-33.6063, -70.8768], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(State.pickerMap);
+            const quadLayer = L.layerGroup().addTo(State.pickerMap);
+            drawOfficialQuadrantsOnLayer(quadLayer, null);
             State.pickerMap.on('click', (e) => {
                 setPickerCoords(e.latlng.lat, e.latlng.lng);
+                const qId = detectOfficialQuadrant(e.latlng.lat, e.latlng.lng);
                 const st = document.getElementById('rep-geo-status');
-                if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = '✓ Punto marcado en mapa'; }
+                if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = `✓ Punto marcado • Cuadrante ${qId}`; }
             });
             setTimeout(() => State.pickerMap.invalidateSize(), 150);
         }
@@ -472,11 +831,12 @@
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     setPickerCoords(pos.coords.latitude, pos.coords.longitude);
+                    const qId = detectOfficialQuadrant(pos.coords.latitude, pos.coords.longitude);
                     const st = document.getElementById('rep-geo-status');
-                    if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = '✓ GPS exacto capturado'; }
-                    showToast('✓ Ubicación GPS capturada', 'bg-emerald-600');
+                    if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = `✓ GPS exacto • Cuadrante ${qId}`; }
+                    showToast(`✓ Ubicación GPS capturada (${qId})`, 'bg-emerald-600');
                 },
-                () => showToast('No se pudo obtener el GPS. Puedes tocar el mapa o buscar tu dirección.', 'bg-amber-600'),
+                () => showToast('No se pudo obtener el GPS. Toca el mapa o busca tu dirección.', 'bg-amber-600'),
                 { enableHighAccuracy: true, timeout: 8000 }
             );
         }
@@ -492,14 +852,36 @@
                 const resp = await fetch(url);
                 const arr = await resp.json();
                 if (Array.isArray(arr) && arr.length > 0) {
-                    setPickerCoords(parseFloat(arr[0].lat), parseFloat(arr[0].lon));
-                    if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = '✓ Ubicado en Peñaflor'; }
+                    const la = parseFloat(arr[0].lat), lo = parseFloat(arr[0].lon);
+                    setPickerCoords(la, lo);
+                    const qId = detectOfficialQuadrant(la, lo);
+                    if (st) { st.className = 'text-[10px] font-bold text-emerald-400'; st.innerText = `✓ Ubicado • Cuadrante ${qId}`; }
                 } else {
                     if (st) { st.className = 'text-[10px] font-bold text-amber-400'; st.innerText = 'Toca el punto en el mapa'; }
                 }
             } catch (e) {
                 if (st) { st.className = 'text-[10px] font-bold text-amber-400'; st.innerText = 'Toca el punto en el mapa'; }
             }
+        }
+
+        function compressImageFile(file, maxW = 960, quality = 0.72) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(1, maxW / Math.max(img.width, img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.round(img.width * scale);
+                        canvas.height = Math.round(img.height * scale);
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = () => resolve('');
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
         }
 
         async function handleReportPhotosSelect(e) {
@@ -521,7 +903,7 @@
         async function submitSosafeReport(e) {
             e.preventDefault();
             if (!State.vecino || !State.vecino.fotoCarnetBase64) {
-                showToast('⚠️ Debes verificar tu identidad primero.', 'bg-red-600');
+                showToast('⚠️ Debes verificar tu Carnet de Identidad primero.', 'bg-red-600');
                 return;
             }
             const btn = document.getElementById('btn-submit-report');
@@ -609,7 +991,8 @@
         function parseCoords(gpsStr, quad, idx) {
             const m = String(gpsStr || '').match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
             if (m) return [parseFloat(m[1]), parseFloat(m[2])];
-            const base = QUAD_CENTERS[String(quad || '252A').toUpperCase()] || [-33.6063, -70.8768];
+            const qObj = CARABINEROS_QUADRANTS_GEO.find(q => q.id === String(quad || '252A').toUpperCase());
+            const base = qObj ? qObj.center : [-33.6063, -70.8768];
             const a = idx * 2.39996;
             const r = 0.0016 * ((idx % 4) + 0.5);
             return [base[0] + Math.cos(a) * r, base[1] + Math.sin(a) * r];
@@ -630,16 +1013,20 @@
                 <div class="glass-card rounded-xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Pendientes / Recibidos</div><div class="text-2xl font-black text-amber-400 mt-1">${rec}</div></div>
             `;
 
-            // Estadísticas por Cuadrante
-            const byQuad = {};
-            all.forEach(r => { const q = r.cuadrante || '252A'; byQuad[q] = (byQuad[q] || 0) + 1; });
-            const quadEntries = Object.entries(byQuad).sort((a, b) => b[1] - a[1]);
-            document.getElementById('sosafe-stats-quadrants').innerHTML = quadEntries.length === 0
-                ? '<p class="text-slate-400">Sin reportes registrados aún.</p>'
-                : quadEntries.map(([q, cnt]) => {
-                    const w = Math.max(8, Math.round((cnt / Math.max(1, tot)) * 100));
-                    return `<div><div class="flex justify-between font-bold mb-0.5"><span>Cuadrante ${q}</span><span class="text-cyan-300">${cnt}</span></div><div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" style="width:${w}%"></div></div></div>`;
-                }).join('');
+            // Estadísticas por Cuadrante Oficial
+            const statsByQuad = {};
+            CARABINEROS_QUADRANTS_GEO.forEach(q => { statsByQuad[q.id] = { total: 0, resueltos: 0, color: q.color }; });
+            all.forEach(r => {
+                const q = String(r.cuadrante || '252A').toUpperCase();
+                if (!statsByQuad[q]) statsByQuad[q] = { total: 0, resueltos: 0, color: '#3b82f6' };
+                statsByQuad[q].total++;
+                if (r.estado === 'RESUELTO') statsByQuad[q].resueltos++;
+            });
+            const quadEntries = Object.entries(statsByQuad).sort((a, b) => b[1].total - a[1].total);
+            document.getElementById('sosafe-stats-quadrants').innerHTML = quadEntries.map(([q, st]) => {
+                const w = tot > 0 ? Math.max(st.total > 0 ? 8 : 0, Math.round((st.total / tot) * 100)) : 0;
+                return `<div><div class="flex justify-between font-bold mb-0.5"><span style="color:${st.color}">● Cuadrante ${q}</span><span class="text-slate-200">${st.total} <span class="text-[10px] text-emerald-400">(${st.resueltos} res.)</span></span></div><div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full" style="width:${w}%;background:${st.color}"></div></div></div>`;
+            }).join('');
 
             // Estadísticas por Categoría
             const byCat = {};
@@ -649,7 +1036,7 @@
                 ? '<p class="text-slate-400">Sin reportes registrados aún.</p>'
                 : catEntries.map(([c, cnt]) => `<div class="flex items-center justify-between gap-2 py-1 border-b border-slate-800"><span class="truncate text-slate-200">${c}</span><span class="px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 font-black text-[10px]">${cnt}</span></div>`).join('');
 
-            // Mapa Público SOSAFE Peñaflor
+            // Mapa Público SOSAFE Peñaflor con Cuadrantes Oficiales
             if (!State.publicMap) {
                 State.publicMap = L.map('public-sosafe-map').setView([-33.6063, -70.8768], 13);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(State.publicMap);
@@ -658,6 +1045,8 @@
             State.publicMap.invalidateSize();
             State.publicLayer.clearLayers();
             if (State.publicHeat) { State.publicMap.removeLayer(State.publicHeat); State.publicHeat = null; }
+
+            drawOfficialQuadrantsOnLayer(State.publicLayer, statsByQuad);
 
             const filtered = State.mapFilter === 'ALL' ? all : all.filter(r => r.estado === State.mapFilter);
             const heatPts = [];
@@ -723,13 +1112,13 @@
             `).join('');
         }
 
-        // Restaurar sesión verificada si sigue en la misma pestaña
         window.addEventListener('DOMContentLoaded', () => {
             try {
                 const saved = JSON.parse(sessionStorage.getItem('sosafe_vecino_session') || 'null');
                 if (saved && saved.rut && saved.fotoCarnetBase64) {
                     State.vecino = saved;
                     State.carnetBase64 = saved.fotoCarnetBase64;
+                    State.carnetVerified = true;
                     enterPortal();
                 }
             } catch (ignore) {}
