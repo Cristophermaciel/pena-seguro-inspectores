@@ -10909,6 +10909,7 @@
                     recipients,
                     notaAdicional,
                     enviadoPor: AppState.userName || AppState.userRut || 'Central 1410',
+                    imagenesBase64: (Array.isArray(inc.imagenes) ? inc.imagenes : []).filter(x => String(x || '').startsWith('data:image/')),
                     incident: inc
                 });
                 if (res && res.ok) {
@@ -11098,6 +11099,7 @@
                         recipients: selectedEmails,
                         notaAdicional: '',
                         enviadoPor: AppState.userName || AppState.userRut || 'Central 1410',
+                        imagenesBase64: imgsB64,
                         incident: savedInc
                     });
                     if (mailRes && mailRes.ok) {
