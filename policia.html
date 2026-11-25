@@ -940,9 +940,9 @@
         ];
 
         const FALLBACK_POLICE_ACCOUNTS = [
-            { rut: 'CARABINEROS', pass: '1410', nombre: 'Carabineros de Chile — 56ª Comisaría Peñaflor', rol: 'CARABINEROS', estado: 'ACTIVO' },
-            { rut: 'PDI', pass: '1410', nombre: 'PDI Chile — BICRIM Peñaflor', rol: 'PDI', estado: 'ACTIVO' },
-            { rut: 'ADMIN', pass: '1410', nombre: 'Administrador Seguridad Pública', rol: 'ADMIN', estado: 'ACTIVO' }
+            { rut: 'CARABINEROS', password: '1410', nombre: 'Carabineros de Chile — 56ª Comisaría Peñaflor', rol: 'CARABINEROS', estado: 'ACTIVO' },
+            { rut: 'PDI', password: '1410', nombre: 'PDI Chile — BICRIM Peñaflor', rol: 'PDI', estado: 'ACTIVO' },
+            { rut: 'ADMIN', password: '1410', nombre: 'Administrador Seguridad Pública', rol: 'ADMIN', estado: 'ACTIVO' }
         ];
 
         const State = {
@@ -1073,12 +1073,12 @@
 
             try {
                 await fetchBootstrap();
-                const norm = (v) => String(v || '').replace(/\./g, '').replace(/\s+/g, '').toUpperCase();
+                const norm = (v) => String(v || '').replace(/[\.\-\s]/g, '').toUpperCase();
                 const allAccounts = [...State.users, ...FALLBACK_POLICE_ACCOUNTS];
                 const allowedRoles = ['CARABINEROS', 'PDI', 'ADMIN', 'CENCO_SUPERVISOR'];
                 const found = allAccounts.find(u =>
                     norm(u.rut) === norm(uRaw) &&
-                    String(u.pass || '').trim() === pRaw &&
+                    String(u.password || u.pass || '').trim() === pRaw &&
                     String(u.estado || 'ACTIVO').toUpperCase() === 'ACTIVO' &&
                     allowedRoles.includes(String(u.rol || '').toUpperCase())
                 );
