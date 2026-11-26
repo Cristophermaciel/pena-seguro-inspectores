@@ -574,8 +574,8 @@
         function getUnitBlueprint(u) {
             const blob = `${u?.tipo || ''} ${u?.nombre || ''}`.toLowerCase();
             if (isMotoUnit(u)) return './flota-honda-189.jpg';
-            if (blob.includes('tiggo') || blob.includes('chery') || blob.includes('suv')) return './flota-chery-tiggo.jpg';
-            return './flota-jmc-vigus.jpg';
+            if (blob.includes('camioneta') || blob.includes('jmc') || blob.includes('vigus') || blob.includes('pickup')) return './flota-jmc-vigus.jpg';
+            return './flota-chery-tiggo.jpg';
         }
 
         function calcMaintStatus(u) {
