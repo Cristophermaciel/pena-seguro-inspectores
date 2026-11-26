@@ -355,7 +355,7 @@
             <!-- TAB 1: MAPA DE CUADRANTES Y ESTADÍSTICAS                   -->
             <!-- ========================================================== -->
             <section id="tab-cuadrantes" class="tab-panel space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-draw-polygon text-emerald-400"></i> Mapa de Cuadrantes y Estadísticas Operativas</h2>
                         <p class="text-xs text-slate-300">Haz clic en cualquier cuadrante en el mapa o en las tarjetas para inspeccionar sus estadísticas y todos sus reportes correspondientes.</p>
@@ -413,7 +413,7 @@
             <!-- TAB 2: SOSAFE PEÑAFLOR (ESTADÍSTICAS Y REPORTES)           -->
             <!-- ========================================================== -->
             <section id="tab-sosafe" class="tab-panel hidden space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-people-roof text-amber-400"></i> SOSAFE Peñaflor — Estadísticas y Reportes Ciudadanos</h2>
                         <p class="text-xs text-slate-300">Reportes vecinales verificados con evidencia fotográfica, cuadrante asignado y estado de atención municipal.</p>
@@ -445,7 +445,7 @@
             <!-- TAB 3: INTELIGENCIA — MECHEROS Y HURTADORES                -->
             <!-- ========================================================== -->
             <section id="tab-mecheros" class="tab-panel hidden space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-user-secret text-rose-400"></i> Inteligencia LPR — Mecheros y Hurtadores</h2>
                         <p class="text-xs text-slate-300">Catálogo compartido entre Carabineros, PDI y CENCO 1410. Puedes consultar e ingresar nuevos registros.</p>
@@ -531,7 +531,7 @@
             <!-- TAB 4: INTELIGENCIA — VEHÍCULOS ROBADOS / LPR              -->
             <!-- ========================================================== -->
             <section id="tab-robados" class="tab-panel hidden space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-car-burst text-red-400"></i> Vehículos Robados y Encargo LPR</h2>
                         <p class="text-xs text-slate-300">Patentes con encargo vigente sincronizadas con lectores LPR y patrullaje municipal.</p>
@@ -621,7 +621,7 @@
             <!-- TAB 5: INTELIGENCIA — PERSONAS EN SITUACIÓN DE CALLE       -->
             <!-- ========================================================== -->
             <section id="tab-calle" class="tab-panel hidden space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-person-shelter text-cyan-400"></i> Catastro — Personas en Situación de Calle</h2>
                         <p class="text-xs text-slate-300">Registro georreferenciado para coordinación policial, social y preventiva en la comuna.</p>
@@ -709,7 +709,7 @@
             <!-- TAB 6: MAPA DE CALOR Y PUNTOS CRÍTICOS                     -->
             <!-- ========================================================== -->
             <section id="tab-calor" class="tab-panel hidden space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-fire text-orange-400"></i> Mapa de Calor y Puntos Críticos</h2>
                         <p class="text-xs text-slate-300">Haz clic en cualquier punto del mapa para marcar un foco delictual o incivilidad; el cuadrante se detecta automáticamente.</p>
@@ -801,7 +801,7 @@
             <!-- TAB 7: SOLICITUDES DE RESPALDO DE VIDEO CCTV               -->
             <!-- ========================================================== -->
             <section id="tab-video" class="tab-panel hidden space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-video text-sky-400"></i> Solicitudes de Respaldo de Video — Central CCTV 1410</h2>
                         <p class="text-xs text-slate-300">Envía solicitudes oficiales de grabación de cámaras municipales directo a la consola del Operador de CCTV y haz seguimiento en tiempo real.</p>
@@ -1260,7 +1260,7 @@
                 const alertaId = `VID-POL-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(Date.now()).slice(-4)}`;
                 const descFull = `[${inst}] N° Parte/RUC: ${parte} | Delito: ${delito} | Ventana Video: ${fechaHecho} de ${hIni} a ${hFin} | Contacto entrega: ${contacto} | Detalle: ${detalle}`;
 
-                await postAction('CENCO_CREAR_ALERTA_CCTV', {
+                const res = await postAction('CENCO_CREAR_ALERTA_CCTV', {
                     alertaId,
                     camaraId: camId,
                     camaraNombre: camName,
@@ -1272,9 +1272,26 @@
                     imagenesBase64: State.pendingPhotos.video ? [State.pendingPhotos.video] : [],
                     crearFolioInmediato: false
                 });
+                const localVid = {
+                    alertaId: res.alertaId || alertaId,
+                    fecha: new Date().toLocaleString('es-CL'),
+                    camaraId: camId,
+                    camaraNombre: camName,
+                    cuadrante: quad,
+                    categoria: `SOLICITUD RESPALDO VIDEO — ${inst}`,
+                    prioridad: prio,
+                    descripcion: descFull,
+                    operadorCctv: officerStamp(),
+                    imagenes: State.pendingPhotos.video ? [State.pendingPhotos.video] : [],
+                    estado: 'ENVIADA_A_DESPACHADOR',
+                    folioVinculado: '',
+                    atendidoPor: ''
+                };
+                State.cctvAlerts = [localVid, ...State.cctvAlerts.filter(x => x.alertaId !== localVid.alertaId)];
                 resetVideoForm();
-                await syncCloudData(false);
-                showToast(`✅ Solicitud ${alertaId} enviada directo al Operador CCTV`);
+                renderAll();
+                showToast(`✅ Solicitud ${localVid.alertaId} enviada directo al Operador CCTV`);
+                setTimeout(() => syncCloudData(false), 1800);
             } catch (err) {
                 showToast('⚠️ Error al enviar solicitud: ' + err.message, 'bg-red-600');
             } finally {
@@ -1658,7 +1675,7 @@
             const btn = document.getElementById('btn-save-mech');
             btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
             try {
-                await postAction('INTEL_SAVE_MECHERO', {
+                const payload = {
                     id: document.getElementById('mech-id').value || '',
                     alias: document.getElementById('mech-alias').value.trim(),
                     cuadrante: document.getElementById('mech-cuadrante').value,
@@ -1670,10 +1687,26 @@
                     foto: document.getElementById('mech-foto-existing').value || 'Sin foto',
                     fotoBase64: State.pendingPhotos.mech || '',
                     registradoPor: officerStamp()
-                });
+                };
+                const res = await postAction('INTEL_SAVE_MECHERO', payload);
+                const savedItem = {
+                    id: res.id || payload.id || ('MECH-' + String(Date.now()).slice(-6)),
+                    fecha: new Date().toLocaleString('es-CL'),
+                    alias: payload.alias,
+                    cuadrante: payload.cuadrante,
+                    riesgo: payload.riesgo,
+                    sector: payload.sector,
+                    senas: payload.senas,
+                    estado: payload.estado,
+                    observaciones: payload.observaciones,
+                    foto: (res.foto && String(res.foto).startsWith('http')) ? res.foto : (payload.fotoBase64 || payload.foto),
+                    registradoPor: payload.registradoPor
+                };
+                State.mecheros = [savedItem, ...State.mecheros.filter(x => x.id !== savedItem.id)];
                 resetMecheroForm();
-                await syncCloudData(false);
-                showToast('✅ Ficha de mechero guardada en Inteligencia 1410');
+                renderAll();
+                showToast('✅ Ficha de mechero guardada y reflejada al instante');
+                setTimeout(() => syncCloudData(false), 1800);
             } catch (err) {
                 showToast('⚠️ Error: ' + err.message, 'bg-red-600');
             } finally {
@@ -1754,7 +1787,7 @@
             const btn = document.getElementById('btn-save-rob');
             btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
             try {
-                await postAction('INTEL_SAVE_ROBADO', {
+                const payload = {
                     id: document.getElementById('rob-id').value || '',
                     patente: document.getElementById('rob-patente').value.trim().toUpperCase(),
                     cuadrante: document.getElementById('rob-cuadrante').value,
@@ -1766,10 +1799,26 @@
                     foto: document.getElementById('rob-foto-existing').value || 'Sin foto',
                     fotoBase64: State.pendingPhotos.rob || '',
                     registradoPor: officerStamp()
-                });
+                };
+                const res = await postAction('INTEL_SAVE_ROBADO', payload);
+                const savedItem = {
+                    id: res.id || payload.id || ('ROB-' + String(Date.now()).slice(-6)),
+                    fecha: new Date().toLocaleString('es-CL'),
+                    patente: res.patente || payload.patente,
+                    cuadrante: payload.cuadrante,
+                    marcaModelo: payload.marcaModelo,
+                    color: payload.color,
+                    tipoEncargo: payload.tipoEncargo,
+                    estado: payload.estado,
+                    observaciones: payload.observaciones,
+                    foto: (res.foto && String(res.foto).startsWith('http')) ? res.foto : (payload.fotoBase64 || payload.foto),
+                    registradoPor: payload.registradoPor
+                };
+                State.robados = [savedItem, ...State.robados.filter(x => x.id !== savedItem.id)];
                 resetRobadoForm();
-                await syncCloudData(false);
-                showToast('✅ Encargo vehicular LPR guardado correctamente');
+                renderAll();
+                showToast('✅ Encargo vehicular LPR guardado y reflejado al instante');
+                setTimeout(() => syncCloudData(false), 1800);
             } catch (err) {
                 showToast('⚠️ Error: ' + err.message, 'bg-red-600');
             } finally {
@@ -1853,7 +1902,7 @@
             const btn = document.getElementById('btn-save-calle');
             btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
             try {
-                await postAction('INTEL_SAVE_CALLE', {
+                const payload = {
                     id: document.getElementById('calle-id').value || '',
                     nombre: document.getElementById('calle-nombre').value.trim(),
                     rutEdad: document.getElementById('calle-rut').value.trim(),
@@ -1866,10 +1915,27 @@
                     foto: document.getElementById('calle-foto-existing').value || 'Sin foto',
                     fotoBase64: State.pendingPhotos.calle || '',
                     registradoPor: officerStamp()
-                });
+                };
+                const res = await postAction('INTEL_SAVE_CALLE', payload);
+                const savedItem = {
+                    id: res.id || payload.id || ('CALLE-' + String(Date.now()).slice(-6)),
+                    fecha: new Date().toLocaleString('es-CL'),
+                    nombre: payload.nombre,
+                    rutEdad: payload.rutEdad,
+                    cuadrante: payload.cuadrante,
+                    estado: payload.estado,
+                    ubicacion: payload.ubicacion,
+                    gps: payload.gps,
+                    perfil: payload.perfil,
+                    observaciones: payload.observaciones,
+                    foto: (res.foto && String(res.foto).startsWith('http')) ? res.foto : (payload.fotoBase64 || payload.foto),
+                    registradoPor: payload.registradoPor
+                };
+                State.calle = [savedItem, ...State.calle.filter(x => x.id !== savedItem.id)];
                 resetCalleForm();
-                await syncCloudData(false);
-                showToast('✅ Registro de Situación de Calle guardado');
+                renderAll();
+                showToast('✅ Registro de Situación de Calle guardado y reflejado al instante');
+                setTimeout(() => syncCloudData(false), 1800);
             } catch (err) {
                 showToast('⚠️ Error: ' + err.message, 'bg-red-600');
             } finally {
@@ -1950,7 +2016,7 @@
             const btn = document.getElementById('btn-save-calor');
             btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
             try {
-                await postAction('INTEL_SAVE_PUNTO_CALOR', {
+                const payload = {
                     id: document.getElementById('calor-id').value || '',
                     tipo: document.getElementById('calor-tipo').value,
                     cuadrante: document.getElementById('calor-cuadrante').value,
@@ -1961,10 +2027,25 @@
                     foto: document.getElementById('calor-foto-existing').value || 'Sin foto',
                     fotoBase64: State.pendingPhotos.calor || '',
                     registradoPor: officerStamp()
-                });
+                };
+                const res = await postAction('INTEL_SAVE_PUNTO_CALOR', payload);
+                const savedItem = {
+                    id: res.id || payload.id || ('HEAT-' + String(Date.now()).slice(-6)),
+                    fecha: new Date().toLocaleString('es-CL'),
+                    tipo: payload.tipo,
+                    cuadrante: payload.cuadrante,
+                    direccion: payload.direccion,
+                    gps: payload.gps,
+                    estado: payload.estado,
+                    descripcion: payload.descripcion,
+                    foto: (res.foto && String(res.foto).startsWith('http')) ? res.foto : (payload.fotoBase64 || payload.foto),
+                    registradoPor: payload.registradoPor
+                };
+                State.calor = [savedItem, ...State.calor.filter(x => x.id !== savedItem.id)];
                 resetCalorForm();
-                await syncCloudData(false);
-                showToast('✅ Punto Crítico guardado en Mapa de Calor');
+                renderAll();
+                showToast('✅ Punto Crítico guardado y reflejado al instante en el mapa');
+                setTimeout(() => syncCloudData(false), 1800);
             } catch (err) {
                 showToast('⚠️ Error: ' + err.message, 'bg-red-600');
             } finally {

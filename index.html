@@ -13025,8 +13025,14 @@
             list.unshift(item);
             saveIntelRobadosDB(list);
             IntelState.tempPhotoB64 = '';
+            updateIntelBadges();
             renderIntelWorkspace(ctx);
-            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_ROBADO' }, item));
+            const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_ROBADO' }, item));
+            if (res && res.foto && String(res.foto).startsWith('http')) {
+                const cur = getIntelRobadosDB();
+                const hit = cur.find(x => x.id === item.id);
+                if (hit) { hit.foto = res.foto; saveIntelRobadosDB(cur); renderIntelWorkspace(ctx); }
+            }
             showToast(`✓ Patente ${item.patente} guardada en Lista Negra`, 'bg-emerald-600');
         }
 
@@ -13050,8 +13056,14 @@
             list.unshift(item);
             saveIntelMecherosDB(list);
             IntelState.tempPhotoB64 = '';
+            updateIntelBadges();
             renderIntelWorkspace(ctx);
-            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_MECHERO' }, item));
+            const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_MECHERO' }, item));
+            if (res && res.foto && String(res.foto).startsWith('http')) {
+                const cur = getIntelMecherosDB();
+                const hit = cur.find(x => x.id === item.id);
+                if (hit) { hit.foto = res.foto; saveIntelMecherosDB(cur); renderIntelWorkspace(ctx); }
+            }
             showToast(`✓ Mechero "${item.alias}" guardado`, 'bg-emerald-600');
         }
 
@@ -13076,8 +13088,14 @@
             list.unshift(item);
             saveIntelCalleDB(list);
             IntelState.tempPhotoB64 = '';
+            updateIntelBadges();
             renderIntelWorkspace(ctx);
-            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_CALLE' }, item));
+            const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_CALLE' }, item));
+            if (res && res.foto && String(res.foto).startsWith('http')) {
+                const cur = getIntelCalleDB();
+                const hit = cur.find(x => x.id === item.id);
+                if (hit) { hit.foto = res.foto; saveIntelCalleDB(cur); renderIntelWorkspace(ctx); }
+            }
             showToast(`✓ Perfil situación calle guardado`, 'bg-emerald-600');
         }
 
@@ -13100,9 +13118,15 @@
             list.unshift(item);
             saveIntelCalorDB(list);
             IntelState.tempPhotoB64 = '';
+            updateIntelBadges();
             renderIntelWorkspace(ctx);
             if (CencoState.map) renderCadMapMarkers();
-            await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_PUNTO_CALOR' }, item));
+            const res = await sendPayloadToGoogleSheets(Object.assign({ action: 'INTEL_SAVE_PUNTO_CALOR' }, item));
+            if (res && res.foto && String(res.foto).startsWith('http')) {
+                const cur = getIntelCalorDB();
+                const hit = cur.find(x => x.id === item.id);
+                if (hit) { hit.foto = res.foto; saveIntelCalorDB(cur); renderIntelWorkspace(ctx); }
+            }
             showToast(`✓ Punto registrado en Mapa de Calor`, 'bg-emerald-600');
         }
 

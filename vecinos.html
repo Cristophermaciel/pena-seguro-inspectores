@@ -1019,13 +1019,28 @@
                 });
                 const json = await resp.json();
                 if (json && json.ok) {
-                    showToast(`✅ ¡Reporte ${json.id} enviado a Seguridad Pública 1410!`, 'bg-emerald-600');
+                    const createdRep = {
+                        id: json.id || ('SOS-' + String(Date.now()).slice(-4)),
+                        fecha: new Date().toLocaleString('es-CL'),
+                        categoria: document.getElementById('rep-categoria').value,
+                        cuadrante: document.getElementById('rep-cuadrante').value,
+                        direccion: document.getElementById('rep-direccion').value.trim(),
+                        gps: document.getElementById('rep-gps').value.trim(),
+                        descripcion: document.getElementById('rep-descripcion').value.trim(),
+                        estado: 'RECIBIDO',
+                        respuestaOficial: '',
+                        fotosVecino: []
+                    };
+                    State.myReports = [createdRep, ...(State.myReports || []).filter(x => x.id !== createdRep.id)];
+                    document.getElementById('my-reports-count').innerText = State.myReports.length;
+                    showToast(`✅ ¡Reporte ${createdRep.id} enviado a Seguridad Pública 1410!`, 'bg-emerald-600');
                     e.target.reset();
                     State.reportFotos = [];
                     document.getElementById('rep-fotos-preview').innerHTML = '';
                     document.getElementById('rep-gps').value = '';
-                    await loadMySosafeReports(false);
                     switchPortalTab('mis');
+                    renderMyReportsList();
+                    setTimeout(() => loadMySosafeReports(false), 1800);
                 } else showToast(`⚠️ Error: ${json?.error || 'No se pudo enviar'}`, 'bg-red-600');
             } catch (err) {
                 showToast('⚠️ Error de conexión al enviar reporte.', 'bg-red-600');
