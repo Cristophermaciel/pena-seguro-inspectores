@@ -12241,7 +12241,7 @@
             if (!url || url === 'Sin foto') return '';
             if (url.startsWith('data:')) return url;
             const m = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url).match(/[?&]id=([a-zA-Z0-9_-]+)/);
-            if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`;
+            if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
             return url;
         }
 
@@ -12404,7 +12404,7 @@
                                 const vigente = String(v.estado || '').toUpperCase() !== 'RECUPERADO';
                                 return `
                                 <div class="rounded-xl border ${vigente ? 'border-red-500/50' : 'border-emerald-500/40'} ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col min-w-0">
-                                    ${img ? `<img src="${img}" class="w-full ${isDark ? 'h-36' : 'h-48'} object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-car-burst"></i></div>`}
+                                    ${img ? `<a href="${v.foto && String(v.foto).startsWith('http') ? v.foto : img}" target="_blank" rel="noopener" title="Tocar para ver foto completa" class="block w-full bg-slate-950 relative"><img src="${img}" class="w-full ${isDark ? 'max-h-56' : 'max-h-[420px]'} h-auto object-contain mx-auto" onerror="this.parentElement.style.display='none'"><span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/65 text-white text-[10px] font-bold"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Ampliar</span></a>` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-car-burst"></i></div>`}
                                     <div class="p-3 space-y-1.5 text-xs flex-1 min-w-0">
                                         <div class="flex flex-wrap items-center justify-between gap-1.5">
                                             <span class="font-mono font-black text-sm px-2.5 py-0.5 rounded-lg bg-slate-950 text-amber-300 tracking-widest shrink-0">${v.patente}</span>
@@ -12453,7 +12453,7 @@
                                 const img = intelDriveImgSrc(m.foto);
                                 return `
                                 <div class="rounded-xl border border-amber-500/40 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col min-w-0">
-                                    ${img ? `<img src="${img}" class="w-full ${isDark ? 'h-36' : 'h-48'} object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-user-secret"></i></div>`}
+                                    ${img ? `<a href="${m.foto && String(m.foto).startsWith('http') ? m.foto : img}" target="_blank" rel="noopener" title="Tocar para ver foto completa" class="block w-full bg-slate-950 relative"><img src="${img}" class="w-full ${isDark ? 'max-h-56' : 'max-h-[420px]'} h-auto object-contain mx-auto" onerror="this.parentElement.style.display='none'"><span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/65 text-white text-[10px] font-bold"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Ampliar</span></a>` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-user-secret"></i></div>`}
                                     <div class="p-3 space-y-1.5 text-xs flex-1 min-w-0">
                                         <div class="flex flex-wrap items-center justify-between gap-1.5">
                                             <span class="font-black text-sm ${isDark ? 'cad-text' : 'text-slate-900'} break-words">${m.alias}</span>
@@ -12507,7 +12507,7 @@
                                 const img = intelDriveImgSrc(p.foto);
                                 return `
                                 <div class="rounded-xl border border-blue-500/35 ${isDark ? 'cad-elevated' : 'bg-slate-50'} overflow-hidden flex flex-col min-w-0">
-                                    ${img ? `<img src="${img}" class="w-full ${isDark ? 'h-36' : 'h-48'} object-cover bg-slate-900" onerror="this.style.display='none'">` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-person-shelter"></i></div>`}
+                                    ${img ? `<a href="${p.foto && String(p.foto).startsWith('http') ? p.foto : img}" target="_blank" rel="noopener" title="Tocar para ver foto completa" class="block w-full bg-slate-950 relative"><img src="${img}" class="w-full ${isDark ? 'max-h-56' : 'max-h-[420px]'} h-auto object-contain mx-auto" onerror="this.parentElement.style.display='none'"><span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/65 text-white text-[10px] font-bold"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Ampliar</span></a>` : `<div class="h-20 bg-slate-800/40 flex items-center justify-center text-slate-400 text-2xl"><i class="fa-solid fa-person-shelter"></i></div>`}
                                     <div class="p-3 space-y-1.5 text-xs flex-1 min-w-0">
                                         <div class="flex flex-wrap items-center justify-between gap-1.5">
                                             <span class="font-black text-sm ${isDark ? 'cad-text' : 'text-slate-900'} break-words">${p.nombre}</span>

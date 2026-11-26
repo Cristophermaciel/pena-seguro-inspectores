@@ -1625,7 +1625,7 @@
             if (!thumb) return '';
             const href = String(url || '').startsWith('http') ? url : thumb;
             return `<a href="${esc(href)}" target="_blank" rel="noopener" title="Abrir fotografía completa" class="shrink-0 block ${sizeCls} rounded-xl overflow-hidden border border-slate-600/80 bg-slate-950 shadow hover:scale-105 hover:border-cyan-400 transition">
-                <img src="${esc(thumb)}" alt="${esc(alt)}" loading="lazy" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'">
+                <img src="${esc(thumb)}" alt="${esc(alt)}" loading="lazy" class="w-full h-full object-contain bg-slate-950" onerror="this.parentElement.style.display='none'">
             </a>`;
         }
 
