@@ -7089,6 +7089,9 @@
             if (document.getElementById('view-cenco')?.classList.contains('active')) {
                 renderAllCencoPanels();
             }
+            if (document.getElementById('view-inteligencia')?.classList.contains('active') && typeof renderIntelWorkspace === 'function') {
+                renderIntelWorkspace('insp');
+            }
             if (document.getElementById('view-setup')?.classList.contains('active')) {
                 renderSetupMaintenanceSummary();
                 onSetupVehicleOrKmChange();
@@ -10278,6 +10281,12 @@
             renderCadIncivilidadesModule();
             renderCencoReportsDashboard();
             renderCadMapMarkers();
+            if (!document.getElementById('cad-mod-inteligencia')?.classList.contains('hidden') && typeof renderIntelWorkspace === 'function') {
+                renderIntelWorkspace('cenco');
+            }
+            if (!document.getElementById('cad-mod-sosafe')?.classList.contains('hidden') && typeof renderCencoSosafeModule === 'function') {
+                renderCencoSosafeModule();
+            }
         }
 
         // --- Render Central -> Subtab Abiertos (Tarjetas compactas + Alertas CCTV) ---
@@ -10285,7 +10294,7 @@
             const cctvWrap = document.getElementById('cad-abiertos-cctv-wrap');
             const cctvQueue = document.getElementById('cenco-despachador-cctv-queue');
             const cctvCount = document.getElementById('cad-abiertos-cctv-count');
-            const activeCctv = getCencoCctvAlertsDB().filter(a => a.estado === 'ENVIADA_A_DESPACHADOR');
+            const activeCctv = getCencoCctvAlertsDB().filter(a => a.estado === 'ENVIADA_A_DESPACHADOR' && !isPoliceVideoCctvAlert(a));
             if (cctvWrap) cctvWrap.classList.toggle('hidden', activeCctv.length === 0);
             if (cctvCount) cctvCount.innerText = activeCctv.length;
             if (cctvQueue) {
@@ -10623,15 +10632,13 @@
             }
             renderCencoCctvHistory();
             try {
-                await sendToGoogleAppsScript({
+                await sendPayloadToGoogleSheets({
                     action: 'CENCO_ATENDER_ALERTA_CCTV',
-                    payload: {
-                        alertaId,
-                        estado: newEstado,
-                        movilSugerido: '',
-                        folioVinculado: notaEntrega,
-                        atendidoPor: opName
-                    }
+                    alertaId,
+                    estado: newEstado,
+                    movilSugerido: '',
+                    folioVinculado: notaEntrega,
+                    atendidoPor: opName
                 });
                 showToast(newEstado === 'RESPALDO_LISTO' ? '✅ Respaldo marcado como LISTO y notificado al Portal Policial' : '🔵 Solicitud marcada EN EXTRACCIÓN', 'bg-emerald-600');
             } catch (e) {
