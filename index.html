@@ -365,14 +365,71 @@
                             </button>
                         </form>
 
-                        <div class="relative z-10 w-full mt-4 pt-3 border-t border-white/15 text-[10px] text-blue-100/80 text-center flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
-                            <span>Acceso privado con clave individual asignada por Administración</span>
+                        <div class="relative z-10 w-full mt-4 pt-3 border-t border-white/15 space-y-2.5">
+                            <button type="button" onclick="openPlateVerifierModal()" class="w-full bg-white/10 hover:bg-white/20 text-white border border-cyan-300/35 font-extrabold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-car-on text-cyan-300"></i>
+                                <span>Verificar Patente (AutoSeguro / PatenteChile)</span>
+                            </button>
+                            <div class="text-[10px] text-blue-100/80 text-center flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                                <span>Acceso privado con clave individual asignada por Administración</span>
+                            </div>
                         </div>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-5 font-semibold">© 2026 Ilustre Municipalidad de Peñaflor • Seguridad Pública 1410</p>
                 </div>
             </section>
+
+            <!-- MODAL MINI-APP: VERIFICADOR DE PATENTES 1410 (LPR + AUTOSEGURO + PATENTECHILE) -->
+            <div id="modal-plate-verifier" class="hidden fixed inset-0 z-[970] bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-3">
+                <div class="bg-slate-900 border border-cyan-400/40 rounded-3xl max-w-md w-full shadow-2xl text-slate-100 overflow-hidden">
+                    <div class="px-5 py-4 bg-gradient-to-r from-[#0a2463] via-blue-900 to-slate-900 border-b border-slate-700 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow shrink-0">
+                                <img src="logo-pena-seguro-1410.png" alt="1410" class="w-full h-full object-contain">
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-white leading-tight">Verificador de Patentes 1410</h3>
+                                <p class="text-[10px] text-cyan-300 font-semibold">Lista Negra LPR • AutoSeguro • PatenteChile</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="closePlateVerifierModal()" class="text-slate-300 hover:text-white text-2xl px-1 leading-none">&times;</button>
+                    </div>
+                    <div class="p-4 space-y-3.5 text-xs">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-cyan-300 mb-1">Ingrese Patente Chilena (PPU)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="pv-plate-input" maxlength="8" placeholder="EJ: ABCD12" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,''); runModalPlateCheck();" onkeydown="if(event.key==='Enter'){event.preventDefault();runModalPlateCheck(true);}" class="flex-1 px-3.5 py-3 rounded-xl bg-slate-950 border-2 border-cyan-500/50 focus:border-amber-400 text-amber-300 font-mono font-black text-lg tracking-[0.2em] text-center uppercase outline-none">
+                                <button type="button" onclick="runModalPlateCheck(true)" class="px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs shadow">BUSCAR</button>
+                            </div>
+                        </div>
+
+                        <div id="pv-local-result" class="rounded-2xl bg-slate-950/75 border border-slate-700/80 p-3 text-center text-[11px] text-slate-400">
+                            Escriba una patente (6 caracteres) para revisar nuestra Lista Negra 1410 y consultar en portales oficiales.
+                        </div>
+
+                        <div class="space-y-2 pt-1">
+                            <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                                <span>Consultas Oficiales Externas</span>
+                                <span class="text-emerald-400 font-bold"><i class="fa-solid fa-copy mr-1"></i>Copia patente automática</span>
+                            </div>
+                            <button type="button" onclick="openExternalPlateLookup('autoseguro', document.getElementById('pv-plate-input').value)" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs shadow-lg flex items-center justify-between transition">
+                                <span class="flex items-center gap-2.5"><i class="fa-solid fa-shield-halved text-base"></i> <span class="text-left leading-tight"><span class="block">Verificar Encargo por Robo</span><span class="text-[10px] font-normal text-red-100">autoseguro.gob.cl (Oficial)</span></span></span>
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                            <button type="button" onclick="openExternalPlateLookup('patentechile', document.getElementById('pv-plate-input').value)" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs shadow-lg flex items-center justify-between transition">
+                                <span class="flex items-center gap-2.5"><i class="fa-solid fa-id-card text-base"></i> <span class="text-left leading-tight"><span class="block">Obtener Datos del Vehículo</span><span class="text-[10px] font-normal text-blue-100">patentechile.com (Marca, Modelo, Año, VIN)</span></span></span>
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                        </div>
+
+                        <div class="rounded-xl bg-slate-800/70 border border-slate-700 p-2.5 text-[10px] text-slate-300 leading-relaxed">
+                            <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i>
+                            Al tocar cualquiera de los botones, la patente se <strong>copia automáticamente</strong> al portapapeles: en la página oficial solo presiona <strong>Pegar</strong> y marca la verificación.
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- 2. SHIFT SETUP VIEW -->
             <section id="view-setup" class="view-section" hidden>
@@ -660,6 +717,20 @@
                             <span id="menu-intel-robados-badge" class="bg-red-600 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow border border-white/30">0</span>
                             <i class="fa-solid fa-chevron-right text-cyan-200 text-sm"></i>
                         </div>
+                    </button>
+
+                    <!-- 2.4 VERIFICADOR RÁPIDO DE PATENTES (AUTOSEGURO + PATENTECHILE) -->
+                    <button type="button" onclick="openPlateVerifierModal()" class="w-full bg-gradient-to-r from-blue-700 via-indigo-700 to-cyan-700 text-white font-bold py-4 rounded-2xl shadow-md hover:shadow-lg flex items-center justify-between px-5 relative transition-all active:scale-[0.98] border border-cyan-400/30">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center text-cyan-200 text-xl border border-white/25 shadow-inner">
+                                <i class="fa-solid fa-car-on"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-base font-extrabold leading-tight">Verificar Patente (Robo y Datos)</p>
+                                <p class="text-xs text-cyan-100 font-normal mt-0.5">Base 1410 • AutoSeguro.gob.cl • PatenteChile</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-cyan-200 text-sm"></i>
                     </button>
 
                     <!-- 2.5 VERIFICACIÓN DE MANTENCIONES Y ACEITE -->
@@ -12282,6 +12353,16 @@
                             <button type="button" onclick="checkPlateAgainstBlacklist(document.getElementById('lpr-manual-input-${ctx}').value, '${ctx}')" class="px-3.5 py-2 rounded-xl bg-[#0a2463] hover:bg-blue-900 text-white font-black text-xs shrink-0">VERIFICAR</button>
                         </div>
 
+                        <!-- Consultas Oficiales AutoSeguro & PatenteChile (Copia patente automática) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <button type="button" onclick="openExternalPlateLookup('autoseguro', document.getElementById('lpr-manual-input-${ctx}')?.value || '')" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-[11px] flex items-center justify-center gap-2 shadow">
+                                <i class="fa-solid fa-shield-halved"></i> Consultar Encargo AutoSeguro.gob.cl
+                            </button>
+                            <button type="button" onclick="openExternalPlateLookup('patentechile', document.getElementById('lpr-manual-input-${ctx}')?.value || '')" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-[11px] flex items-center justify-center gap-2 shadow">
+                                <i class="fa-solid fa-id-card"></i> Ver Datos en PatenteChile.com
+                            </button>
+                        </div>
+
                         <!-- Vista previa del recorte binarizado + estado OCR -->
                         <div id="lpr-scan-preview-${ctx}" class="hidden flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/90 border border-slate-700">
                             <img id="lpr-scan-preview-img-${ctx}" class="h-12 rounded border border-cyan-500/50 bg-white object-contain">
@@ -13505,6 +13586,68 @@
             } else {
                 prompt('Copia el enlace del Portal Vecinos SOSAFE Peñaflor:', url);
             }
+        }
+
+        function openPlateVerifierModal(prefillPlate = '') {
+            const modal = document.getElementById('modal-plate-verifier');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            const inp = document.getElementById('pv-plate-input');
+            if (inp) {
+                if (prefillPlate) inp.value = String(prefillPlate).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                inp.focus();
+                runModalPlateCheck();
+            }
+        }
+
+        function closePlateVerifierModal() {
+            document.getElementById('modal-plate-verifier')?.classList.add('hidden');
+        }
+
+        function runModalPlateCheck(notifyEmpty = false) {
+            const inp = document.getElementById('pv-plate-input');
+            const resEl = document.getElementById('pv-local-result');
+            if (!inp || !resEl) return;
+            const plate = String(inp.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (plate.length < 4) {
+                resEl.className = 'rounded-2xl bg-slate-950/75 border border-slate-700/80 p-3 text-center text-[11px] text-slate-400';
+                resEl.innerHTML = notifyEmpty
+                    ? '<span class="text-amber-300 font-bold">Ingrese al menos 4 caracteres de la patente (Ej: ABCD12).</span>'
+                    : 'Escriba una patente (6 caracteres) para revisar nuestra Lista Negra 1410 y consultar en portales oficiales.';
+                return;
+            }
+            const list = getIntelRobadosDB();
+            const hit = list.find(v => String(v.patente || '').toUpperCase().replace(/[^A-Z0-9]/g, '') === plate);
+            if (hit) {
+                const isVig = String(hit.estado || '').toUpperCase() !== 'RECUPERADO';
+                resEl.className = `rounded-2xl p-3.5 text-left space-y-1.5 border-2 ${isVig ? 'bg-red-950/85 border-red-500 text-red-100' : 'bg-emerald-950/70 border-emerald-500/60 text-emerald-100'}`;
+                resEl.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-black text-xs uppercase">${isVig ? '🚨 ALERTA EN LISTA NEGRA 1410' : '✅ REGISTRO RECUPERADO'}</span>
+                        <span class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-mono font-black text-xs">${plate}</span>
+                    </div>
+                    <div class="font-bold text-white text-xs">${hit.marcaModelo || 'Vehículo'} ${hit.color ? `• ${hit.color}` : ''}</div>
+                    <div class="text-[11px] text-amber-200 font-semibold">${hit.tipoEncargo || 'ROBO VEHÍCULO'} • Cuadrante ${hit.cuadrante || 'Peñaflor'} • ${hit.estado || ''}</div>
+                    ${hit.observaciones ? `<div class="text-[11px] bg-black/30 rounded-lg p-2">${hit.observaciones}</div>` : ''}
+                `;
+            } else {
+                resEl.className = 'rounded-2xl bg-emerald-950/45 border border-emerald-500/40 p-3 text-center text-[11px] text-emerald-200';
+                resEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Patente <strong class="font-mono text-white">${plate}</strong> sin registro local en Lista Negra 1410. Verifica abajo en <strong>AutoSeguro</strong> o <strong>PatenteChile</strong>.`;
+            }
+        }
+
+        function openExternalPlateLookup(service, rawPlate) {
+            const plate = String(rawPlate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const url = service === 'autoseguro' ? 'https://www.autoseguro.gob.cl/' : 'https://www.patentechile.com/';
+            const label = service === 'autoseguro' ? 'AutoSeguro.gob.cl' : 'PatenteChile.com';
+            if (plate && navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(plate).then(() => {
+                    showToast(`📋 Patente ${plate} copiada — Pégala en ${label}`, 'bg-blue-600');
+                }).catch(() => {});
+            } else if (plate) {
+                showToast(`Abriendo ${label} para patente ${plate}`, 'bg-blue-600');
+            }
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function copyPoliciaPortalLink() {

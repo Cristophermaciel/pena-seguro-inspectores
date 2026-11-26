@@ -544,6 +544,12 @@
                             <option value="RECUPERADO">🟢 Recuperado</option>
                             <option value="ANULADO">⚪ Anulado</option>
                         </select>
+                        <button type="button" onclick="openExternalPlateLookup('autoseguro', document.getElementById('rob-search')?.value || document.getElementById('rob-patente')?.value || '')" class="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black flex items-center gap-1.5 shadow">
+                            <i class="fa-solid fa-shield-halved"></i> AutoSeguro
+                        </button>
+                        <button type="button" onclick="openExternalPlateLookup('patentechile', document.getElementById('rob-search')?.value || document.getElementById('rob-patente')?.value || '')" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-black flex items-center gap-1.5 shadow">
+                            <i class="fa-solid fa-id-card"></i> PatenteChile
+                        </button>
                     </div>
                 </div>
 
@@ -965,6 +971,16 @@
         let _calorMap = null, _calorLayer = null, _calorHeat = null, _calorPickMarker = null;
 
         const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        function openExternalPlateLookup(service, rawPlate) {
+            const plate = String(rawPlate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const url = service === 'autoseguro' ? 'https://www.autoseguro.gob.cl/' : 'https://www.patentechile.com/';
+            const label = service === 'autoseguro' ? 'AutoSeguro.gob.cl' : 'PatenteChile.com';
+            if (plate && navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(plate).then(() => showToast(`📋 Patente ${plate} copiada — Pégala en ${label}`, 'bg-blue-600')).catch(() => {});
+            }
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
 
         function showToast(msg, cls = 'bg-emerald-600') {
             const t = document.getElementById('toast');
