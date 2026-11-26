@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mantenimiento de Flota — Peña Seguro 1410</title>
+    <meta name="theme-color" content="#071326">
+    <link rel="icon" type="image/png" href="logo-pena-seguro-1410.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050c1a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .bg-fleet-full {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background-image: url('./fondo-flota-mantenimiento.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .glass-card {
+            background: linear-gradient(160deg, rgba(9, 18, 36, 0.84), rgba(6, 13, 28, 0.80));
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            border-top: 1px solid rgba(255, 255, 255, 0.28);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+        }
+        .glass-sidebar {
+            background: rgba(6, 13, 28, 0.86);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border-right: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 8px 0 36px rgba(0, 0, 0, 0.50);
+        }
+        .nav-item {
+            transition: all 0.18s ease;
+            border: 1px solid transparent;
+        }
+        .nav-item:hover {
+            background: rgba(51, 65, 85, 0.45);
+            border-color: rgba(148, 163, 184, 0.22);
+        }
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.26), rgba(37, 99, 235, 0.28));
+            border-color: rgba(251, 191, 36, 0.50);
+            color: #ffffff;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.18);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="bg-fleet-full" aria-hidden="true"></div>
+
+    <!-- ================================================================== -->
+    <!-- 1. PANTALLA DE ACCESO EXCLUSIVO (ENCARGADO DE MANTENIMIENTO)       -->
+    <!-- ================================================================== -->
+    <main id="screen-login" class="min-h-screen flex items-center justify-center p-4 py-8">
+        <div class="max-w-5xl w-full space-y-5">
+            <!-- Barra Oficial -->
+            <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/75 border border-sky-400/40">
+                        <img src="logo-municipalidad-penaflor.jpg" alt="Municipalidad de Peñaflor" class="w-10 h-10 rounded-lg object-contain bg-white p-0.5">
+                        <div class="leading-tight">
+                            <div class="text-[9px] font-black uppercase tracking-widest text-sky-300">I. Municipalidad</div>
+                            <div class="text-xs font-black text-white">PEÑAFLOR</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/75 border border-amber-400/45">
+                        <img src="logo-pena-seguro-1410.png" alt="Peña Seguro 1410" class="w-10 h-10 rounded-lg object-contain bg-white p-0.5">
+                        <div class="leading-tight">
+                            <div class="text-[9px] font-black uppercase tracking-widest text-amber-300">Departamento de Operaciones</div>
+                            <div class="text-xs font-black text-white">MANTENIMIENTO DE FLOTA 1410</div>
+                        </div>
+                    </div>
+                </div>
+                <a href="./index.html" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-cyan-300 text-xs font-bold border border-slate-700">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Volver a App 1410
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                <!-- Izquierda: Resumen Flota -->
+                <section class="lg:col-span-6 glass-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-5">
+                    <div class="space-y-4">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/45 text-amber-300 text-[10px] font-black uppercase tracking-wider">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> Portal Privado — Encargado de Flota
+                        </span>
+                        <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">Control de Mantenimiento de Camionetas, SUV y Motocicletas</h1>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Plataforma exclusiva para el encargado de flota de <strong>Seguridad Pública Peñaflor 1410</strong>. Controla kilometrajes, intervalos preventivos, alertas de terreno, ingresos a taller, resoluciones y fichas oficiales listas para <strong>Correo Institucional, WhatsApp y PDF</strong>.
+                        </p>
+
+                        <div class="grid grid-cols-3 gap-2.5 pt-1">
+                            <div class="rounded-xl overflow-hidden border border-slate-600/70 bg-slate-950">
+                                <img src="flota-jmc-vigus.jpg" alt="JMC Vigus" class="w-full h-20 object-cover">
+                                <div class="p-1.5 text-center text-[10px] font-black text-amber-300">JMC VIGUS 4x4</div>
+                            </div>
+                            <div class="rounded-xl overflow-hidden border border-slate-600/70 bg-slate-950">
+                                <img src="flota-chery-tiggo.jpg" alt="Chery Tiggo" class="w-full h-20 object-cover">
+                                <div class="p-1.5 text-center text-[10px] font-black text-cyan-300">CHERY TIGGO</div>
+                            </div>
+                            <div class="rounded-xl overflow-hidden border border-slate-600/70 bg-slate-950">
+                                <img src="flota-honda-189.jpg" alt="Honda 189cc" class="w-full h-20 object-cover">
+                                <div class="p-1.5 text-center text-[10px] font-black text-emerald-300">HONDA 189cc</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-700/60 text-[11px] text-slate-300 flex items-center justify-between">
+                        <span><i class="fa-solid fa-lock text-amber-400 mr-1"></i> Acceso restringido (Rol <code class="text-amber-300">MANTENIMIENTO</code> o <code class="text-cyan-300">ADMIN</code>)</span>
+                    </div>
+                </section>
+
+                <!-- Derecha: Login -->
+                <section class="lg:col-span-6 glass-card rounded-3xl p-6 sm:p-8 flex flex-col justify-center">
+                    <div class="mb-5">
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-key text-amber-400"></i> Acceso Encargado de Mantenimiento</h2>
+                        <p class="text-xs text-slate-300 mt-0.5">Ingresa con tu cuenta personal asignada por Administración.</p>
+                    </div>
+
+                    <form id="form-maint-login" onsubmit="handleMaintLogin(event)" class="space-y-3.5 text-xs">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-200 mb-1">RUT o Usuario <span class="text-red-400">*</span></label>
+                            <input type="text" id="login-user" required autocomplete="username" placeholder="Ej: 15.123.456-7 o MANTENIMIENTO" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-semibold focus:border-amber-400 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-200 mb-1">Contraseña <span class="text-red-400">*</span></label>
+                            <input type="password" id="login-pass" required autocomplete="current-password" placeholder="••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-semibold focus:border-amber-400 outline-none">
+                        </div>
+
+                        <div id="login-error" class="hidden rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 p-2.5 text-[11px] font-semibold"></div>
+
+                        <button type="submit" id="btn-login-submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-blue-600 hover:from-amber-400 hover:to-blue-500 text-slate-950 hover:text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-right-to-bracket"></i> INGRESAR AL PORTAL DE MANTENIMIENTO
+                        </button>
+                    </form>
+
+                    <div class="mt-4 rounded-xl bg-slate-900/70 border border-slate-700/80 p-3 text-[11px] text-slate-300">
+                        <i class="fa-solid fa-circle-info text-amber-400 mr-1"></i>
+                        La cuenta personal del encargado se administra en <strong>Peña Seguro 1410 &rarr; Administrador &rarr; Usuarios</strong> seleccionando el rol <code class="text-amber-300 font-bold">MANTENIMIENTO</code>.
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================================================================== -->
+    <!-- 2. PORTAL ACTIVO CON GLASSY SIDEBAR                                -->
+    <!-- ================================================================== -->
+    <div id="screen-portal" class="hidden min-h-screen flex flex-col lg:flex-row">
+        <!-- Mobile Topbar -->
+        <header class="lg:hidden sticky top-0 z-40 glass-sidebar border-b border-slate-700/60 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <button type="button" onclick="toggleMobileSidebar(true)" class="h-9 w-9 rounded-xl bg-slate-800/80 border border-slate-700 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div>
+                    <div class="text-xs font-black text-white">MANTENIMIENTO 1410</div>
+                    <div class="text-[10px] font-bold text-amber-400">FLOTA VEHICULAR</div>
+                </div>
+            </div>
+            <button type="button" onclick="syncCloudData(true)" class="px-3 py-1.5 rounded-xl bg-blue-600/80 text-white text-xs font-bold">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </header>
+
+        <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="hidden fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-xs lg:hidden"></div>
+
+        <!-- Glassy Sidebar -->
+        <aside id="maint-sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 shrink-0 glass-sidebar flex flex-col justify-between p-4 transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+            <div class="space-y-4 overflow-y-auto no-scrollbar">
+                <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-700/60">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="h-10 w-10 rounded-xl bg-white p-1 shadow shrink-0 flex items-center justify-center">
+                            <img src="logo-pena-seguro-1410.png" alt="1410" class="w-full h-full object-contain">
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-xs font-black text-white truncate">PEÑA SEGURO 1410</div>
+                            <div class="text-[10px] font-black text-amber-400 uppercase truncate">MANTENIMIENTO FLOTA</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="toggleMobileSidebar(false)" class="lg:hidden text-slate-400 hover:text-white text-lg px-1">&times;</button>
+                </div>
+
+                <div class="rounded-2xl bg-slate-900/80 border border-slate-700/70 p-3 text-xs space-y-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <span id="side-role-pill" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">MANTENIMIENTO</span>
+                        <span class="text-[10px] text-emerald-400 font-bold"><i class="fa-solid fa-circle text-[7px] mr-1"></i>Sincronizado</span>
+                    </div>
+                    <div id="side-user-name" class="font-black text-white truncate">Encargado de Flota</div>
+                    <div id="side-last-sync" class="text-[10px] text-slate-400">Cargando...</div>
+                </div>
+
+                <nav class="space-y-1 text-xs font-bold">
+                    <div class="px-2 pt-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Control Vehicular</div>
+                    <button type="button" onclick="switchTab('flota')" id="nav-flota" class="nav-item active w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-car-side text-amber-400 w-4 text-center"></i> Estado de Flota</span>
+                        <span id="badge-flota" class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 text-[10px] font-black">0</span>
+                    </button>
+                    <button type="button" onclick="switchTab('alertas')" id="nav-alertas" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-triangle-exclamation text-red-400 w-4 text-center"></i> Alertas y Resoluciones</span>
+                        <span id="badge-alertas" class="px-2 py-0.5 rounded-full bg-red-500/25 text-red-300 text-[10px] font-black">0</span>
+                    </button>
+                    <button type="button" onclick="switchTab('mantencion')" id="nav-mantencion" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-screwdriver-wrench text-emerald-400 w-4 text-center"></i> Registrar Mantención</span>
+                    </button>
+
+                    <div class="px-2 pt-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Reportes y Administración</div>
+                    <button type="button" onclick="switchTab('reportes')" id="nav-reportes" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-file-export text-sky-400 w-4 text-center"></i> Fichas WhatsApp / Correo</span>
+                    </button>
+                    <button type="button" onclick="switchTab('unidades')" id="nav-unidades" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-motorcycle text-cyan-400 w-4 text-center"></i> Unidades y Fichas Técnicas</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="pt-3 border-t border-slate-700/60 space-y-2">
+                <button type="button" onclick="syncCloudData(true)" class="w-full py-2.5 rounded-xl bg-blue-600/85 hover:bg-blue-500 text-white text-xs font-black flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-rotate"></i> Actualizar Flota Nube
+                </button>
+                <button type="button" onclick="logoutMaint()" class="w-full py-2 rounded-xl bg-slate-800/80 hover:bg-red-900/60 text-slate-300 hover:text-red-200 border border-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 min-w-0 p-4 sm:p-6 space-y-5">
+            <div id="toast" class="hidden fixed bottom-5 right-5 z-[1000] px-4 py-3 rounded-2xl shadow-2xl text-xs font-black text-white border border-white/15"></div>
+
+            <!-- Barra Superior Institucional -->
+            <div class="glass-card rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/80 border border-sky-400/40 text-[10px] font-black text-white">
+                        <img src="logo-municipalidad-penaflor.jpg" alt="Muni" class="w-6 h-6 rounded-md object-contain bg-white p-0.5"> I. MUNICIPALIDAD DE PEÑAFLOR
+                    </span>
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/80 border border-amber-400/45 text-[10px] font-black text-amber-200">
+                        <img src="logo-pena-seguro-1410.png" alt="1410" class="w-6 h-6 rounded-md object-contain bg-white p-0.5"> DEPTO. MANTENIMIENTO FLOTA 1410
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="switchTab('mantencion')" class="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600 text-emerald-100 hover:text-white border border-emerald-400/45 text-[11px] font-black transition">
+                        <i class="fa-solid fa-wrench mr-1"></i> + Registrar Mantención
+                    </button>
+                    <button type="button" onclick="switchTab('reportes')" class="px-3 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600 text-sky-100 hover:text-white border border-sky-400/45 text-[11px] font-black transition">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Ficha Correo / WhatsApp
+                    </button>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- TAB 1: ESTADO GENERAL DE FLOTA                             -->
+            <!-- ========================================================== -->
+            <section id="tab-flota" class="tab-panel space-y-4">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-car-side text-amber-400"></i> Estado General de Flota — Camionetas, SUV y Motocicletas</h2>
+                        <p class="text-xs text-slate-300">Monitoreo en tiempo real de kilometraje, próximos cambios de aceite/mantenciones (10.000 km autos / 3.000 km motos) y disponibilidad.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="fleet-filter-type" onchange="renderFlotaTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Tipo: Toda la Flota</option>
+                            <option value="AUTO">🚙 Camionetas y SUV</option>
+                            <option value="MOTO">🏍️ Motocicletas</option>
+                            <option value="TALLER">🔧 En Taller / Fuera Servicio</option>
+                            <option value="ALERTA">⚠️ Con Mantención Próxima / Vencida</option>
+                        </select>
+                        <input type="text" id="fleet-search" oninput="renderFlotaTab()" placeholder="Buscar móvil o patente..." class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs w-44">
+                    </div>
+                </div>
+
+                <div id="flota-kpis" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+                <div id="flota-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 2: ALERTAS DE TERRENO Y RESOLUCIONES                   -->
+            <!-- ========================================================== -->
+            <section id="tab-alertas" class="tab-panel hidden space-y-4">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-red-400"></i> Alertas de Fallas y Resoluciones de Mantenimiento</h2>
+                        <p class="text-xs text-slate-300">Novedades mecánicas, eléctricas o de carrocería reportadas en checklists por los inspectores. Resuelve y emite ficha por correo/WhatsApp.</p>
+                    </div>
+                    <select id="alert-filter-status" onchange="renderAlertasTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                        <option value="PENDIENTE">🔴 Solo Pendientes</option>
+                        <option value="RESUELTO">🟢 Historial Resueltas</option>
+                        <option value="ALL">Todas</option>
+                    </select>
+                </div>
+                <div id="alertas-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 3: REGISTRAR MANTENCIÓN / TALLER                       -->
+            <!-- ========================================================== -->
+            <section id="tab-mantencion" class="tab-panel hidden space-y-4">
+                <div class="glass-card rounded-2xl px-4 py-3">
+                    <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-screwdriver-wrench text-emerald-400"></i> Registrar Mantención Preventiva o Reparación</h2>
+                    <p class="text-xs text-slate-300">Actualiza automáticamente el kilometraje de última mantención en Google Sheets y recalcula el próximo servicio (10.000 km camionetas / 3.000 km motos).</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <form id="form-log-maint" onsubmit="submitMaintenanceLog(event)" class="lg:col-span-6 glass-card rounded-2xl p-5 space-y-3.5 text-xs">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-200 mb-1">Unidad (Camioneta / SUV / Motocicleta) <span class="text-red-400">*</span></label>
+                            <select id="maint-unit-id" onchange="onMaintUnitChange()" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-200 mb-1">Kilometraje de Mantención <span class="text-red-400">*</span></label>
+                                <input type="number" id="maint-km" required min="0" placeholder="Ej: 45200" class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-amber-300 font-mono font-black">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-200 mb-1">Fecha Servicio <span class="text-red-400">*</span></label>
+                                <input type="date" id="maint-date" required class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-200 mb-1">Tipo de Servicio</label>
+                                <select id="maint-service-type" class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="MANTENCIÓN PREVENTIVA (ACEITE Y FILTROS)">Mantención Preventiva (Aceite y Filtros)</option>
+                                    <option value="FRENOS / DISCOS / PASTILLAS">Frenos / Discos / Pastillas</option>
+                                    <option value="NEUMÁTICOS / ALINEACIÓN / BALANCEO">Neumáticos / Alineación / Balanceo</option>
+                                    <option value="SISTEMA ELÉCTRICO / BALIZA / SIRENA">Sistema Eléctrico / Baliza / Sirena</option>
+                                    <option value="REPARACIÓN MECÁNICA MAYOR">Reparación Mecánica Mayor</option>
+                                    <option value="CARROCERÍA / GRÁFICA 1410">Carrocería / Gráfica 1410</option>
+                                    <option value="REVISIÓN TÉCNICA / DOCUMENTACIÓN">Revisión Técnica / Documentación</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-200 mb-1">Taller / Proveedor</label>
+                                <input type="text" id="maint-taller" placeholder="Ej: Taller Municipal / Concesionario" class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-200 mb-1">Estado Resultante de la Unidad</label>
+                                <select id="maint-new-status" class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="OPERATIVO">🟢 OPERATIVO (Entregado a servicio)</option>
+                                    <option value="EN TALLER">🟡 EN TALLER (Pendiente entrega)</option>
+                                    <option value="FUERA DE SERVICIO">🔴 FUERA DE SERVICIO</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-200 mb-1">N° Orden / Factura (opcional)</label>
+                                <input type="text" id="maint-oc" placeholder="Ej: OC-2026-0145" class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-200 mb-1">Detalle Técnico, Repuestos y Resolución <span class="text-red-400">*</span></label>
+                            <textarea id="maint-obs" rows="3" required placeholder="Ej: Cambio de aceite 5W30, filtro aceite/aire/combustible, revisión frenos delanteros. Unidad queda 100% operativa." class="w-full px-3 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white"></textarea>
+                        </div>
+                        <button type="submit" id="btn-log-maint" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black shadow-lg">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> GUARDAR MANTENCIÓN Y ACTUALIZAR FLOTA
+                        </button>
+                    </form>
+
+                    <div class="lg:col-span-6 glass-card rounded-2xl p-5 space-y-3 text-xs">
+                        <h3 class="font-black text-amber-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-gauge-high"></i> Unidades con Mayor Urgencia de Mantención</h3>
+                        <div id="maint-priority-list" class="space-y-2.5 max-h-[460px] overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 4: FICHAS DE REPORTE (CORREO, WHATSAPP Y PDF)          -->
+            <!-- ========================================================== -->
+            <section id="tab-reportes" class="tab-panel hidden space-y-4">
+                <div class="glass-card rounded-2xl px-4 py-3">
+                    <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-file-export text-sky-400"></i> Fichas de Reporte y Resoluciones — Correo, WhatsApp y PDF</h2>
+                    <p class="text-xs text-slate-300">Genera fichas técnicas o resoluciones de mantenimiento listas para enviar por <strong>WhatsApp</strong>, <strong>Correo Oficial (`central1410@penaflor.cl`)</strong> o descargar en <strong>PDF</strong>.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <!-- Constructor de Ficha -->
+                    <div class="lg:col-span-5 glass-card rounded-2xl p-5 space-y-3 text-xs h-fit">
+                        <h3 class="font-black text-sky-300 uppercase border-b border-slate-700/70 pb-2"><i class="fa-solid fa-sliders mr-1"></i> Configurar Ficha de Reporte</h3>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Tipo de Ficha</label>
+                            <select id="rep-type" onchange="generateReportFicha()" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                <option value="UNIT_RES">🔧 Ficha de Mantención / Resolución de Unidad</option>
+                                <option value="FLEET_SUMMARY">📊 Resumen Completo de Estado de Flota</option>
+                                <option value="WORKSHOP_ORDER">🏭 Ficha de Ingreso / Egreso de Taller</option>
+                            </select>
+                        </div>
+                        <div id="rep-unit-wrap">
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Seleccionar Unidad</label>
+                            <select id="rep-unit-id" onchange="generateReportFicha()" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Nota / Resolución Adicional del Encargado</label>
+                            <textarea id="rep-extra-note" rows="3" oninput="generateReportFicha()" placeholder="Ej: Se autoriza retiro desde taller, unidad revisada con baliza, radio y neumáticos en óptimo estado..." class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-300 mb-1">Adjuntar Foto de Respaldo / Boleta (para Correo)</label>
+                            <input type="file" id="rep-photo-file" accept="image/*" onchange="handleReportPhoto(this)" class="w-full text-[10px] text-slate-300">
+                            <div id="rep-photo-preview" class="mt-1"></div>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-700/70 space-y-2">
+                            <div class="text-[10px] font-black uppercase text-amber-300"><i class="fa-solid fa-envelope mr-1"></i> Destinatarios para Envío por Correo Oficial</div>
+                            <div id="rep-email-checkboxes" class="space-y-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <input type="email" id="rep-custom-email" placeholder="+ Correo adicional manual (ej: direccion@penaflor.cl)" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Vista Previa + Acciones -->
+                    <div class="lg:col-span-7 glass-card rounded-2xl p-5 space-y-3 text-xs">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/70 pb-2">
+                            <h3 class="font-black text-white uppercase"><i class="fa-solid fa-file-lines text-amber-400 mr-1"></i> Vista Previa de Ficha Oficial (Editable)</h3>
+                            <button type="button" onclick="generateReportFicha()" class="text-[10px] text-cyan-300 hover:underline font-bold">↻ Regenerar</button>
+                        </div>
+                        <textarea id="rep-preview-text" rows="15" class="w-full p-3.5 rounded-xl bg-slate-950/90 border border-slate-700 text-slate-100 font-mono text-[11px] leading-relaxed"></textarea>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                            <button type="button" onclick="sendFichaWhatsApp()" class="py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black flex items-center justify-center gap-1.5 shadow">
+                                <i class="fa-brands fa-whatsapp text-base"></i> WhatsApp
+                            </button>
+                            <button type="button" id="btn-send-email" onclick="sendFichaEmail()" class="py-3 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black flex items-center justify-center gap-1.5 shadow">
+                                <i class="fa-solid fa-envelope"></i> Enviar Correo
+                            </button>
+                            <button type="button" onclick="downloadFichaPDF()" class="py-3 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black flex items-center justify-center gap-1.5 shadow">
+                                <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+                            </button>
+                            <button type="button" onclick="copyFichaText()" class="py-3 px-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-black flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-copy"></i> Copiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 5: GESTIÓN DE UNIDADES Y FICHAS TÉCNICAS               -->
+            <!-- ========================================================== -->
+            <section id="tab-unidades" class="tab-panel hidden space-y-4">
+                <div class="glass-card rounded-2xl px-4 py-3">
+                    <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-motorcycle text-cyan-400"></i> Gestión de Unidades y Fichas Técnicas de Flota</h2>
+                    <p class="text-xs text-slate-300">Crea o modifica datos de camionetas, SUV y motocicletas sincronizados con la planilla maestra de Seguridad Pública 1410.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <form id="form-save-unit" onsubmit="saveVehicleUnit(event)" class="lg:col-span-5 glass-card rounded-2xl p-5 space-y-3 text-xs h-fit">
+                        <div class="flex items-center justify-between border-b border-slate-700/70 pb-2">
+                            <h3 class="font-black text-cyan-300 uppercase"><i class="fa-solid fa-plus-circle mr-1"></i> Crear / Editar Unidad</h3>
+                            <button type="button" onclick="resetUnitForm()" class="text-[10px] text-amber-300 hover:underline">Limpiar</button>
+                        </div>
+                        <input type="hidden" id="unit-id">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Nombre Unidad <span class="text-red-400">*</span></label>
+                                <input type="text" id="unit-nombre" required placeholder="Ej: Móvil 12 / Tango 01" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Patente (PPU)</label>
+                                <input type="text" id="unit-patente" placeholder="Ej: ABCD-12" class="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-amber-300 font-mono uppercase">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Tipo de Vehículo</label>
+                                <select id="unit-tipo" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="Camioneta (JMC Vigus)">Camioneta (JMC Vigus)</option>
+                                    <option value="SUV (Chery Tiggo)">SUV (Chery Tiggo)</option>
+                                    <option value="Motocicleta (Honda 189cc)">Motocicleta (Honda 189cc)</option>
+                                    <option value="Móvil">Móvil General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Estado Operativo</label>
+                                <select id="unit-estado" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-bold">
+                                    <option value="OPERATIVO">🟢 OPERATIVO</option>
+                                    <option value="EN TALLER">🟡 EN TALLER</option>
+                                    <option value="FUERA DE SERVICIO">🔴 FUERA DE SERVICIO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Cuadrante Base</label>
+                                <input type="text" id="unit-cuadrante" value="252A" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Km Actual</label>
+                                <input type="number" id="unit-km" min="0" value="0" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-amber-300 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 mb-1">Km Últ. Mant.</label>
+                                <input type="number" id="unit-km-ult" min="0" value="0" class="w-full px-2.5 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-emerald-300 font-mono">
+                            </div>
+                        </div>
+                        <button type="submit" id="btn-save-unit" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black shadow">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Unidad en Flota 1410
+                        </button>
+                    </form>
+
+                    <!-- Fichas Técnicas Blueprints -->
+                    <div class="lg:col-span-7 space-y-3">
+                        <div class="glass-card rounded-2xl p-4 space-y-3">
+                            <h3 class="text-xs font-black text-amber-300 uppercase"><i class="fa-solid fa-blueprint mr-1"></i> Fichas Técnicas Oficiales de Flota (Clic para ampliar)</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <a href="./flota-jmc-vigus.jpg" target="_blank" class="rounded-xl overflow-hidden border border-slate-600 hover:border-amber-400 transition block bg-slate-950">
+                                    <img src="flota-jmc-vigus.jpg" alt="JMC Vigus" class="w-full h-32 object-cover">
+                                    <div class="p-2 text-center text-[11px] font-black text-white">JMC Vigus 4x4<div class="text-[9px] text-amber-300 font-normal">Intervalo: 10.000 km</div></div>
+                                </a>
+                                <a href="./flota-chery-tiggo.jpg" target="_blank" class="rounded-xl overflow-hidden border border-slate-600 hover:border-cyan-400 transition block bg-slate-950">
+                                    <img src="flota-chery-tiggo.jpg" alt="Chery Tiggo" class="w-full h-32 object-cover">
+                                    <div class="p-2 text-center text-[11px] font-black text-white">Chery Tiggo 1.5T<div class="text-[9px] text-cyan-300 font-normal">Intervalo: 10.000 km</div></div>
+                                </a>
+                                <a href="./flota-honda-189.jpg" target="_blank" class="rounded-xl overflow-hidden border border-slate-600 hover:border-emerald-400 transition block bg-slate-950">
+                                    <img src="flota-honda-189.jpg" alt="Honda 189cc" class="w-full h-32 object-cover">
+                                    <div class="p-2 text-center text-[11px] font-black text-white">Honda 189cc<div class="text-[9px] text-emerald-300 font-normal">Intervalo: 3.000 km</div></div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzA-qJkVTWhnL_0YKPb3uA3k_-Pr7Wlp-gQUZXxQJjBacM5eHTJ7PiCh7eeTKN2LjxroA/exec';
+        const SESSION_KEY = 'pena_seguro_mantenimiento_session_v1';
+
+        const FALLBACK_MAINT_ACCOUNTS = [
+            { rut: 'MANTENIMIENTO', password: '1410', nombre: 'Encargado de Mantenimiento Flota 1410', rol: 'MANTENIMIENTO', estado: 'ACTIVO' },
+            { rut: 'ADMIN', password: '1410', nombre: 'Administrador Seguridad Pública', rol: 'ADMIN', estado: 'ACTIVO' }
+        ];
+
+        const State = {
+            session: null,
+            activeTab: 'flota',
+            users: [],
+            fleet: [],
+            alerts: [],
+            emails: [],
+            reportPhotoB64: ''
+        };
+
+        const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+        function showToast(msg, cls = 'bg-emerald-600') {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.className = `fixed bottom-5 right-5 z-[1000] px-4 py-3 rounded-2xl shadow-2xl text-xs font-black text-white border border-white/15 ${cls}`;
+            t.innerText = msg;
+            t.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => t.classList.add('hidden'), 3800);
+        }
+
+        function isMotoUnit(u) {
+            const blob = `${u?.tipo || ''} ${u?.nombre || ''}`.toLowerCase();
+            return blob.includes('moto') || blob.includes('tango') || blob.includes('honda');
+        }
+
+        function getUnitBlueprint(u) {
+            const blob = `${u?.tipo || ''} ${u?.nombre || ''}`.toLowerCase();
+            if (isMotoUnit(u)) return './flota-honda-189.jpg';
+            if (blob.includes('tiggo') || blob.includes('chery') || blob.includes('suv')) return './flota-chery-tiggo.jpg';
+            return './flota-jmc-vigus.jpg';
+        }
+
+        function calcMaintStatus(u) {
+            const interval = isMotoUnit(u) ? 3000 : 10000;
+            const kmActual = Number(u?.kmActual || 0);
+            const kmUlt = Number(u?.kmUltimaMantencion || 0);
+            const nextKm = kmUlt > 0 ? kmUlt + interval : (Math.floor(kmActual / interval) + 1) * interval;
+            const remaining = nextKm - kmActual;
+            const usedPct = Math.min(100, Math.max(0, Math.round(((interval - remaining) / interval) * 100)));
+            let level = 'OK';
+            if (remaining <= 0) level = 'VENCIDA';
+            else if (remaining <= (isMotoUnit(u) ? 400 : 1000)) level = 'PROXIMA';
+            return { interval, kmActual, kmUlt, nextKm, remaining, usedPct, level };
+        }
+
+        async function fetchBootstrap() {
+            const res = await fetch(`${APPS_SCRIPT_URL}?action=bootstrap&t=${Date.now()}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (!data || data.ok === false) throw new Error(data?.error || 'Error cargando datos');
+            State.users = Array.isArray(data.users) ? data.users : [];
+            State.fleet = Array.isArray(data.fleet) ? data.fleet : [];
+            State.alerts = Array.isArray(data.fleetAlerts) ? data.fleetAlerts : [];
+            State.emails = Array.isArray(data.emailDirectory) ? data.emailDirectory : [];
+            return data;
+        }
+
+        async function postAction(action, payload) {
+            const res = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(Object.assign({ action }, payload || {}))
+            });
+            const data = await res.json();
+            if (!data || data.ok === false) throw new Error(data?.error || 'Error en servidor');
+            return data;
+        }
+
+        async function handleMaintLogin(e) {
+            e.preventDefault();
+            const uRaw = document.getElementById('login-user').value.trim();
+            const pRaw = document.getElementById('login-pass').value.trim();
+            const errEl = document.getElementById('login-error');
+            const btn = document.getElementById('btn-login-submit');
+            errEl.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando cuenta...';
+            try {
+                await fetchBootstrap();
+                const norm = (v) => String(v || '').replace(/[\.\-\s]/g, '').toUpperCase();
+                const allAccounts = [...State.users, ...FALLBACK_MAINT_ACCOUNTS];
+                const found = allAccounts.find(u =>
+                    norm(u.rut) === norm(uRaw) &&
+                    String(u.password || u.pass || '').trim() === pRaw &&
+                    String(u.estado || 'ACTIVO').toUpperCase() === 'ACTIVO' &&
+                    ['MANTENIMIENTO', 'ADMIN'].includes(String(u.rol || '').toUpperCase())
+                );
+                if (!found) throw new Error('Credenciales inválidas o sin rol MANTENIMIENTO / ADMIN habilitado.');
+                State.session = { rut: found.rut, nombre: found.nombre || 'Encargado de Mantenimiento', rol: found.rol };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(State.session));
+                enterPortal();
+            } catch (err) {
+                errEl.innerText = err.message;
+                errEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> INGRESAR AL PORTAL DE MANTENIMIENTO';
+            }
+        }
+
+        function enterPortal() {
+            document.getElementById('screen-login').classList.add('hidden');
+            document.getElementById('screen-portal').classList.remove('hidden');
+            document.getElementById('side-user-name').innerText = State.session.nombre;
+            document.getElementById('side-role-pill').innerText = State.session.rol;
+            document.getElementById('side-last-sync').innerText = `Actualizado: ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+            const dEl = document.getElementById('maint-date');
+            if (dEl && !dEl.value) dEl.value = new Date().toISOString().slice(0, 10);
+            renderAll();
+            switchTab('flota');
+        }
+
+        function logoutMaint() {
+            localStorage.removeItem(SESSION_KEY);
+            State.session = null;
+            document.getElementById('screen-portal').classList.add('hidden');
+            document.getElementById('screen-login').classList.remove('hidden');
+        }
+
+        async function syncCloudData(showFeedback = false) {
+            try {
+                await fetchBootstrap();
+                document.getElementById('side-last-sync').innerText = `Actualizado: ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+                renderAll();
+                if (showFeedback) showToast('✅ Flota y alertas actualizadas desde Google Sheets');
+            } catch (err) {
+                if (showFeedback) showToast('⚠️ Error al sincronizar: ' + err.message, 'bg-red-600');
+            }
+        }
+
+        function toggleMobileSidebar(open) {
+            const sb = document.getElementById('maint-sidebar');
+            const bd = document.getElementById('sidebar-backdrop');
+            sb.classList.toggle('-translate-x-full', !open);
+            bd.classList.toggle('hidden', !open);
+        }
+
+        function switchTab(tab) {
+            State.activeTab = tab;
+            ['flota', 'alertas', 'mantencion', 'reportes', 'unidades'].forEach(t => {
+                document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== tab);
+                const nav = document.getElementById(`nav-${t}`);
+                if (nav) { nav.classList.toggle('active', t === tab); nav.classList.toggle('text-slate-300', t !== tab); }
+            });
+            toggleMobileSidebar(false);
+            if (tab === 'reportes') generateReportFicha();
+        }
+
+        function renderAll() {
+            const pendAlerts = State.alerts.filter(a => String(a.estado || 'PENDIENTE').toUpperCase() !== 'RESUELTO').length;
+            document.getElementById('badge-flota').innerText = State.fleet.length;
+            document.getElementById('badge-alertas').innerText = pendAlerts;
+            populateUnitSelects();
+            populateEmailCheckboxes();
+            renderFlotaTab();
+            renderAlertasTab();
+            renderMaintPriorityList();
+            generateReportFicha();
+        }
+
+        function populateUnitSelects() {
+            const opts = State.fleet.map(u => `<option value="${esc(u.id)}">${esc(u.nombre)} ${u.patente ? `(${esc(u.patente)})` : ''} — ${Number(u.kmActual || 0).toLocaleString('es-CL')} km [${esc(u.estado || 'OPERATIVO')}]</option>`).join('');
+            ['maint-unit-id', 'rep-unit-id'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const cur = el.value;
+                el.innerHTML = opts || '<option value="">Sin unidades registradas</option>';
+                if (cur && State.fleet.some(u => u.id === cur)) el.value = cur;
+            });
+            onMaintUnitChange();
+        }
+
+        function onMaintUnitChange() {
+            const id = document.getElementById('maint-unit-id')?.value;
+            const u = State.fleet.find(x => x.id === id);
+            if (u && document.getElementById('maint-km')) {
+                document.getElementById('maint-km').value = Number(u.kmActual || 0);
+            }
+        }
+
+        function renderFlotaTab() {
+            const fType = document.getElementById('fleet-filter-type')?.value || 'ALL';
+            const qTxt = (document.getElementById('fleet-search')?.value || '').trim().toLowerCase();
+
+            const tot = State.fleet.length;
+            const op = State.fleet.filter(u => String(u.estado || 'OPERATIVO').toUpperCase() === 'OPERATIVO').length;
+            const taller = tot - op;
+            const dueCount = State.fleet.filter(u => calcMaintStatus(u).level !== 'OK').length;
+            const pendAlerts = State.alerts.filter(a => String(a.estado || 'PENDIENTE').toUpperCase() !== 'RESUELTO').length;
+
+            document.getElementById('flota-kpis').innerHTML = `
+                <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Flota Total</div><div class="text-2xl font-black text-white mt-0.5">${tot}</div><div class="text-[10px] text-slate-400">Autos y Motos</div></div>
+                <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Operativos</div><div class="text-2xl font-black text-emerald-400 mt-0.5">${op}</div><div class="text-[10px] text-slate-400">En servicio</div></div>
+                <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">En Taller / Baja</div><div class="text-2xl font-black text-amber-400 mt-0.5">${taller}</div><div class="text-[10px] text-slate-400">En reparación</div></div>
+                <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Mant. Próxima/Vencida</div><div class="text-2xl font-black text-orange-400 mt-0.5">${dueCount}</div><div class="text-[10px] text-slate-400">Revisar km</div></div>
+                <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Alertas Pendientes</div><div class="text-2xl font-black text-red-400 mt-0.5">${pendAlerts}</div><div class="text-[10px] text-slate-400">Reportadas terreno</div></div>
+            `;
+
+            const filtered = State.fleet.filter(u => {
+                if (fType === 'MOTO' && !isMotoUnit(u)) return false;
+                if (fType === 'AUTO' && isMotoUnit(u)) return false;
+                if (fType === 'TALLER' && String(u.estado || 'OPERATIVO').toUpperCase() === 'OPERATIVO') return false;
+                if (fType === 'ALERTA' && calcMaintStatus(u).level === 'OK') return false;
+                if (qTxt && !`${u.nombre} ${u.patente} ${u.tipo} ${u.cuadranteBase}`.toLowerCase().includes(qTxt)) return false;
+                return true;
+            });
+
+            const grid = document.getElementById('flota-grid');
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full glass-card rounded-2xl p-8 text-center text-xs text-slate-300">No hay unidades en este filtro.</div>`;
+                return;
+            }
+            grid.innerHTML = filtered.map(u => {
+                const st = String(u.estado || 'OPERATIVO').toUpperCase();
+                const m = calcMaintStatus(u);
+                const bp = getUnitBlueprint(u);
+                const stBadge = st === 'OPERATIVO' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : (st === 'EN TALLER' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-red-500/20 text-red-300 border-red-500/40');
+                const barCls = m.level === 'VENCIDA' ? 'bg-red-500' : (m.level === 'PROXIMA' ? 'bg-amber-400' : 'bg-emerald-500');
+                return `
+                    <div class="glass-card rounded-2xl overflow-hidden flex flex-col">
+                        <div class="relative h-32 bg-slate-950">
+                            <img src="${bp}" alt="${esc(u.nombre)}" class="w-full h-full object-cover opacity-90">
+                            <span class="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full border text-[10px] font-black backdrop-blur-md ${stBadge}">${esc(st)}</span>
+                            <span class="absolute bottom-2 left-2.5 px-2 py-0.5 rounded-md bg-slate-950/85 border border-slate-700 text-[10px] font-mono font-black text-amber-300">${esc(u.patente || 'SIN PATENTE')}</span>
+                        </div>
+                        <div class="p-4 space-y-2.5 text-xs flex-1 flex flex-col justify-between">
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h4 class="text-sm font-black text-white">${esc(u.nombre)}</h4>
+                                    <span class="text-[10px] text-cyan-300 font-bold">${esc(u.tipo || 'Móvil')} • ${esc(u.cuadranteBase || '-')}</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-[11px]">
+                                    <div class="rounded-lg bg-slate-900/75 p-2"><span class="text-slate-400 block text-[9px] uppercase">Km Actual</span><strong class="font-mono text-white">${m.kmActual.toLocaleString('es-CL')} km</strong></div>
+                                    <div class="rounded-lg bg-slate-900/75 p-2"><span class="text-slate-400 block text-[9px] uppercase">Próxima Mant.</span><strong class="font-mono ${m.level === 'VENCIDA' ? 'text-red-400' : 'text-emerald-300'}">${m.nextKm.toLocaleString('es-CL')} km</strong></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] mb-1">
+                                        <span class="text-slate-300">Intervalo ${m.interval.toLocaleString('es-CL')} km</span>
+                                        <span class="font-black ${m.level === 'VENCIDA' ? 'text-red-400' : (m.level === 'PROXIMA' ? 'text-amber-300' : 'text-emerald-300')}">${m.remaining <= 0 ? `VENCIDA (${Math.abs(m.remaining)} km)` : `Faltan ${m.remaining.toLocaleString('es-CL')} km`}</span>
+                                    </div>
+                                    <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full ${barCls}" style="width:${m.usedPct}%"></div></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-700/60">
+                                <button type="button" onclick="quickOpenMaint('${esc(u.id)}')" class="py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white font-black text-[10px]">🔧 Mant.</button>
+                                <button type="button" onclick="editUnit('${esc(u.id)}')" class="py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-[10px]">⚙️ Editar</button>
+                                <button type="button" onclick="quickOpenFicha('${esc(u.id)}')" class="py-1.5 rounded-lg bg-sky-600/30 hover:bg-sky-600 text-sky-200 hover:text-white font-black text-[10px]">📄 Ficha</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function quickOpenMaint(id) {
+            document.getElementById('maint-unit-id').value = id;
+            onMaintUnitChange();
+            switchTab('mantencion');
+        }
+
+        function quickOpenFicha(id) {
+            document.getElementById('rep-type').value = 'UNIT_RES';
+            document.getElementById('rep-unit-id').value = id;
+            switchTab('reportes');
+        }
+
+        function renderMaintPriorityList() {
+            const el = document.getElementById('maint-priority-list');
+            if (!el) return;
+            const sorted = State.fleet.slice().sort((a, b) => calcMaintStatus(a).remaining - calcMaintStatus(b).remaining);
+            el.innerHTML = sorted.map(u => {
+                const m = calcMaintStatus(u);
+                const cls = m.level === 'VENCIDA' ? 'border-red-500/50 bg-red-950/35' : (m.level === 'PROXIMA' ? 'border-amber-500/50 bg-amber-950/30' : 'border-slate-700/70 bg-slate-900/70');
+                return `
+                    <div class="rounded-xl border p-3 flex items-center justify-between gap-2 ${cls}">
+                        <div>
+                            <div class="font-black text-white">${esc(u.nombre)} <span class="font-mono text-[10px] text-amber-300">(${esc(u.patente || '-')})</span></div>
+                            <div class="text-[10px] text-slate-300">Km actual: ${m.kmActual.toLocaleString('es-CL')} • Próxima: ${m.nextKm.toLocaleString('es-CL')} km</div>
+                        </div>
+                        <button type="button" onclick="quickOpenMaint('${esc(u.id)}')" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px]">
+                            ${m.remaining <= 0 ? '⚠️ VENCIDA' : `${m.remaining.toLocaleString('es-CL')} km`}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function submitMaintenanceLog(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-log-maint');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
+            try {
+                const id = document.getElementById('maint-unit-id').value;
+                const u = State.fleet.find(x => x.id === id);
+                if (!u) throw new Error('Seleccione una unidad válida');
+                const kmMant = Number(document.getElementById('maint-km').value || u.kmActual || 0);
+                const fechaMant = document.getElementById('maint-date').value;
+                const tipoSrv = document.getElementById('maint-service-type').value;
+                const taller = document.getElementById('maint-taller').value.trim();
+                const oc = document.getElementById('maint-oc').value.trim();
+                const newSt = document.getElementById('maint-new-status').value;
+                const obsRaw = document.getElementById('maint-obs').value.trim();
+                const obsFull = `[${tipoSrv}] ${taller ? `Taller: ${taller} | ` : ''}${oc ? `Ref: ${oc} | ` : ''}${obsRaw}`;
+
+                await postAction('ADMIN_LOG_MAINTENANCE', {
+                    id: u.id,
+                    nombre: u.nombre,
+                    tipo: u.tipo || 'Móvil',
+                    patente: u.patente || '',
+                    kmMantencion: kmMant,
+                    fechaMantencion: fechaMant,
+                    observaciones: obsFull,
+                    registradoPor: State.session.nombre
+                });
+
+                if (newSt !== u.estado || kmMant !== Number(u.kmActual || 0)) {
+                    await postAction('ADMIN_SAVE_VEHICLE', Object.assign({}, u, {
+                        estado: newSt,
+                        kmActual: Math.max(kmMant, Number(u.kmActual || 0)),
+                        kmUltimaMantencion: kmMant,
+                        fechaUltimaMantencion: fechaMant
+                    }));
+                }
+
+                // Reflejo instantáneo sin recargar
+                u.estado = newSt;
+                u.kmActual = Math.max(kmMant, Number(u.kmActual || 0));
+                u.kmUltimaMantencion = kmMant;
+                u.fechaUltimaMantencion = fechaMant;
+                document.getElementById('maint-obs').value = '';
+                document.getElementById('rep-extra-note').value = obsFull;
+                document.getElementById('rep-unit-id').value = u.id;
+                renderAll();
+                showToast(`✅ Mantención de ${u.nombre} guardada y reflejada al instante`);
+                setTimeout(() => syncCloudData(false), 1800);
+            } catch (err) {
+                showToast('⚠️ Error: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> GUARDAR MANTENCIÓN Y ACTUALIZAR FLOTA';
+            }
+        }
+
+        // ====================================================================
+        // TAB 2: ALERTAS Y RESOLUCIONES
+        // ====================================================================
+        function renderAlertasTab() {
+            const fSt = document.getElementById('alert-filter-status')?.value || 'PENDIENTE';
+            const list = State.alerts.filter(a => {
+                const isRes = String(a.estado || 'PENDIENTE').toUpperCase() === 'RESUELTO';
+                if (fSt === 'PENDIENTE') return !isRes;
+                if (fSt === 'RESUELTO') return isRes;
+                return true;
+            });
+            const el = document.getElementById('alertas-list');
+            if (list.length === 0) {
+                el.innerHTML = `<div class="col-span-full glass-card rounded-2xl p-8 text-center text-xs text-slate-300">No hay alertas de flota en este filtro.</div>`;
+                return;
+            }
+            el.innerHTML = list.map(a => {
+                const isRes = String(a.estado || 'PENDIENTE').toUpperCase() === 'RESUELTO';
+                return `
+                    <div class="glass-card rounded-2xl p-4 space-y-2 text-xs border ${isRes ? 'border-emerald-500/35' : 'border-red-500/45'}">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-mono font-black text-amber-300">${esc(a.id)} • ${esc(a.movil || 'Unidad')}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isRes ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}">${isRes ? '🟢 RESUELTO' : '🔴 PENDIENTE'}</span>
+                        </div>
+                        <div class="font-bold text-white">${esc(a.tipoAlerta || a.categoria || 'Falla reportada en terreno')}</div>
+                        <p class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2.5 text-[11px] text-slate-200">${esc(a.detalle || a.descripcion || 'Sin detalle')}</p>
+                        <div class="text-[10px] text-slate-400">Reportado por: <strong class="text-slate-200">${esc(a.inspector || '-')}</strong> • ${esc(a.fecha || '')}</div>
+                        ${isRes ? `<div class="rounded-lg bg-emerald-950/50 border border-emerald-500/30 p-2 text-[11px] text-emerald-200"><strong>Resolución (${esc(a.resueltoPor || 'Mantenimiento')}):</strong> ${esc(a.notaResolucion || 'Resuelto')} • ${esc(a.fechaResolucion || '')}</div>` : `
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                <button type="button" onclick="resolveFleetAlert('${esc(a.id)}')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px]">✅ Resolver Alerta</button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function resolveFleetAlert(alertId) {
+            const nota = prompt('Ingresa la resolución técnica aplicada para esta falla:', 'Revisado y reparado en taller — unidad operativa');
+            if (nota === null) return;
+            const fechaRes = new Date().toLocaleString('es-CL');
+            const al = State.alerts.find(x => x.id === alertId);
+            if (al) {
+                al.estado = 'RESUELTO';
+                al.fechaResolucion = fechaRes;
+                al.resueltoPor = State.session.nombre;
+                al.notaResolucion = nota.trim() || 'Resuelto';
+                renderAll();
+            }
+            try {
+                await postAction('ADMIN_RESOLVE_ALERT', {
+                    id: alertId,
+                    fechaResolucion: fechaRes,
+                    resueltoPor: State.session.nombre,
+                    notaResolucion: nota.trim() || 'Resuelto'
+                });
+                showToast('✅ Resolución guardada y reflejada en toda la app');
+                setTimeout(() => syncCloudData(false), 1800);
+            } catch (err) {
+                showToast('⚠️ Error al guardar resolución: ' + err.message, 'bg-red-600');
+            }
+        }
+
+        // ====================================================================
+        // TAB 4: FICHAS DE REPORTE (CORREO, WHATSAPP, PDF)
+        // ====================================================================
+        function populateEmailCheckboxes() {
+            const el = document.getElementById('rep-email-checkboxes');
+            if (!el) return;
+            if (State.emails.length === 0) {
+                el.innerHTML = `<div class="text-[10px] text-slate-400">Agrega destinatarios en Admin → Correos o usa el campo manual abajo.</div>`;
+                return;
+            }
+            el.innerHTML = State.emails.map(em => `
+                <label class="flex items-center gap-2 p-1.5 rounded-lg bg-slate-900/70 hover:bg-slate-800 cursor-pointer text-[11px]">
+                    <input type="checkbox" class="rep-email-chk accent-amber-400" value="${esc(em.correo)}">
+                    <span class="font-bold text-white truncate">${esc(em.nombre)}</span>
+                    <span class="text-slate-400 truncate text-[10px]">(${esc(em.correo)})</span>
+                </label>
+            `).join('');
+        }
+
+        function handleReportPhoto(input) {
+            const file = input.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxDim = 1024;
+                    let w = img.width, h = img.height;
+                    if (w > maxDim || h > maxDim) { const r = Math.min(maxDim / w, maxDim / h); w = Math.round(w * r); h = Math.round(h * r); }
+                    const c = document.createElement('canvas'); c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    State.reportPhotoB64 = c.toDataURL('image/jpeg', 0.78);
+                    document.getElementById('rep-photo-preview').innerHTML = `<div class="flex items-center gap-2"><img src="${State.reportPhotoB64}" class="w-12 h-12 rounded-lg object-cover border border-emerald-400/60"><span class="text-[10px] text-emerald-300 font-bold">✓ Foto lista para adjuntar al correo</span></div>`;
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function generateReportFicha() {
+            const type = document.getElementById('rep-type')?.value || 'UNIT_RES';
+            const unitId = document.getElementById('rep-unit-id')?.value;
+            const extra = (document.getElementById('rep-extra-note')?.value || '').trim();
+            const nowStr = new Date().toLocaleString('es-CL');
+            document.getElementById('rep-unit-wrap')?.classList.toggle('hidden', type === 'FLEET_SUMMARY');
+
+            let txt = '';
+            if (type === 'FLEET_SUMMARY') {
+                const op = State.fleet.filter(u => String(u.estado || 'OPERATIVO').toUpperCase() === 'OPERATIVO');
+                const off = State.fleet.filter(u => String(u.estado || 'OPERATIVO').toUpperCase() !== 'OPERATIVO');
+                const pend = State.alerts.filter(a => String(a.estado || 'PENDIENTE').toUpperCase() !== 'RESUELTO');
+                txt = `🔧 *REPORTE GENERAL DE FLOTA — PEÑA SEGURO 1410*\n` +
+                      `📅 Fecha/Hora: ${nowStr}\n` +
+                      `👤 Encargado: ${State.session?.nombre || 'Mantenimiento'}\n` +
+                      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                      `📊 *RESUMEN:* ${State.fleet.length} Unidades | 🟢 ${op.length} Operativas | 🟡 ${off.length} En Taller/Baja | 🔴 ${pend.length} Alertas Pendientes\n\n` +
+                      `🚘 *DETALLE DE UNIDADES:*\n` +
+                      State.fleet.map(u => {
+                          const m = calcMaintStatus(u);
+                          return `• *${u.nombre}* (${u.patente || 'S/P'}) — ${u.estado || 'OPERATIVO'} | ${m.kmActual.toLocaleString('es-CL')} km | Próx. Mant: ${m.nextKm.toLocaleString('es-CL')} km`;
+                      }).join('\n') +
+                      (extra ? `\n\n📝 *RESOLUCIÓN / OBSERVACIONES:*\n${extra}` : '') +
+                      `\n\nDirección de Seguridad Pública — I. Municipalidad de Peñaflor`;
+            } else {
+                const u = State.fleet.find(x => x.id === unitId) || State.fleet[0];
+                if (!u) { document.getElementById('rep-preview-text').value = 'Sin unidades registradas.'; return; }
+                const m = calcMaintStatus(u);
+                const header = type === 'WORKSHOP_ORDER' ? '🏭 *FICHA DE INGRESO / EGRESO DE TALLER — 1410*' : '🔧 *FICHA OFICIAL DE MANTENCIÓN Y RESOLUCIÓN — 1410*';
+                const uAlerts = State.alerts.filter(a => String(a.movil || '').toLowerCase().includes(String(u.nombre || '').toLowerCase())).slice(0, 4);
+                txt = `${header}\n` +
+                      `📅 Fecha/Hora: ${nowStr}\n` +
+                      `👤 Encargado: ${State.session?.nombre || 'Mantenimiento'}\n` +
+                      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                      `🚘 *Unidad:* ${u.nombre}\n` +
+                      `🔖 *Patente:* ${u.patente || 'Sin patente'}\n` +
+                      `📋 *Tipo:* ${u.tipo || 'Móvil'} | *Cuadrante Base:* ${u.cuadranteBase || '-'}\n` +
+                      `🚦 *Estado Actual:* ${u.estado || 'OPERATIVO'}\n` +
+                      `⏱️ *Kilometraje Actual:* ${m.kmActual.toLocaleString('es-CL')} km\n` +
+                      `🛠️ *Última Mantención:* ${m.kmUlt.toLocaleString('es-CL')} km (${u.fechaUltimaMantencion || 'Sin registro'})\n` +
+                      `🎯 *Próxima Mantención:* ${m.nextKm.toLocaleString('es-CL')} km (${m.remaining <= 0 ? 'VENCIDA' : `Faltan ${m.remaining.toLocaleString('es-CL')} km`})\n` +
+                      (uAlerts.length > 0 ? `\n⚠️ *ÚLTIMAS NOVEDADES / RESOLUCIONES:*\n` + uAlerts.map(a => `• [${a.estado}] ${a.tipoAlerta || a.detalle} ${a.notaResolucion ? `→ ${a.notaResolucion}` : ''}`).join('\n') + '\n' : '') +
+                      (extra ? `\n📝 *DETALLE / RESOLUCIÓN TÉCNICA:*\n${extra}\n` : '') +
+                      `\nDirección de Seguridad Pública — I. Municipalidad de Peñaflor`;
+            }
+            document.getElementById('rep-preview-text').value = txt;
+        }
+
+        function sendFichaWhatsApp() {
+            const txt = document.getElementById('rep-preview-text').value.trim();
+            if (!txt) return;
+            window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank', 'noopener');
+        }
+
+        function copyFichaText() {
+            const txt = document.getElementById('rep-preview-text').value.trim();
+            if (!txt) return;
+            navigator.clipboard.writeText(txt).then(() => showToast('✅ Ficha copiada al portapapeles'));
+        }
+
+        async function sendFichaEmail() {
+            const recipients = [...document.querySelectorAll('.rep-email-chk:checked')].map(c => c.value);
+            const custom = document.getElementById('rep-custom-email')?.value.trim();
+            if (custom && custom.includes('@')) recipients.push(custom);
+            if (recipients.length === 0) {
+                showToast('⚠️ Selecciona al menos un correo destinatario o ingresa uno manual', 'bg-amber-600');
+                return;
+            }
+            const btn = document.getElementById('btn-send-email');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+            try {
+                const u = State.fleet.find(x => x.id === document.getElementById('rep-unit-id')?.value);
+                const txt = document.getElementById('rep-preview-text').value.trim();
+                await postAction('CENCO_ENVIAR_CORREO_PROCEDIMIENTO', {
+                    recipients,
+                    folioId: `MANT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(Date.now()).slice(-4)}`,
+                    enviadoPor: State.session?.nombre || 'Encargado de Mantenimiento 1410',
+                    notaAdicional: txt,
+                    imagenesBase64: State.reportPhotoB64 ? [State.reportPhotoB64] : [],
+                    incident: {
+                        folioId: `MANT-${u ? u.nombre : 'FLOTA'}`,
+                        categoria: 'MANTENIMIENTO DE FLOTA VEHICULAR',
+                        subcategoria: document.getElementById('rep-type')?.options[document.getElementById('rep-type').selectedIndex]?.text || 'Reporte Mantenimiento',
+                        cuadrante: u?.cuadranteBase || 'PEÑAFLOR',
+                        direccion: 'Taller / Base Seguridad Pública 1410',
+                        estado: u?.estado || 'OPERATIVO',
+                        prioridad: 'ALTA',
+                        movilAsignado: u ? `${u.nombre} (${u.patente || 'S/P'})` : 'FLOTA COMPLETA',
+                        descripcion: txt
+                    }
+                });
+                showToast(`✅ Ficha enviada por correo oficial a ${recipients.length} destinatario(s)`);
+            } catch (err) {
+                showToast('⚠️ Error enviando correo: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-envelope"></i> Enviar Correo';
+            }
+        }
+
+        function downloadFichaPDF() {
+            const txt = document.getElementById('rep-preview-text').value.trim();
+            if (!txt || !window.jspdf) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            doc.setFillColor(10, 36, 99);
+            doc.rect(0, 0, 210, 26, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PEÑA SEGURO 1410 — FICHA DE MANTENIMIENTO DE FLOTA', 14, 12);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Dirección de Seguridad Pública • I. Municipalidad de Peñaflor', 14, 19);
+
+            doc.setTextColor(20, 30, 50);
+            doc.setFontSize(10);
+            const cleanTxt = txt.replace(/\*/g, '').replace(/[🔧📅👤📊🚘🔖📋🚦⏱️🛠️🎯⚠️📝🏭🟢🟡🔴]/g, '');
+            const lines = doc.splitTextToSize(cleanTxt, 182);
+            doc.text(lines, 14, 36);
+            doc.save(`Ficha_Mantenimiento_1410_${new Date().toISOString().slice(0, 10)}.pdf`);
+            showToast('✅ Ficha PDF descargada');
+        }
+
+        // ====================================================================
+        // TAB 5: CREAR / EDITAR UNIDAD
+        // ====================================================================
+        function resetUnitForm() {
+            document.getElementById('form-save-unit').reset();
+            document.getElementById('unit-id').value = '';
+        }
+
+        function editUnit(id) {
+            const u = State.fleet.find(x => x.id === id);
+            if (!u) return;
+            document.getElementById('unit-id').value = u.id;
+            document.getElementById('unit-nombre').value = u.nombre || '';
+            document.getElementById('unit-patente').value = u.patente || '';
+            document.getElementById('unit-tipo').value = u.tipo || 'Móvil';
+            document.getElementById('unit-estado').value = u.estado || 'OPERATIVO';
+            document.getElementById('unit-cuadrante').value = u.cuadranteBase || '252A';
+            document.getElementById('unit-km').value = Number(u.kmActual || 0);
+            document.getElementById('unit-km-ult').value = Number(u.kmUltimaMantencion || 0);
+            switchTab('unidades');
+        }
+
+        async function saveVehicleUnit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-unit');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
+            try {
+                const payload = {
+                    id: document.getElementById('unit-id').value || ('UND-' + String(Date.now()).slice(-6)),
+                    nombre: document.getElementById('unit-nombre').value.trim(),
+                    patente: document.getElementById('unit-patente').value.trim().toUpperCase(),
+                    tipo: document.getElementById('unit-tipo').value,
+                    estado: document.getElementById('unit-estado').value,
+                    cuadranteBase: document.getElementById('unit-cuadrante').value.trim().toUpperCase(),
+                    kmActual: Number(document.getElementById('unit-km').value || 0),
+                    kmUltimaMantencion: Number(document.getElementById('unit-km-ult').value || 0)
+                };
+                await postAction('ADMIN_SAVE_VEHICLE', payload);
+                State.fleet = [payload, ...State.fleet.filter(x => x.id !== payload.id)];
+                resetUnitForm();
+                renderAll();
+                showToast(`✅ Unidad ${payload.nombre} guardada y reflejada al instante`);
+                setTimeout(() => syncCloudData(false), 1800);
+            } catch (err) {
+                showToast('⚠️ Error: ' + err.message, 'bg-red-600');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Unidad en Flota 1410';
+            }
+        }
+
+        (async function init() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+                if (saved && saved.rut) {
+                    State.session = saved;
+                    enterPortal();
+                    await syncCloudData(false);
+                }
+            } catch (e) {}
+            setInterval(() => {
+                if (State.session && document.visibilityState === 'visible') syncCloudData(false);
+            }, 30000);
+        })();
+    </script>
+</body>
+</html>
