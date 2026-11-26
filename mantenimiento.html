@@ -693,8 +693,33 @@
             if (tab === 'reportes') generateReportFicha();
         }
 
+        function isAlertResolved(a) {
+            return String(a?.estadoGestion || a?.estado || 'PENDIENTE').toUpperCase() === 'RESUELTO';
+        }
+
+        function formatAlertCategory(cat) {
+            const c = String(cat || '').toUpperCase();
+            if (c.includes('LUCES') || c.includes('ELECTR')) return '💡 Luces / Eléctrico';
+            if (c.includes('FRENO') || c.includes('NEUM')) return '🛞 Frenos / Neumáticos';
+            if (c.includes('MOTOR') || c.includes('MECAN')) return '⚙️ Motor / Mecánica';
+            if (c.includes('CARROC')) return '🚘 Carrocería / Vidrios';
+            if (c.includes('EQUIP')) return '🧰 Equipamiento / Baliza';
+            if (c.includes('DOC')) return '📄 Documentación';
+            return cat ? `🔧 ${cat.replace(/_/g, ' ')}` : '🔧 Falla General';
+        }
+
+        function driveThumbUrl(url) {
+            const s = String(url || '').trim();
+            if (!s) return '';
+            const m1 = s.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (m1) return `https://drive.google.com/thumbnail?id=${m1[1]}&sz=w480`;
+            const m2 = s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (m2) return `https://drive.google.com/thumbnail?id=${m2[1]}&sz=w480`;
+            return s.startsWith('http') ? s : '';
+        }
+
         function renderAll() {
-            const pendAlerts = State.alerts.filter(a => String(a.estado || 'PENDIENTE').toUpperCase() !== 'RESUELTO').length;
+            const pendAlerts = State.alerts.filter(a => !isAlertResolved(a)).length;
             document.getElementById('badge-flota').innerText = State.fleet.length;
             document.getElementById('badge-alertas').innerText = pendAlerts;
             populateUnitSelects();
@@ -733,7 +758,7 @@
             const op = State.fleet.filter(u => String(u.estado || 'OPERATIVO').toUpperCase() === 'OPERATIVO').length;
             const taller = tot - op;
             const dueCount = State.fleet.filter(u => calcMaintStatus(u).level !== 'OK').length;
-            const pendAlerts = State.alerts.filter(a => String(a.estado || 'PENDIENTE').toUpperCase() !== 'RESUELTO').length;
+            const pendAlerts = State.alerts.filter(a => !isAlertResolved(a)).length;
 
             document.getElementById('flota-kpis').innerHTML = `
                 <div class="glass-card rounded-2xl p-3.5"><div class="text-[10px] uppercase text-slate-400 font-bold">Flota Total</div><div class="text-2xl font-black text-white mt-0.5">${tot}</div><div class="text-[10px] text-slate-400">Autos y Motos</div></div>
@@ -890,10 +915,42 @@
         // ====================================================================
         // TAB 2: ALERTAS Y RESOLUCIONES
         // ====================================================================
+        function sendAlertOrderWhatsApp(alertId) {
+            const a = State.alerts.find(x => x.id === alertId);
+            if (!a) return;
+            const txt = `🔧 *ORDEN DE MANTENIMIENTO — PEÑA SEGURO 1410*\n` +
+                `🆔 ID Alerta: ${a.id}\n` +
+                `🚘 Unidad: *${a.movil || '-'}* (${a.cuadrante || 'Peñaflor'})\n` +
+                `🚨 Prioridad: *${a.prioridad || 'ALTA'}* | ${formatAlertCategory(a.categoria)}\n` +
+                `⚠️ Falla Detectada: *${a.itemLabel || 'Falla reportada'}* — ${a.estadoReportado || 'Malo'}\n` +
+                `🛠️ Acción Requerida: *${a.accionRecomendada || 'Revisión y reparación técnica'}*\n` +
+                (a.observaciones ? `📝 Observaciones Inspector: ${a.observaciones}\n` : '') +
+                `👤 Reportado por: ${a.inspector || '-'}\n` +
+                `📅 Fecha: ${a.fecha || ''}\n` +
+                `\nEnviado desde Portal de Mantenimiento Flota 1410`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank', 'noopener');
+        }
+
+        function openAlertInFicha(alertId) {
+            const a = State.alerts.find(x => x.id === alertId);
+            if (!a) return;
+            const matchUnit = State.fleet.find(u => String(u.nombre || '').trim().toUpperCase() === String(a.movil || '').trim().toUpperCase());
+            if (matchUnit && document.getElementById('rep-unit-id')) {
+                document.getElementById('rep-unit-id').value = matchUnit.id;
+            }
+            document.getElementById('rep-type').value = 'UNIT_RES';
+            document.getElementById('rep-extra-note').value =
+                `Alerta ${a.id} (${a.prioridad || 'ALTA'}): ${a.itemLabel || a.categoria} — ${a.estadoReportado || 'Malo'}.\n` +
+                `Acción recomendada: ${a.accionRecomendada || 'Revisión mecánica'}` +
+                (a.observaciones ? `\nObservaciones inspector: ${a.observaciones}` : '') +
+                (a.notaResolucion ? `\nResolución aplicada: ${a.notaResolucion}` : '');
+            switchTab('reportes');
+        }
+
         function renderAlertasTab() {
             const fSt = document.getElementById('alert-filter-status')?.value || 'PENDIENTE';
             const list = State.alerts.filter(a => {
-                const isRes = String(a.estado || 'PENDIENTE').toUpperCase() === 'RESUELTO';
+                const isRes = isAlertResolved(a);
                 if (fSt === 'PENDIENTE') return !isRes;
                 if (fSt === 'RESUELTO') return isRes;
                 return true;
@@ -904,19 +961,69 @@
                 return;
             }
             el.innerHTML = list.map(a => {
-                const isRes = String(a.estado || 'PENDIENTE').toUpperCase() === 'RESUELTO';
+                const isRes = isAlertResolved(a);
+                const prio = String(a.prioridad || 'MEDIA').toUpperCase();
+                const prioCls = prio.includes('CRIT') ? 'bg-red-600 text-white' : (prio === 'ALTA' ? 'bg-orange-500 text-slate-950' : 'bg-amber-400/25 text-amber-200 border border-amber-400/40');
+                const thumb = driveThumbUrl(a.foto);
                 return `
-                    <div class="glass-card rounded-2xl p-4 space-y-2 text-xs border ${isRes ? 'border-emerald-500/35' : 'border-red-500/45'}">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="font-mono font-black text-amber-300">${esc(a.id)} • ${esc(a.movil || 'Unidad')}</span>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isRes ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}">${isRes ? '🟢 RESUELTO' : '🔴 PENDIENTE'}</span>
+                    <div class="glass-card rounded-2xl p-4 space-y-2.5 text-xs border ${isRes ? 'border-emerald-500/40' : (prio.includes('CRIT') ? 'border-red-500/60' : 'border-amber-500/45')}">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${prioCls}">${esc(prio)}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400/20 text-amber-200 border border-amber-400/35">${esc(formatAlertCategory(a.categoria))}</span>
+                            </div>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${isRes ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40'}">${isRes ? '🟢 RESUELTO' : '🔴 PENDIENTE'}</span>
                         </div>
-                        <div class="font-bold text-white">${esc(a.tipoAlerta || a.categoria || 'Falla reportada en terreno')}</div>
-                        <p class="rounded-xl bg-slate-900/75 border border-slate-700/70 p-2.5 text-[11px] text-slate-200">${esc(a.detalle || a.descripcion || 'Sin detalle')}</p>
-                        <div class="text-[10px] text-slate-400">Reportado por: <strong class="text-slate-200">${esc(a.inspector || '-')}</strong> • ${esc(a.fecha || '')}</div>
-                        ${isRes ? `<div class="rounded-lg bg-emerald-950/50 border border-emerald-500/30 p-2 text-[11px] text-emerald-200"><strong>Resolución (${esc(a.resueltoPor || 'Mantenimiento')}):</strong> ${esc(a.notaResolucion || 'Resuelto')} • ${esc(a.fechaResolucion || '')}</div>` : `
+
+                        <div class="flex items-start gap-3">
+                            ${thumb ? `<a href="${esc(a.foto)}" target="_blank" rel="noopener" title="Ver fotografía completa" class="shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-slate-600 bg-slate-950 hover:border-cyan-400 transition"><img src="${esc(thumb)}" alt="Falla" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'"></a>` : ''}
+                            <div class="flex-1 min-w-0 space-y-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="text-sm font-black text-white">${esc(a.movil || 'Unidad')}</span>
+                                    ${a.cuadrante ? `<span class="text-[11px] font-bold text-cyan-300">• ${esc(a.cuadrante)}</span>` : ''}
+                                    <span class="font-mono text-[10px] text-slate-400 ml-auto">${esc(a.id)}</span>
+                                </div>
+                                <div class="text-[13px] font-black text-rose-300 leading-snug">
+                                    ${esc(a.itemLabel || 'Falla reportada en checklist')}
+                                    ${a.estadoReportado ? ` — <span class="underline text-red-300">${esc(a.estadoReportado)}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        ${a.accionRecomendada ? `
+                            <div class="rounded-xl bg-blue-950/65 border border-sky-400/35 px-3 py-2 text-[12px] font-black text-sky-200 flex items-center gap-2">
+                                <i class="fa-solid fa-wrench text-sky-400"></i>
+                                <span>${esc(a.accionRecomendada)}</span>
+                            </div>
+                        ` : ''}
+
+                        ${a.observaciones ? `
+                            <div class="rounded-xl bg-slate-900/80 border border-slate-700/80 p-2.5 text-[11px] text-slate-200">
+                                <strong class="text-amber-300">Observación del Inspector:</strong> ${esc(a.observaciones)}
+                            </div>
+                        ` : ''}
+
+                        <div class="text-[10px] text-slate-300 space-y-0.5 pt-1 border-t border-slate-700/60">
+                            <div><i class="fa-solid fa-user-shield text-cyan-400 mr-1"></i> Reportado por: <strong class="text-white">${esc(a.inspector || '-')}</strong></div>
+                            <div><i class="fa-regular fa-clock text-slate-400 mr-1"></i> ${esc(a.fecha || '')}</div>
+                        </div>
+
+                        ${isRes ? `
+                            <div class="rounded-xl bg-emerald-950/55 border border-emerald-500/35 p-2.5 text-[11px] text-emerald-200 space-y-1">
+                                <div><strong>Resolución (${esc(a.resueltoPor || 'Mantenimiento')}):</strong> ${esc(a.notaResolucion || 'Resuelto')}</div>
+                                ${a.fechaResolucion ? `<div class="text-[10px] text-emerald-300/80">${esc(a.fechaResolucion)}</div>` : ''}
+                            </div>
+                        ` : `
                             <div class="flex flex-wrap items-center gap-2 pt-1">
-                                <button type="button" onclick="resolveFleetAlert('${esc(a.id)}')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px]">✅ Resolver Alerta</button>
+                                <button type="button" onclick="resolveFleetAlert('${esc(a.id)}')" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] flex items-center justify-center gap-1.5 shadow">
+                                    <i class="fa-solid fa-check-double"></i> Marcar Resuelta
+                                </button>
+                                <button type="button" onclick="sendAlertOrderWhatsApp('${esc(a.id)}')" class="py-2 px-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-[11px] flex items-center gap-1.5 shadow">
+                                    <i class="fa-brands fa-whatsapp"></i> Orden
+                                </button>
+                                <button type="button" onclick="openAlertInFicha('${esc(a.id)}')" class="py-2 px-3 rounded-xl bg-sky-600/35 hover:bg-sky-600 text-sky-100 hover:text-white border border-sky-400/40 font-black text-[11px] flex items-center gap-1">
+                                    <i class="fa-solid fa-envelope"></i> Ficha
+                                </button>
                             </div>
                         `}
                     </div>
@@ -930,6 +1037,7 @@
             const fechaRes = new Date().toLocaleString('es-CL');
             const al = State.alerts.find(x => x.id === alertId);
             if (al) {
+                al.estadoGestion = 'RESUELTO';
                 al.estado = 'RESUELTO';
                 al.fechaResolucion = fechaRes;
                 al.resueltoPor = State.session.nombre;
@@ -1000,7 +1108,7 @@
             if (type === 'FLEET_SUMMARY') {
                 const op = State.fleet.filter(u => String(u.estado || 'OPERATIVO').toUpperCase() === 'OPERATIVO');
                 const off = State.fleet.filter(u => String(u.estado || 'OPERATIVO').toUpperCase() !== 'OPERATIVO');
-                const pend = State.alerts.filter(a => String(a.estado || 'PENDIENTE').toUpperCase() !== 'RESUELTO');
+                const pend = State.alerts.filter(a => !isAlertResolved(a));
                 txt = `🔧 *REPORTE GENERAL DE FLOTA — PEÑA SEGURO 1410*\n` +
                       `📅 Fecha/Hora: ${nowStr}\n` +
                       `👤 Encargado: ${State.session?.nombre || 'Mantenimiento'}\n` +
@@ -1030,7 +1138,7 @@
                       `⏱️ *Kilometraje Actual:* ${m.kmActual.toLocaleString('es-CL')} km\n` +
                       `🛠️ *Última Mantención:* ${m.kmUlt.toLocaleString('es-CL')} km (${u.fechaUltimaMantencion || 'Sin registro'})\n` +
                       `🎯 *Próxima Mantención:* ${m.nextKm.toLocaleString('es-CL')} km (${m.remaining <= 0 ? 'VENCIDA' : `Faltan ${m.remaining.toLocaleString('es-CL')} km`})\n` +
-                      (uAlerts.length > 0 ? `\n⚠️ *ÚLTIMAS NOVEDADES / RESOLUCIONES:*\n` + uAlerts.map(a => `• [${a.estado}] ${a.tipoAlerta || a.detalle} ${a.notaResolucion ? `→ ${a.notaResolucion}` : ''}`).join('\n') + '\n' : '') +
+                      (uAlerts.length > 0 ? `\n⚠️ *ÚLTIMAS NOVEDADES / RESOLUCIONES:*\n` + uAlerts.map(a => `• [${a.estadoGestion || 'PENDIENTE'}] ${a.itemLabel || a.categoria} (${a.estadoReportado || 'Malo'})${a.accionRecomendada ? ` — Acción: ${a.accionRecomendada}` : ''}${a.notaResolucion ? ` → Resolución: ${a.notaResolucion}` : ''}`).join('\n') + '\n' : '') +
                       (extra ? `\n📝 *DETALLE / RESOLUCIÓN TÉCNICA:*\n${extra}\n` : '') +
                       `\nDirección de Seguridad Pública — I. Municipalidad de Peñaflor`;
             }
