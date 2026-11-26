@@ -7126,6 +7126,10 @@
             }
             if (Array.isArray(data.cencoShifts)) {
                 saveCencoShiftsDB(data.cencoShifts);
+                syncActiveCencoShiftFromCloud(data.cencoShifts);
+            }
+            if (Array.isArray(data.recentShifts)) {
+                restoreActiveInspectorShiftFromCloud(data.recentShifts);
             }
             if (Array.isArray(data.cencoCctvAlerts)) {
                 mergeCencoCctvAlertsFromCloud(data.cencoCctvAlerts);
@@ -7159,6 +7163,10 @@
                 renderAllAdminPanels();
             }
             if (document.getElementById('view-cenco')?.classList.contains('active')) {
+                if (typeof evaluateGpsGeofences === 'function' && (CencoState.gpsUnits || []).length > 0) {
+                    evaluateGpsGeofences();
+                }
+                if (typeof renderGpsGeofencePanel === 'function') renderGpsGeofencePanel();
                 renderAllCencoPanels();
             }
             if (document.getElementById('view-inteligencia')?.classList.contains('active') && typeof renderIntelWorkspace === 'function') {
@@ -8561,14 +8569,78 @@
         }
         function getActiveCencoShift() {
             try {
-                const s = JSON.parse(localStorage.getItem(STORAGE_KEYS.CENCO_ACTIVE_SHIFT));
-                if (s && s.estado === 'ACTIVO' && s.rut === AppState.userRut) return s;
+                const localS = JSON.parse(localStorage.getItem(STORAGE_KEYS.CENCO_ACTIVE_SHIFT) || 'null');
+                if (localS && String(localS.estado || '').toUpperCase() === 'ACTIVO') return localS;
+                const cloudList = getCencoShiftsDB();
+                const cloudActive = cloudList.find(s => s && String(s.estado || '').toUpperCase() === 'ACTIVO');
+                if (cloudActive) {
+                    saveActiveCencoShift(cloudActive);
+                    return cloudActive;
+                }
                 return null;
             } catch (e) { return null; }
         }
         function saveActiveCencoShift(shiftObj) {
             if (!shiftObj) localStorage.removeItem(STORAGE_KEYS.CENCO_ACTIVE_SHIFT);
-            else localStorage.setItem(STORAGE_KEYS.CENCO_ACTIVE_SHIFT, JSON.stringify(shiftObj));
+            else {
+                const toSave = Object.assign({}, shiftObj, { _savedAtMs: shiftObj._savedAtMs || Date.now() });
+                localStorage.setItem(STORAGE_KEYS.CENCO_ACTIVE_SHIFT, JSON.stringify(toSave));
+            }
+        }
+        function syncActiveCencoShiftFromCloud(cloudShifts) {
+            try {
+                const list = Array.isArray(cloudShifts) ? cloudShifts : [];
+                const cloudActive = list.find(s => s && String(s.estado || '').toUpperCase() === 'ACTIVO');
+                const localS = JSON.parse(localStorage.getItem(STORAGE_KEYS.CENCO_ACTIVE_SHIFT) || 'null');
+                if (cloudActive) {
+                    const merged = Object.assign({}, cloudActive);
+                    if ((!merged.conformacion || (!merged.conformacion.moviles?.length && !merged.conformacion.motoristas?.length)) &&
+                        localS && localS.turnoCencoId === cloudActive.turnoCencoId && localS.conformacion) {
+                        merged.conformacion = localS.conformacion;
+                    }
+                    saveActiveCencoShift(merged);
+                } else {
+                    const ageMs = localS && localS._savedAtMs ? (Date.now() - Number(localS._savedAtMs)) : Infinity;
+                    if (localS && ageMs > 90000) {
+                        saveActiveCencoShift(null);
+                    }
+                }
+            } catch (e) {}
+        }
+        function restoreActiveInspectorShiftFromCloud(recentShifts) {
+            try {
+                if (!AppState.isLoggedIn || AppState.turnoActivo) return;
+                if (AppState.userRole === 'ADMIN' || isCencoRole(AppState.userRole)) return;
+                const norm = (v) => String(v || '').replace(/[\.\-\s]/g, '').toUpperCase();
+                const myRut = norm(AppState.userRut);
+                const myName = String(AppState.userName || '').trim().toUpperCase();
+                const nowMs = Date.now();
+                const active = (recentShifts || []).find(s => {
+                    if (!s || String(s.estadoTurno || '').toUpperCase() !== 'ACTIVO') return false;
+                    const sRut = norm(s.rut);
+                    const sName = String(s.rut || '').trim().toUpperCase();
+                    const matchesMe = (myRut && sRut === myRut) || (myName && sName === myName);
+                    if (!matchesMe) return false;
+                    const tMs = s.fechaInicioIso ? Date.parse(s.fechaInicioIso) : NaN;
+                    if (!isNaN(tMs) && (nowMs - tMs) > 16 * 60 * 60 * 1000) return false;
+                    return true;
+                });
+                if (!active) return;
+                AppState.turnoActivo = true;
+                AppState.turnoId = active.turnoId || '';
+                AppState.fechaInicioTurno = active.fechaInicio || '';
+                AppState.rangoHorario = active.rangoHorario || '';
+                AppState.movil = active.movil || '';
+                AppState.cuadrante = active.cuadrante || '';
+                AppState.kmInicial = Number(active.kmInicial || 0);
+                const hd = document.getElementById('header-shift-display');
+                if (hd) hd.innerText = `${AppState.movil} • ${AppState.cuadrante}`;
+                saveActiveSessionState('view-menu');
+                if (document.getElementById('view-setup')?.classList.contains('active')) {
+                    navigateTo('view-menu');
+                    showToast(`✅ Turno activo recuperado (${AppState.movil} • ${AppState.cuadrante})`, 'bg-emerald-600');
+                }
+            } catch (e) {}
         }
 
         function isClosedOrArchivedIncident(inc) {
@@ -9373,8 +9445,8 @@
                 // Solo evaluar geocerca sobre reportes recientes (últimos 15 min) para evitar falsas alertas de GPS apagado
                 if (gps.ageSec > 900) return;
 
-                const inComuna = isPointInPolygon(gps.lat, gps.lon, PENAFLOR_COMMUNE_BOUNDARY);
                 const detectedQuad = detectQuadrantForPoint(gps.lat, gps.lon);
+                const inComuna = Boolean(detectedQuad) || isPointInPolygon(gps.lat, gps.lon, PENAFLOR_COMMUNE_BOUNDARY);
                 const assignedQuad = String(sh.cuadrante || '').trim().toUpperCase();
                 const isVolante = !assignedQuad || assignedQuad.includes('VOLANTE') || assignedQuad.includes('TODA');
                 const graceInfo = getQuadrantGraceWindowInfo(sh, nowMs);

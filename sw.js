@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pena-seguro-1410-cache-v65';
+const CACHE_NAME = 'pena-seguro-1410-cache-v66';
 const APP_SHELL = [
   './',
   './index.html',
