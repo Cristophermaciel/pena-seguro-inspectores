@@ -9407,6 +9407,43 @@
             return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        function normalizeCcDateISO(raw) {
+            const s = String(raw || '').trim();
+            if (!s) return '';
+            const iso = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+            if (iso) return `${iso[1]}-${iso[2].padStart(2, '0')}-${iso[3].padStart(2, '0')}`;
+            const cl = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+            if (cl) return `${cl[3]}-${cl[2].padStart(2, '0')}-${cl[1].padStart(2, '0')}`;
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) {
+                // Si venía en medianoche UTC desplazada a GMT-03/04 (21:00 o 20:00), ajustar al día real
+                const adj = (d.getHours() >= 20 && d.getMinutes() === 0 && d.getSeconds() === 0)
+                    ? new Date(d.getTime() + 6 * 3600 * 1000)
+                    : d;
+                return `${adj.getFullYear()}-${String(adj.getMonth() + 1).padStart(2, '0')}-${String(adj.getDate()).padStart(2, '0')}`;
+            }
+            return s;
+        }
+
+        function formatCcDateSimple(raw) {
+            const iso = normalizeCcDateISO(raw);
+            const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            return m ? `${m[3]}-${m[2]}-${m[1]}` : String(raw || '-');
+        }
+
+        function formatCcTimeSimple(raw) {
+            const s = String(raw || '').trim();
+            if (!s) return '--:--';
+            const hm = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+            if (hm) return `${hm[1].padStart(2, '0')}:${hm[2]}`;
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) {
+                return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            }
+            const inside = s.match(/(\d{1,2}):(\d{2})/);
+            return inside ? `${inside[1].padStart(2, '0')}:${inside[2]}` : s;
+        }
+
         function toggleCallCenterHistoryMode() {
             window._ccHistoryMode = !window._ccHistoryMode;
             const btn = document.getElementById('cc-btn-toggle-history');
@@ -9456,7 +9493,7 @@
                     <i class="fa-solid fa-clock-rotate-left text-amber-400 mt-0.5"></i>
                     <div>
                         <div class="font-bold text-amber-200">Historial detectado (${matches.length} ${matches.length === 1 ? 'servicio previo' : 'servicios previos'})</div>
-                        <div class="text-amber-100/85">Último: <strong>${escCcHtml(last.tipoRequerimiento)}</strong> el ${escCcHtml(last.fechaProgramada || '-')} ${escCcHtml(last.horaProgramada || '')} (${escCcHtml(last.direccion || '-')})</div>
+                        <div class="text-amber-100/85">Último: <strong>${escCcHtml(last.tipoRequerimiento)}</strong> el ${escCcHtml(formatCcDateSimple(last.fechaProgramada))} ${escCcHtml(formatCcTimeSimple(last.horaProgramada))} hrs (${escCcHtml(last.direccion || '-')})</div>
                     </div>`;
             }
         }
@@ -9535,9 +9572,9 @@
             const item = getCallCenterServicesDB().find(x => x.id === id);
             if (!item) return;
             document.getElementById('cc-edit-id').value = item.id;
-            document.getElementById('cc-hora').value = item.horaProgramada || '';
+            document.getElementById('cc-hora').value = formatCcTimeSimple(item.horaProgramada) !== '--:--' ? formatCcTimeSimple(item.horaProgramada) : '';
             document.getElementById('cc-telefono').value = item.telefono || '';
-            document.getElementById('cc-fecha').value = item.fechaProgramada || '';
+            document.getElementById('cc-fecha').value = normalizeCcDateISO(item.fechaProgramada) || '';
             document.getElementById('cc-cuadrante').value = item.cuadrante || '252A';
             document.getElementById('cc-tipo').value = item.tipoRequerimiento || 'Patrullaje';
             document.getElementById('cc-direccion').value = item.direccion || '';
@@ -9576,7 +9613,7 @@
                 <div class="grid grid-cols-2 gap-2.5">
                     <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">ID Solicitud</span><strong class="font-mono text-indigo-300">${escCcHtml(item.id)}</strong></div>
                     <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">Estado</span><strong class="${isDispatched ? 'text-emerald-400' : 'text-amber-300'}">${escCcHtml(item.estado || 'AGENDADO')}</strong></div>
-                    <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">Fecha y Hora</span><strong class="cad-text">${escCcHtml(item.fechaProgramada)} • ${escCcHtml(item.horaProgramada)} hrs</strong></div>
+                    <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">Fecha y Hora</span><strong class="cad-text">${escCcHtml(formatCcDateSimple(item.fechaProgramada))} • ${escCcHtml(formatCcTimeSimple(item.horaProgramada))} hrs</strong></div>
                     <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">Tipo Requerimiento</span><strong class="text-blue-300">${escCcHtml(item.tipoRequerimiento)}</strong></div>
                 </div>
                 <div class="rounded-lg cad-elevated border cad-border p-3 space-y-1">
@@ -9686,7 +9723,7 @@
                 if (fTipo !== 'ALL' && String(s.tipoRequerimiento || '') !== fTipo) return false;
                 if (qTxt && !`${s.funcionario} ${s.direccion} ${s.tipoRequerimiento} ${s.descripcion} ${s.telefono}`.toLowerCase().includes(qTxt)) return false;
                 return true;
-            }).sort((a, b) => `${a.fechaProgramada || ''} ${a.horaProgramada || ''}`.localeCompare(`${b.fechaProgramada || ''} ${b.horaProgramada || ''}`));
+            }).sort((a, b) => `${normalizeCcDateISO(a.fechaProgramada)} ${formatCcTimeSimple(a.horaProgramada)}`.localeCompare(`${normalizeCcDateISO(b.fechaProgramada)} ${formatCcTimeSimple(b.horaProgramada)}`));
 
             const countEl = document.getElementById('cc-list-count');
             if (countEl) countEl.innerText = filtered.length;
@@ -9712,8 +9749,8 @@
                             <span class="inline-block px-2.5 py-0.5 rounded-full bg-blue-600/25 text-blue-300 border border-blue-500/35 text-[11px] font-bold">${escCcHtml(s.tipoRequerimiento || 'Patrullaje')}</span>
                         </td>
                         <td class="py-3 px-3 whitespace-nowrap">
-                            <div class="font-black cad-text font-mono">${escCcHtml(s.horaProgramada || '--:--')}</div>
-                            <div class="text-[10px] cad-muted font-mono">${escCcHtml(s.fechaProgramada || '')}</div>
+                            <div class="font-black cad-text font-mono text-sm">${escCcHtml(formatCcTimeSimple(s.horaProgramada))} <span class="text-[10px] font-semibold cad-muted">hrs</span></div>
+                            <div class="text-[11px] text-sky-300 font-mono font-bold">${escCcHtml(formatCcDateSimple(s.fechaProgramada))}</div>
                         </td>
                         <td class="py-3 px-3">
                             <div class="cad-text font-medium">${escCcHtml(s.direccion || '-')}</div>
@@ -9748,7 +9785,7 @@
             const headers = ['ID', 'Fecha Programada', 'Hora', 'Tipo Requerimiento', 'Funcionario Solicitante', 'Teléfono', 'Dirección', 'Cuadrante', 'Descripción', 'Estado', 'Agendado Por', 'Folio Despacho'];
             const escCsv = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
             const rows = [headers.map(escCsv).join(';'), ...list.map(s => [
-                s.id, s.fechaProgramada, s.horaProgramada, s.tipoRequerimiento,
+                s.id, formatCcDateSimple(s.fechaProgramada), formatCcTimeSimple(s.horaProgramada), s.tipoRequerimiento,
                 s.funcionario, s.telefono, s.direccion, s.cuadrante,
                 s.descripcion, s.estado, s.agendadoPor, s.folioDespacho
             ].map(escCsv).join(';'))];
@@ -9768,17 +9805,12 @@
 
         function parseScheduledServiceDateMs(s) {
             if (!s || !s.fechaProgramada || !s.horaProgramada) return NaN;
-            const datePart = String(s.fechaProgramada).trim();
-            const timePart = String(s.horaProgramada).trim();
-            let y, m, d;
+            const datePart = normalizeCcDateISO(s.fechaProgramada);
+            const timePart = formatCcTimeSimple(s.horaProgramada);
             const iso = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-            const cl = datePart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-            if (iso) { y = Number(iso[1]); m = Number(iso[2]); d = Number(iso[3]); }
-            else if (cl) { d = Number(cl[1]); m = Number(cl[2]); y = Number(cl[3]); }
-            else return NaN;
-            const tm = timePart.match(/^(\d{1,2}):(\d{2})/);
-            if (!tm) return NaN;
-            return new Date(y, m - 1, d, Number(tm[1]), Number(tm[2]), 0, 0).getTime();
+            const tm = timePart.match(/^(\d{2}):(\d{2})$/);
+            if (!iso || !tm) return NaN;
+            return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), Number(tm[1]), Number(tm[2]), 0, 0).getTime();
         }
 
         function getUpcoming5MinCallCenterServices() {
@@ -9838,8 +9870,8 @@
                 banner.classList.toggle('hidden', due.length === 0);
                 bannerList.innerHTML = due.map(s => {
                     const timeBadge = s._minsLeft > 0
-                        ? `EN ${s._minsLeft} MIN (${escCcHtml(s.horaProgramada)} hrs)`
-                        : (s._minsLeft === 0 ? `¡AHORA! (${escCcHtml(s.horaProgramada)} hrs)` : `ATRASADO ${Math.abs(s._minsLeft)} MIN (${escCcHtml(s.horaProgramada)} hrs)`);
+                        ? `EN ${s._minsLeft} MIN (${escCcHtml(formatCcTimeSimple(s.horaProgramada))} hrs)`
+                        : (s._minsLeft === 0 ? `¡AHORA! (${escCcHtml(formatCcTimeSimple(s.horaProgramada))} hrs)` : `ATRASADO ${Math.abs(s._minsLeft)} MIN (${escCcHtml(formatCcTimeSimple(s.horaProgramada))} hrs)`);
                     return `
                         <div class="flex flex-wrap items-center justify-between gap-2 text-white text-xs">
                             <div class="flex flex-wrap items-center gap-2 min-w-0">
@@ -9914,7 +9946,7 @@
             doc.setFont('helvetica', 'normal');
             list.forEach(s => {
                 if (y > 192) { doc.addPage(); y = 20; }
-                doc.text(`${s.fechaProgramada || ''} ${s.horaProgramada || ''}`, 14, y);
+                doc.text(`${formatCcDateSimple(s.fechaProgramada)} ${formatCcTimeSimple(s.horaProgramada)}`, 14, y);
                 doc.text(String(s.funcionario || '-').slice(0, 28), 50, y);
                 doc.text(String(s.tipoRequerimiento || '-').slice(0, 26), 105, y);
                 doc.text(`${String(s.direccion || '-').slice(0, 42)} (${s.cuadrante || '-'})`, 158, y);
@@ -11724,7 +11756,7 @@
                     return `
                         <div class="cad-elevated border border-amber-500/60 bg-amber-950/35 rounded-lg p-2.5 space-y-1.5 text-xs">
                             <div class="flex items-center justify-between gap-1">
-                                <span class="font-black text-amber-300"><i class="fa-solid fa-clock mr-1"></i>${escCcHtml(s.horaProgramada)} hrs • ${timeTxt}</span>
+                                <span class="font-black text-amber-300"><i class="fa-solid fa-clock mr-1"></i>${escCcHtml(formatCcTimeSimple(s.horaProgramada))} hrs • ${timeTxt}</span>
                                 <span class="px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 text-[10px] font-black">${escCcHtml(s.tipoRequerimiento)}</span>
                             </div>
                             <div class="font-bold cad-text">${escCcHtml(s.direccion)} <span class="text-cyan-400">(${escCcHtml(s.cuadrante || 'Peñaflor')})</span></div>
