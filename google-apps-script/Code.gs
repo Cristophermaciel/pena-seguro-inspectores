@@ -1928,12 +1928,18 @@ function apiHandleAction(payload) {
 
       actualizarKmFlota(ss, payload.movil, Number(payload.kmInicial || 0));
 
-      // Guardar alertas clasificadas del checklist en Alertas_Flota
+      // Guardar alertas clasificadas del checklist en Alertas_Flota (con foto y detalle exacto por ítem)
       const shAlertas = ss.getSheetByName(SHEETS.ALERTAS_FLOTA);
       if (shAlertas && Array.isArray(payload.alertasChecklist) && payload.alertasChecklist.length > 0) {
-        payload.alertasChecklist.forEach(al => {
+        payload.alertasChecklist.forEach((al, alIdx) => {
+          const alId = al.id || `ALR-${Date.now()}-${alIdx}-${Math.floor(Math.random() * 1000)}`;
+          let urlFotoAlerta = urlFotoDesperfecto !== "Sin desperfectos" ? urlFotoDesperfecto : urlFotoGeneral;
+          if (al.fotoBase64 && String(al.fotoBase64).indexOf("data:image/") === 0) {
+            urlFotoAlerta = guardarFotoEnDrive(al.fotoBase64, `${alId}_${al.itemId || "Falla"}.jpg`);
+          }
+          const obsAlerta = String(al.observaciones || payload.observaciones || "").trim();
           shAlertas.appendRow([
-            al.id || `ALR-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            alId,
             payload.fechaInicio || nowFormatted,
             payload.movil || "",
             payload.cuadrante || "",
@@ -1943,8 +1949,8 @@ function apiHandleAction(payload) {
             al.itemLabel || al.itemId || "",
             al.estadoReportado || "",
             al.accionRecomendada || "Revisar / Gestionar",
-            payload.observaciones || "",
-            urlFotoDesperfecto !== "Sin desperfectos" ? urlFotoDesperfecto : urlFotoGeneral,
+            obsAlerta,
+            urlFotoAlerta,
             "PENDIENTE",
             "",
             "",
