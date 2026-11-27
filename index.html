@@ -2087,6 +2087,7 @@
                                                 <option value="PENDIENTE_DESPACHO">Sin Móvil</option>
                                                 <option value="DESPACHADO">Despachados</option>
                                                 <option value="EN_LUGAR">En Lugar</option>
+                                                <option value="EN_PROCEDIMIENTO">En Procedimiento</option>
                                             </select>
                                         </div>
 
@@ -9159,16 +9160,31 @@
 
         function mergeCencoIncidentsFromCloud(cloudList) {
             // Regla de alineación entre usuarios: Google Sheets es la fuente única de verdad.
-            // Elimina procedimientos fantasma/borrados localmente; solo conserva creaciones en vuelo (< 60s) que no sean geocercas.
+            // Conserva creaciones/actualizaciones locales en vuelo (< 60s) para evitar parpadeos o desapariciones mientras guarda Sheets.
             const nowMs = Date.now();
             const local = getCencoIncidentsDB();
             const map = new Map();
             (cloudList || []).forEach(item => { if (item && item.folioId) map.set(item.folioId, item); });
             local.forEach(item => {
-                if (!item || !item.folioId || map.has(item.folioId)) return;
-                const isInFlight = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
+                if (!item || !item.folioId) return;
                 const isGeo = String(item.folioId).toUpperCase().startsWith('CAD-GPS-') || String(item.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA';
-                if (isInFlight && !isGeo) map.set(item.folioId, item);
+                const isInFlightCreate = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
+                const isInFlightUpdate = Number(item._localUpdatedMs || 0) > 0 && (nowMs - Number(item._localUpdatedMs)) <= 30000;
+                if (!map.has(item.folioId)) {
+                    if (isInFlightCreate && !isGeo) map.set(item.folioId, item);
+                } else if (isInFlightUpdate && !isGeo) {
+                    const cloudItem = map.get(item.folioId);
+                    if (cloudItem && !isClosedOrArchivedIncident(cloudItem)) {
+                        map.set(item.folioId, Object.assign({}, cloudItem, {
+                            estado: item.estado,
+                            despachador: item.despachador || cloudItem.despachador,
+                            movilesAsignados: item.movilesAsignados || cloudItem.movilesAsignados,
+                            horaDespacho: item.horaDespacho || cloudItem.horaDespacho,
+                            horaArribo: item.horaArribo || cloudItem.horaArribo,
+                            _localUpdatedMs: item._localUpdatedMs
+                        }));
+                    }
+                }
             });
             saveCencoIncidentsDB(Array.from(map.values()));
         }
@@ -11705,8 +11721,8 @@
             const incidents = getCencoIncidentsDB();
             const cctvAlerts = getCencoCctvAlertsDB();
 
-            const openCount = incidents.filter(i => !['FINALIZADO', 'CANCELADO', 'DESCARTADA'].includes(i.estado)).length;
-            const cctvActiveCount = cctvAlerts.filter(a => a.estado === 'ENVIADA_A_DESPACHADOR').length;
+            const openCount = incidents.filter(i => !isClosedOrArchivedIncident(i)).length;
+            const cctvActiveCount = cctvAlerts.filter(a => a.estado === 'ENVIADA_A_DESPACHADOR' && !isPoliceVideoCctvAlert(a)).length;
 
             const bCentral = document.getElementById('cad-badge-central');
             if (bCentral) { bCentral.innerText = openCount; bCentral.classList.toggle('hidden', openCount === 0); }
@@ -11810,14 +11826,18 @@
             const fEst = document.getElementById('cad-abiertos-filter-estado')?.value || 'ALL';
             const prioRank = { 'CRITICA': 1, 'ALTA': 2, 'MEDIA': 3, 'BAJA': 4 };
 
-            const open = getCencoIncidentsDB()
-                .filter(i => !isClosedOrArchivedIncident(i))
-                .filter(i => fEst === 'ALL' || i.estado === fEst)
+            const allOpen = getCencoIncidentsDB().filter(i => !isClosedOrArchivedIncident(i));
+            const open = allOpen
+                .filter(i => fEst === 'ALL' || String(i.estado || '').trim().toUpperCase() === fEst)
                 .filter(i => !q || normalizeSearchText(`${i.folioId} ${i.direccion} ${i.cuadrante} ${i.categoria} ${i.movilesAsignados} ${i.detalle}`).includes(q))
                 .sort((a, b) => (prioRank[a.prioridad] || 3) - (prioRank[b.prioridad] || 3));
 
             if (open.length === 0) {
-                listWrap.innerHTML = '<div class="text-center py-8 cad-muted text-xs">No hay procedimientos abiertos en este momento.</div>';
+                if (allOpen.length > 0 && (fEst !== 'ALL' || q)) {
+                    listWrap.innerHTML = `<div class="text-center py-6 space-y-2"><div class="cad-muted text-xs">Hay <strong class="text-amber-300">${allOpen.length}</strong> procedimiento(s) abierto(s) oculto(s) por el filtro actual.</div><button type="button" onclick="document.getElementById('cad-abiertos-filter-estado').value='ALL'; document.getElementById('cad-abiertos-search').value=''; renderCentralOpenQueue();" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold">Mostrar todos los abiertos</button></div>`;
+                } else {
+                    listWrap.innerHTML = '<div class="text-center py-8 cad-muted text-xs">No hay procedimientos abiertos en este momento.</div>';
+                }
                 return;
             }
             listWrap.innerHTML = open.map(inc => `
@@ -12480,6 +12500,7 @@
             const nowStr = new Date().toLocaleString('es-CL');
             if (idx >= 0) {
                 list[idx].estado = newEstado;
+                list[idx]._localUpdatedMs = Date.now();
                 if (newEstado === 'EN_LUGAR') list[idx].horaArribo = nowStr;
                 list[idx].historial = [...(list[idx].historial || []), {
                     fecha: nowStr, rol: AppState.userRole, usuario: AppState.userName || AppState.userRut,
@@ -12487,6 +12508,8 @@
                 }];
                 saveCencoIncidentsDB(list);
             }
+            const fEstEl = document.getElementById('cad-abiertos-filter-estado');
+            if (fEstEl && fEstEl.value !== 'ALL' && fEstEl.value !== newEstado) fEstEl.value = 'ALL';
             renderAllCencoPanels();
             if (!document.getElementById('cad-bitacora-drawer-backdrop')?.classList.contains('hidden')) openCencoFolioModal(folioId);
             await sendPayloadToGoogleSheets({
@@ -13349,6 +13372,7 @@
                         denunciante: 'Operador CCTV', telefono: '', detalle: payload.descripcion,
                         ingresadoPor: `CCTV: ${payload.operadorCctv}`, despachador: '', movilesAsignados: '',
                         imagenes: savedImgs,
+                        _localCreatedMs: Date.now(),
                         historial: [{ fecha: nowStr, rol: 'CCTV', usuario: payload.operadorCctv, accion: `Alerta visual desde ${cam.id} enviada al Despachador` }]
                     });
                     saveCencoIncidentsDB(incList);
@@ -13411,6 +13435,7 @@
                         denunciante: 'Operador CCTV', telefono: '', detalle: al ? al.descripcion : nota,
                         ingresadoPor: al ? `CCTV: ${al.operadorCctv}` : 'CCTV', despachador: AppState.userName || AppState.userRut,
                         movilesAsignados: moviles, horaDespacho: nowStr, imagenes: al ? (al.imagenes || []) : [],
+                        _localCreatedMs: Date.now(),
                         historial: [{ fecha: nowStr, rol: 'DESPACHADOR', usuario: AppState.userName || AppState.userRut, accion: `Despachó ${moviles} por Alerta CCTV ${cctvId}. ${nota}` }]
                     };
                     const incList = getCencoIncidentsDB();
@@ -13422,6 +13447,7 @@
                     const idx = incList.findIndex(i => i.folioId === folioId);
                     if (idx >= 0) {
                         incList[idx].estado = 'DESPACHADO';
+                        incList[idx]._localUpdatedMs = Date.now();
                         incList[idx].despachador = AppState.userName || AppState.userRut;
                         incList[idx].movilesAsignados = moviles;
                         incList[idx].horaDespacho = nowStr;
@@ -13432,7 +13458,7 @@
                         action: 'CENCO_ACTUALIZAR_INCIDENTE', folioId, estado: 'DESPACHADO',
                         despachador: AppState.userName || AppState.userRut, movilesAsignados: moviles, horaDespacho: nowStr,
                         registrarDespacho: true, notaDespacho: nota,
-                        eventoHistorial: { rol: 'DESPACHADOR', usuario: AppState.userName || AppState.userRut, accion: `Despachó unidad(es): ${moviles}. ${nota}` }
+                        eventoHistorial: { rol: AppState.userRole, usuario: AppState.userName || AppState.userRut, accion: `Despachó unidad(es): ${moviles}. ${nota}` }
                     });
                 }
 
@@ -13443,6 +13469,8 @@
                     await sendPayloadToGoogleSheets({ action: 'CENCO_ATENDER_ALERTA_CCTV', alertaId: cctvId, estado: 'DESPACHADO', movilSugerido: moviles, folioVinculado: folioId, atendidoPor: AppState.userName || AppState.userRut });
                 }
 
+                const fEstEl = document.getElementById('cad-abiertos-filter-estado');
+                if (fEstEl && fEstEl.value !== 'ALL' && fEstEl.value !== 'DESPACHADO') fEstEl.value = 'ALL';
                 closeCencoDispatchModal();
                 renderAllCencoPanels();
                 showToast(`✓ Móvil ${moviles} despachado a ${folioId}`, 'bg-emerald-600');
