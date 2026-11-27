@@ -4188,7 +4188,7 @@
             auto_neu_repuesto: { label: 'Neumático de repuesto', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Reponer o reparar neumático de repuesto' },
             auto_mec_gata: { label: 'Gata hidráulica, llave de ruedas y gancho', categoria: 'MECANICA_NEUMATICOS', prioridad: 'MEDIA', accion: 'Reponer gata hidráulica / llave de ruedas' },
             auto_mec_frenomano: { label: 'Freno de servicio (pedal) y Freno de mano', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisar pastillas, discos y regular freno en taller' },
-            auto_mec_direccion: { label: 'Dirección, Suspensión y Amortiguadores', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisión de tren delantero, amortiguadores y alineación' },
+            auto_mec_direccion: { label: 'Dirección, Suspensión y Amortiguadores', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisión de tren delantero/trasero, amortiguadores y alineación' },
             auto_mec_transmision: { label: 'Embrague, Caja de Cambios y Tracción 4x4', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisión de embrague, caja de cambios o selector 4x4' },
             auto_mec_fugas: { label: 'Fugas de fluidos o ruidos anormales', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Inspección mecánica urgente por fuga o ruido anormal' },
             moto_neu_delantero: { label: 'Neumático delantero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de neumático delantero de moto' },
@@ -4206,8 +4206,10 @@
             moto_seg_extintor: { label: 'Extintor de incendios', categoria: 'EQUIPAMIENTO', prioridad: 'ALTA', accion: 'Recargar o reponer extintor' },
             auto_seg_botiquin: { label: 'Botiquín de primeros auxilios', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer insumos faltantes del botiquín' },
             moto_seg_botiquin: { label: 'Botiquín de primeros auxilios', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer insumos faltantes del botiquín' },
-            auto_seg_triangulos: { label: 'Triángulos / Conos de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer conos / triángulos de seguridad' },
-            moto_seg_triangulos: { label: 'Triángulos / Conos de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer conos de seguridad' },
+            auto_seg_conos: { label: 'Conos de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer conos de seguridad faltantes (dotación 4 conos)' },
+            moto_seg_conos: { label: 'Conos de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer conos de seguridad faltantes' },
+            auto_seg_triangulos: { label: 'Triángulo de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer triángulo reflectante de seguridad' },
+            moto_seg_triangulos: { label: 'Triángulo de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer triángulo reflectante de seguridad' },
             auto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chalecos reflectantes en móvil' },
             moto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chaleco reflectante' },
             auto_seg_linterna: { label: 'Linterna táctica y Cables puente batería', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer linterna táctica o cables puente' },
@@ -4306,7 +4308,8 @@
         // --- Generate Dynamic Exhaustive Checklist based on Vehicle Type ---
         const CHECKLIST_ALERT_VALUES = new Set([
             'Atrasada', 'No porta', '1/4', 'Malo',
-            'Sin Carga', 'Sin Implementos', 'Sin Conos', 'No Disponible'
+            'Sin Carga', 'Vencido', 'Sin Implementos', 'Faltan Implementos',
+            'Sin Conos', 'Menos de 4 Conos', 'No porta Triángulo', 'No Disponible'
         ]);
 
         function getOptionBadgeClasses(val) {
@@ -4348,10 +4351,10 @@
                         icon: "fa-file-contract",
                         defaultOptions: ["Al día", "Atrasada", "No porta"],
                         items: [
-                            { id: "moto_doc_padron", label: "Padrón del vehículo" },
-                            { id: "moto_doc_permiso", label: "Permiso de Circulación" },
-                            { id: "moto_doc_revtech", label: "Revisión Técnica" },
-                            { id: "moto_doc_soap", label: "Seguro Obligatorio (SOAP)" },
+                            { id: "moto_doc_padron", label: "Padrón del vehículo", noDetail: true },
+                            { id: "moto_doc_permiso", label: "Permiso de Circulación", noDetail: true },
+                            { id: "moto_doc_revtech", label: "Revisión Técnica", noDetail: true },
+                            { id: "moto_doc_soap", label: "Seguro Obligatorio (SOAP)", noDetail: true },
                             { id: "moto_doc_patente", label: "Placa Patente y soporte trasero", options: ["Bueno", "Malo"] }
                         ]
                     },
@@ -4398,13 +4401,14 @@
                     {
                         title: "5. Equipamiento de Emergencia y EPP Motorista",
                         icon: "fa-kit-medical",
-                        defaultOptions: ["Disponible", "No Disponible"],
+                        defaultOptions: ["Porta", "No porta"],
                         items: [
-                            { id: "moto_seg_extintor", label: "Extintor con carga vigente", options: ["Con Carga", "Sin Carga"] },
-                            { id: "moto_seg_botiquin", label: "Botiquín de primeros auxilios completo", options: ["Completo", "Sin Implementos"] },
-                            { id: "moto_seg_triangulos", label: "Triángulos / Conos de seguridad", options: ["4 Conos", "Sin Conos"] },
-                            { id: "moto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Disponible", "No Disponible"] },
-                            { id: "moto_seg_casco", label: "Casco homologado, guantes y protecciones", options: ["Disponible", "No Disponible"] },
+                            { id: "moto_seg_extintor", label: "Extintor con carga vigente", options: ["Con Carga", "Sin Carga", "Vencido"], noDetail: true },
+                            { id: "moto_seg_botiquin", label: "Botiquín de primeros auxilios completo", options: ["Completo", "Faltan Implementos"], noDetail: true },
+                            { id: "moto_seg_conos", label: "Conos de seguridad", options: ["Porta 4 Conos", "Menos de 4 Conos", "No porta"], noDetail: true },
+                            { id: "moto_seg_triangulos", label: "Triángulo de seguridad", options: ["Porta Triángulo", "No porta Triángulo"], noDetail: true },
+                            { id: "moto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Porta", "No porta"], noDetail: true },
+                            { id: "moto_seg_casco", label: "Casco homologado, guantes y protecciones", options: ["Porta", "No porta"], noDetail: true },
                             { id: "moto_seg_maleta", label: "Maleta / Top Case y Defensas laterales", options: ["Bueno", "Malo"] }
                         ]
                     }
@@ -4417,10 +4421,10 @@
                         icon: "fa-file-lines",
                         defaultOptions: ["Al día", "Atrasada", "No porta"],
                         items: [
-                            { id: "auto_doc_padron", label: "Padrón del vehículo" },
-                            { id: "auto_doc_permiso", label: "Permiso de Circulación" },
-                            { id: "auto_doc_revtech", label: "Revisión Técnica y Gases" },
-                            { id: "auto_doc_soap", label: "Seguro Obligatorio (SOAP)" },
+                            { id: "auto_doc_padron", label: "Padrón del vehículo", noDetail: true },
+                            { id: "auto_doc_permiso", label: "Permiso de Circulación", noDetail: true },
+                            { id: "auto_doc_revtech", label: "Revisión Técnica y Gases", noDetail: true },
+                            { id: "auto_doc_soap", label: "Seguro Obligatorio (SOAP)", noDetail: true },
                             { id: "auto_doc_patentes", label: "Placas Patentes (Del./Tras.) y Tarjeta Combustible", options: ["Bueno", "Malo"] }
                         ]
                     },
@@ -4470,13 +4474,14 @@
                     {
                         title: "5. Equipamiento de Emergencia y Seguridad",
                         icon: "fa-kit-medical",
-                        defaultOptions: ["Disponible", "No Disponible"],
+                        defaultOptions: ["Porta", "No porta"],
                         items: [
-                            { id: "auto_seg_extintor", label: "Extintor con carga vigente", options: ["Con Carga", "Sin Carga"] },
-                            { id: "auto_seg_botiquin", label: "Botiquín de primeros auxilios completo", options: ["Completo", "Sin Implementos"] },
-                            { id: "auto_seg_triangulos", label: "Triángulos / Conos de seguridad", options: ["4 Conos", "Sin Conos"] },
-                            { id: "auto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Disponible", "No Disponible"] },
-                            { id: "auto_seg_linterna", label: "Linterna táctica y Cables puente batería", options: ["Disponible", "No Disponible"] }
+                            { id: "auto_seg_extintor", label: "Extintor con carga vigente", options: ["Con Carga", "Sin Carga", "Vencido"], noDetail: true },
+                            { id: "auto_seg_botiquin", label: "Botiquín de primeros auxilios completo", options: ["Completo", "Faltan Implementos"], noDetail: true },
+                            { id: "auto_seg_conos", label: "Conos de seguridad", options: ["Porta 4 Conos", "Menos de 4 Conos", "No porta"], noDetail: true },
+                            { id: "auto_seg_triangulos", label: "Triángulo de seguridad", options: ["Porta Triángulo", "No porta Triángulo"], noDetail: true },
+                            { id: "auto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Porta", "No porta"], noDetail: true },
+                            { id: "auto_seg_linterna", label: "Linterna táctica y Cables puente batería", options: ["Porta", "No porta"], noDetail: true }
                         ]
                     },
                     {
@@ -4511,21 +4516,18 @@
                         </label>
                     `).join('');
 
-                    const partChips = getChecklistPartOptions(item.id);
+                    const partChips = item.noDetail ? [] : getChecklistPartOptions(item.id);
                     const chipsHtml = partChips.map(p => `<button type="button" onclick="appendChecklistPartChip('${item.id}', '${p.replace(/'/g, "\\'")}')" class="px-2 py-1 rounded-lg bg-white hover:bg-red-100 border border-red-200 text-[10px] font-bold text-red-900 transition active:scale-95">+ ${p}</button>`).join('');
-
-                    catHtml += `
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
-                        <span class="text-xs font-bold text-slate-800">${item.label} <span class="text-red-500">*</span></span>
-                        <div class="flex flex-wrap items-center gap-1.5">
-                            ${optsHtml}
-                        </div>
+                    const isFluidOnly = partChips.length === 1 && partChips[0] === 'Faltante';
+                    const detailTitle = isFluidOnly ? 'Indicar nivel faltante / observación y foto (opcional):' : 'Especificar parte exacta y foto de la falla:';
+                    const detailPlaceholder = isFluidOnly ? 'Ej: Faltante / Nivel bajo...' : 'Ej: Trasero derecho / Foco izquierdo quemado / Rueda pinchada...';
+                    const detailBlockHtml = item.noDetail ? '' : `
                         <div id="chk-detail-${item.id}" class="hidden mt-1 rounded-xl bg-red-50/90 border border-red-200 p-2.5 space-y-2">
                             <div class="text-[10px] font-black uppercase text-red-800 flex items-center gap-1">
-                                <i class="fa-solid fa-triangle-exclamation text-red-600"></i> Especificar parte exacta y foto de la falla:
+                                <i class="fa-solid fa-triangle-exclamation text-red-600"></i> ${detailTitle}
                             </div>
                             <div class="flex flex-wrap gap-1">${chipsHtml}</div>
-                            <input type="text" id="chk-part-text-${item.id}" placeholder="Ej: Trasero derecho / Foco izquierdo quemado / Rueda pinchada..." class="w-full px-2.5 py-2 rounded-lg border border-red-300 bg-white text-xs font-semibold text-slate-900 outline-none focus:border-red-500">
+                            <input type="text" id="chk-part-text-${item.id}" placeholder="${detailPlaceholder}" class="w-full px-2.5 py-2 rounded-lg border border-red-300 bg-white text-xs font-semibold text-slate-900 outline-none focus:border-red-500">
                             <div class="flex flex-wrap items-center gap-2">
                                 <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[11px] font-black shadow-xs">
                                     <i class="fa-solid fa-camera"></i> Adjuntar Foto de esta Falla
@@ -4533,7 +4535,15 @@
                                 </label>
                                 <div id="chk-item-photo-prev-${item.id}" class="flex items-center gap-1.5 text-[10px] text-slate-600"></div>
                             </div>
+                        </div>`;
+
+                    catHtml += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2">
+                        <span class="text-xs font-bold text-slate-800">${item.label} <span class="text-red-500">*</span></span>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            ${optsHtml}
                         </div>
+                        ${detailBlockHtml}
                     </div>`;
                 });
                 
@@ -4545,6 +4555,13 @@
         const CHECKLIST_PART_OPTIONS = {
             auto_doc_patentes: ['Patente Delantera suelta/dañada', 'Patente Trasera suelta/dañada', 'Tarjeta Combustible faltante'],
             moto_doc_patente: ['Patente doblada / suelta', 'Soporte quebrado', 'Luz patente quemada'],
+            auto_flu_combustible: ['Faltante'],
+            auto_flu_aceite: ['Faltante'],
+            auto_flu_frenos: ['Faltante'],
+            auto_flu_refrigerante: ['Faltante'],
+            moto_niv_combustible: ['Faltante'],
+            moto_niv_aceite: ['Faltante'],
+            moto_niv_frenos: ['Faltante'],
             auto_flu_plumillas: ['Plumilla Piloto', 'Plumilla Copiloto', 'Plumilla Trasera', 'Sapito sin agua / tapado'],
             auto_mec_tablero: ['Testigo Check Engine', 'Testigo Batería / Alternador', 'Testigo ABS / Frenos', 'Testigo Airbag', 'Cuesta arrancar'],
             auto_ele_luces: ['Foco Delantero Izq. (Piloto)', 'Foco Delantero Der. (Copiloto)', 'Luz Baja', 'Luz Alta', 'Neblinero Izq.', 'Neblinero Der.'],
@@ -4559,7 +4576,7 @@
             auto_neu_traseros: ['Trasero Izquierdo', 'Trasero Derecho', 'Ambos Traseros', 'Desgaste liso', 'Pinchado / Baja presión', 'Llanta dañada'],
             auto_neu_repuesto: ['Pinchado / Desinflado', 'No porta repuesto', 'Llanta dañada'],
             auto_mec_frenomano: ['Pedal de freno largo/esponjoso', 'Chillido pastillas', 'Freno de mano destensado'],
-            auto_mec_direccion: ['Volante vibración / desalineado', 'Amortiguador Delantero', 'Amortiguador Trasero', 'Ruido tren delantero'],
+            auto_mec_direccion: ['Volante vibración / desalineado', 'Amortiguador Delantero', 'Amortiguador Trasero', 'Ruido tren delantero', 'Ruido tren trasero'],
             auto_mec_transmision: ['Embrague patina / duro', 'Caja de cambios / Marchas', 'Selector Tracción 4x4'],
             auto_mec_fugas: ['Fuga aceite motor', 'Fuga refrigerante / agua', 'Fuga líquido frenos', 'Ruido motor / escape'],
             auto_car_parabrisas: ['Parabrisas Delantero', 'Luneta Trasera', 'Vidrio Piloto', 'Vidrio Copiloto', 'Vidrio Trasero Izq.', 'Vidrio Trasero Der.'],
