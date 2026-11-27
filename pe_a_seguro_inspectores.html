@@ -10007,21 +10007,47 @@
         function findNearestOperationalCameras(inc, maxResults = 2) {
             const cams = getCencoCamerasDB().filter(c => String(c.estado || 'OPERATIVA').trim().toUpperCase() === 'OPERATIVA');
             if (cams.length === 0) return { nearest: null, list: [] };
-            const hasExactGps = /-\d+\.\d+\s*,\s*-\d+\.\d+/.test(String(inc?.direccion || ''));
-            const incCoords = parseGpsOrQuadrantCoords(inc?.direccion || '', inc?.cuadrante || '252A', 0);
+            const rawDir = String(inc?.direccion || '');
+            const hasExactGps = /-\d+\.\d+\s*,\s*-\d+\.\d+/.test(rawDir);
+            const incCoords = parseGpsOrQuadrantCoords(rawDir, inc?.cuadrante || '252A', 0);
             const incQuad = String(inc?.cuadrante || '').trim().toUpperCase();
+            const refBlob = `${inc?.referenciaCamara || ''} ${inc?.subcategoria || ''}`.toUpperCase();
+            const refCamMatch = refBlob.match(/\b(CAM-[A-Z0-9-]+)\b/);
+            const explicitCamId = refCamMatch ? refCamMatch[1] : '';
+            const normText = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+            const dirNorm = normText(rawDir.replace(/\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)/g, ''));
+            const dirTokens = dirNorm.split(' ').filter(w => w.length >= 4 && !['penaflor', 'chile', 'calle', 'avenida', 'pasaje', 'sector', 'villa'].includes(w));
 
             const scored = cams.map(cam => {
                 const camCoords = parseGpsOrQuadrantCoords(cam.gps || cam.nombre || '', cam.cuadrante || '252A', 0);
                 const distM = calcGeoDistanceMeters(incCoords[0], incCoords[1], camCoords[0], camCoords[1]);
                 const sameQuad = incQuad && String(cam.cuadrante || '').trim().toUpperCase() === incQuad;
+                const isExplicit = explicitCamId && String(cam.id || '').trim().toUpperCase() === explicitCamId;
+                const camNameNorm = normText(`${cam.nombre || ''} ${cam.sector || ''}`);
+                let textScore = 0;
+                if (dirNorm && camNameNorm && (camNameNorm.includes(dirNorm) || dirNorm.includes(camNameNorm))) {
+                    textScore = 100;
+                } else if (dirTokens.length > 0) {
+                    const hits = dirTokens.filter(t => camNameNorm.includes(t)).length;
+                    textScore = hits * 20;
+                }
+                let distLabel = hasExactGps
+                    ? `GPS exacto: ${formatApproxDistance(distM)}`
+                    : (isExplicit || textScore >= 40
+                        ? `Ubicación exacta (${cam.cuadrante || incQuad})`
+                        : (sameQuad ? `Cuadrante ${incQuad} (~${formatApproxDistance(distM)})` : `~${formatApproxDistance(distM)}`));
                 return Object.assign({}, cam, {
                     _distMeters: distM,
-                    _distLabel: hasExactGps ? formatApproxDistance(distM) : (sameQuad ? `Cuadrante ${incQuad} (~${formatApproxDistance(distM)})` : `~${formatApproxDistance(distM)}`),
-                    _sameQuad: sameQuad
+                    _distLabel: distLabel,
+                    _sameQuad: sameQuad,
+                    _isExplicit: isExplicit,
+                    _textScore: textScore
                 });
             }).sort((a, b) => {
-                if (!hasExactGps && a._sameQuad !== b._sameQuad) return a._sameQuad ? -1 : 1;
+                if (a._isExplicit !== b._isExplicit) return a._isExplicit ? -1 : 1;
+                if (hasExactGps) return a._distMeters - b._distMeters;
+                if (a._textScore !== b._textScore) return b._textScore - a._textScore;
+                if (a._sameQuad !== b._sameQuad) return a._sameQuad ? -1 : 1;
                 return a._distMeters - b._distMeters;
             });
 
@@ -10036,6 +10062,11 @@
         function jumpToNearestCameraForIncident(folioId, camId) {
             switchCencoModule('cctv');
             if (camId) {
+                const cam = getCencoCamerasDB().find(c => c.id === camId);
+                const { openUrl } = cam ? parseCameraIpMeta(cam) : { openUrl: '' };
+                if (openUrl) {
+                    window.open(openUrl, '_blank', 'noopener');
+                }
                 setTimeout(() => {
                     const sel = document.getElementById('cctv-camara-select');
                     if (sel && Array.from(sel.options).some(o => o.value === camId)) {
@@ -10044,6 +10075,9 @@
                     if (typeof onCencoCctvCameraSelect === 'function') onCencoCctvCameraSelect(camId);
                     const camCard = document.getElementById('cctv-camara-select');
                     if (camCard) camCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (!openUrl) {
+                        showToast(`📹 ${camId} seleccionada — agrega su IP con ✏️ para abrir el video directo en el navegador`, 'bg-cyan-700');
+                    }
                 }, 120);
             }
         }
