@@ -3887,10 +3887,12 @@
             const ultimaMantNum = hasExplicitLast ? Number(rawUltima) : 0;
 
             // Hitos correlativos (Móviles/Camionetas: 10.000, 20.000, ..., 120.000; Motos: 3.000, 6.000, ..., 15.000)
+            // Si la unidad aún NO tiene una mantención previa registrada (ultimaMantNum <= 0),
+            // NO se marca vencida contra un hito pasado; se proyecta al siguiente hito (ej. 68.437 -> 70.000 km).
             const ultimoHito = Math.floor(kmActual / intervalo) * intervalo;
             let kmProxima;
             let kmCicloInicio;
-            if (ultimoHito > 0 && ultimaMantNum < (ultimoHito - avisoAntes)) {
+            if (hasExplicitLast && ultimaMantNum > 0 && ultimoHito > 0 && ultimaMantNum < (ultimoHito - avisoAntes)) {
                 kmProxima = ultimoHito;
                 kmCicloInicio = Math.max(0, ultimoHito - intervalo);
             } else {
