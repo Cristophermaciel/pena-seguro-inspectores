@@ -2612,6 +2612,9 @@
                                     <option value="253A">253A</option><option value="253B">253B</option><option value="SRA">SRA</option>
                                     <option value="SRB">SRB</option><option value="SRC">SRC</option><option value="SRA1">SRA1</option>
                                 </select>
+                                <button type="button" onclick="openCctvBridgeConfigModal()" class="cad-elevated border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 font-bold text-xs px-3 py-2 rounded-md" title="Configurar Servidor DSS / Visor En Vivo">
+                                    <i class="fa-solid fa-sliders mr-1"></i> DSS / Video Vivo
+                                </button>
                                 <button type="button" onclick="toggleNewCameraForm()" class="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-md">
                                     + Nueva Cámara
                                 </button>
@@ -3088,6 +3091,67 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Visor CCTV En Vivo (go2rtc WebRTC + Acceso DSS / IP) -->
+                    <div id="modal-cctv-live-player" class="hidden fixed inset-0 z-[130] bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+                        <div class="w-full max-w-4xl cad-surface border border-cyan-500/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+                            <div class="px-4 py-3 border-b cad-border flex flex-wrap items-center justify-between gap-2 bg-slate-950/80">
+                                <div class="min-w-0">
+                                    <h3 id="cctv-live-modal-title" class="text-sm font-black text-white flex items-center gap-2 truncate">
+                                        <i class="fa-solid fa-video text-cyan-400"></i> Visor CCTV En Vivo
+                                    </h3>
+                                    <p id="cctv-live-modal-sub" class="text-[11px] cad-muted truncate"></p>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button" id="cctv-live-btn-dss" onclick="openDssPortalFromLiveModal()" class="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black flex items-center gap-1">
+                                        <i class="fa-solid fa-desktop"></i> Abrir DSS Web
+                                    </button>
+                                    <button type="button" id="cctv-live-btn-ip" onclick="openSelectedCamIpFromLiveModal()" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black flex items-center gap-1">
+                                        <i class="fa-solid fa-globe"></i> Abrir IP
+                                    </button>
+                                    <button type="button" onclick="openCctvBridgeConfigModal()" class="px-2.5 py-1.5 rounded-lg cad-elevated border cad-border text-cyan-300 hover:text-white text-[11px] font-bold">
+                                        <i class="fa-solid fa-gear"></i>
+                                    </button>
+                                    <button type="button" onclick="closeCctvLiveModal()" class="w-8 h-8 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white font-black text-sm flex items-center justify-center">&times;</button>
+                                </div>
+                            </div>
+                            <div id="cctv-live-modal-body" class="flex-1 bg-black relative min-h-[360px] flex items-center justify-center"></div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Configuración Servidor DSS y Puente Video En Vivo (Solo Local en este PC) -->
+                    <div id="modal-cctv-bridge-config" class="hidden fixed inset-0 z-[135] bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-4">
+                        <div class="w-full max-w-lg cad-surface border border-cyan-500/45 rounded-2xl shadow-2xl overflow-hidden">
+                            <div class="px-5 py-3.5 border-b cad-border flex items-center justify-between bg-slate-950/70">
+                                <h3 class="text-sm font-black text-white flex items-center gap-2"><i class="fa-solid fa-server text-cyan-400"></i> Configurar DSS y Visor En Vivo (Local)</h3>
+                                <button type="button" onclick="closeCctvBridgeConfigModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                            </div>
+                            <form onsubmit="saveCctvBridgeConfig(event)" class="p-5 space-y-3.5 text-xs">
+                                <div class="rounded-lg bg-blue-950/50 border border-blue-500/35 p-3 text-[11px] text-blue-200">
+                                    <i class="fa-solid fa-shield-halved text-cyan-400 mr-1"></i>
+                                    Esta configuración se guarda <strong>únicamente en este PC de la Central</strong> (nunca se sube a internet ni expone contraseñas).
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold cad-text mb-1">Servidor Web DSS (URL / IP)</label>
+                                    <input type="text" id="cfg-cctv-dss-url" placeholder="Ej: https://70.33.206.114" class="cad-input w-full font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold cad-text mb-1">Servidor Puente Video En Vivo (go2rtc / WebRTC)</label>
+                                    <input type="text" id="cfg-cctv-go2rtc-url" placeholder="Ej: http://localhost:1984 (o túnel HTTPS)" class="cad-input w-full font-mono">
+                                    <p class="text-[10px] cad-muted mt-1">Si tienes <code>go2rtc</code> corriendo en el PC de CCTV, el visor abrirá el video en vivo directamente dentro de Peña Seguro 1410 al presionar <strong>Abrir CAM-XX</strong>.</p>
+                                </div>
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t cad-border">
+                                    <button type="button" onclick="downloadGo2rtcTemplate()" class="px-3 py-2 rounded-lg cad-elevated border border-cyan-500/40 text-cyan-300 hover:text-white font-bold text-[11px]">
+                                        <i class="fa-solid fa-file-arrow-down mr-1"></i> Descargar plantilla go2rtc.yaml
+                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" onclick="closeCctvBridgeConfigModal()" class="px-3 py-2 rounded-lg cad-elevated border cad-border cad-text font-bold">Cancelar</button>
+                                        <button type="submit" class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black">Guardar</button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
@@ -10059,25 +10123,143 @@
             checkPendingCallCenterDerivations();
         }
 
+        function getCctvBridgeConfig() {
+            try {
+                const raw = JSON.parse(localStorage.getItem('pena_seguro_cctv_bridge_cfg_v1') || '{}');
+                return {
+                    dssUrl: String(raw.dssUrl || 'https://70.33.206.114').trim(),
+                    go2rtcUrl: String(raw.go2rtcUrl || '').trim().replace(/\/+$/, '')
+                };
+            } catch (e) {
+                return { dssUrl: 'https://70.33.206.114', go2rtcUrl: '' };
+            }
+        }
+
+        function openCctvBridgeConfigModal() {
+            const cfg = getCctvBridgeConfig();
+            const dEl = document.getElementById('cfg-cctv-dss-url');
+            const gEl = document.getElementById('cfg-cctv-go2rtc-url');
+            if (dEl) dEl.value = cfg.dssUrl;
+            if (gEl) gEl.value = cfg.go2rtcUrl;
+            document.getElementById('modal-cctv-bridge-config')?.classList.remove('hidden');
+        }
+
+        function closeCctvBridgeConfigModal() {
+            document.getElementById('modal-cctv-bridge-config')?.classList.add('hidden');
+        }
+
+        function saveCctvBridgeConfig(e) {
+            e.preventDefault();
+            const dssUrl = (document.getElementById('cfg-cctv-dss-url')?.value || '').trim();
+            const go2rtcUrl = (document.getElementById('cfg-cctv-go2rtc-url')?.value || '').trim().replace(/\/+$/, '');
+            localStorage.setItem('pena_seguro_cctv_bridge_cfg_v1', JSON.stringify({ dssUrl, go2rtcUrl }));
+            closeCctvBridgeConfigModal();
+            showToast('✅ Configuración DSS / Visor En Vivo guardada en este equipo', 'bg-emerald-600');
+        }
+
+        function downloadGo2rtcTemplate() {
+            const cams = getCencoCamerasDB();
+            const lines = [
+                '# Plantilla go2rtc.yaml para Central CCTV Peña Seguro 1410 (Dahua / DSS)',
+                '# 1. Descarga go2rtc_win64.zip desde https://github.com/AlexxIT/go2rtc/releases',
+                '# 2. Pon este archivo junto a go2rtc.exe, completa USUARIO:CLAVE e IP de cada camara y ejecuta go2rtc.exe',
+                '# 3. En Peña Seguro 1410 -> CCTV -> DSS / Video Vivo coloca http://localhost:1984',
+                'api:',
+                '  listen: ":1984"',
+                '  origin: "*"',
+                'streams:'
+            ];
+            cams.forEach(c => {
+                const { ip } = parseCameraIpMeta(c);
+                const host = ip ? ip.replace(/^https?:\/\//i, '').split('/')[0] : 'IP_DE_ESTA_CAMARA';
+                lines.push(`  ${c.id}:`);
+                lines.push(`    - rtsp://USUARIO:CLAVE@${host}:554/cam/realmonitor?channel=1&subtype=1  # ${c.nombre}`);
+            });
+            const blob = new Blob([lines.join('\n')], { type: 'text/yaml;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'go2rtc.yaml';
+            a.click();
+            showToast('📥 Plantilla go2rtc.yaml descargada con todas tus cámaras', 'bg-cyan-700');
+        }
+
+        window._liveModalCamId = '';
+        function openCctvLiveModal(camId) {
+            const cam = getCencoCamerasDB().find(c => c.id === camId);
+            if (!cam) return;
+            window._liveModalCamId = camId;
+            const cfg = getCctvBridgeConfig();
+            const { ip, openUrl } = parseCameraIpMeta(cam);
+            const titleEl = document.getElementById('cctv-live-modal-title');
+            const subEl = document.getElementById('cctv-live-modal-sub');
+            const ipBtn = document.getElementById('cctv-live-btn-ip');
+            const bodyEl = document.getElementById('cctv-live-modal-body');
+            if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-video text-cyan-400"></i> ${escCcHtml(cam.id)} — ${escCcHtml(cam.nombre)}`;
+            if (subEl) subEl.innerText = `Cuadrante ${cam.cuadrante || '-'} • ${cam.sector || 'Peñaflor'} • ${ip ? 'IP: ' + ip : 'Acceso vía DSS'}`;
+            if (ipBtn) ipBtn.classList.toggle('hidden', !openUrl);
+
+            if (bodyEl) {
+                if (cfg.go2rtcUrl) {
+                    const streamUrl = `${cfg.go2rtcUrl}/stream.html?src=${encodeURIComponent(cam.id)}&mode=webrtc,mse`;
+                    bodyEl.innerHTML = `<iframe src="${escCcHtml(streamUrl)}" class="w-full h-[65vh] border-0 bg-black" allow="autoplay; fullscreen"></iframe>`;
+                } else {
+                    const dssHref = cfg.dssUrl || 'https://70.33.206.114';
+                    bodyEl.innerHTML = `
+                        <div class="p-6 text-center max-w-md space-y-4 text-xs">
+                            <div class="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/15 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-2xl">
+                                <i class="fa-solid fa-video"></i>
+                            </div>
+                            <div class="space-y-1">
+                                <h4 class="text-base font-black text-white">${escCcHtml(cam.id)} — ${escCcHtml(cam.nombre)}</h4>
+                                <p class="text-slate-300">Abre el video directamente en <strong>DSS Web</strong> o por su <strong>IP</strong>, o activa el puente local <code>go2rtc</code> para ver el video en vivo aquí mismo sin salir del CAD.</p>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-center gap-2">
+                                <a href="${escCcHtml(dssHref)}" target="_blank" rel="noopener" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black shadow flex items-center gap-1.5">
+                                    <i class="fa-solid fa-desktop"></i> Abrir DSS (${escCcHtml(dssHref.replace(/^https?:\/\//i, ''))})
+                                </a>
+                                ${openUrl ? `<a href="${escCcHtml(openUrl)}" target="_blank" rel="noopener" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow flex items-center gap-1.5"><i class="fa-solid fa-globe"></i> Abrir IP (${escCcHtml(ip)})</a>` : ''}
+                            </div>
+                            <div class="pt-2 border-t border-slate-800 flex items-center justify-center gap-2">
+                                <button type="button" onclick="navigator.clipboard?.writeText('${escCcHtml(cam.id)}'); showToast('📋 ${escCcHtml(cam.id)} copiada para buscar en DSS', 'bg-cyan-700')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold">
+                                    <i class="fa-regular fa-copy mr-1"></i> Copiar ${escCcHtml(cam.id)} para DSS
+                                </button>
+                                <button type="button" onclick="openCctvBridgeConfigModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold">
+                                    <i class="fa-solid fa-bolt mr-1"></i> Activar Video Vivo Embebido
+                                </button>
+                            </div>
+                        </div>`;
+                }
+            }
+            document.getElementById('modal-cctv-live-player')?.classList.remove('hidden');
+        }
+
+        function closeCctvLiveModal() {
+            const modal = document.getElementById('modal-cctv-live-player');
+            const bodyEl = document.getElementById('cctv-live-modal-body');
+            if (bodyEl) bodyEl.innerHTML = '';
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function openDssPortalFromLiveModal() {
+            const cfg = getCctvBridgeConfig();
+            const url = cfg.dssUrl || 'https://70.33.206.114';
+            window.open(url, '_blank', 'noopener');
+        }
+
+        function openSelectedCamIpFromLiveModal() {
+            if (window._liveModalCamId) openCameraIpInBrowser(window._liveModalCamId);
+        }
+
         function jumpToNearestCameraForIncident(folioId, camId) {
             switchCencoModule('cctv');
             if (camId) {
-                const cam = getCencoCamerasDB().find(c => c.id === camId);
-                const { openUrl } = cam ? parseCameraIpMeta(cam) : { openUrl: '' };
-                if (openUrl) {
-                    window.open(openUrl, '_blank', 'noopener');
-                }
                 setTimeout(() => {
                     const sel = document.getElementById('cctv-camara-select');
                     if (sel && Array.from(sel.options).some(o => o.value === camId)) {
                         sel.value = camId;
                     }
                     if (typeof onCencoCctvCameraSelect === 'function') onCencoCctvCameraSelect(camId);
-                    const camCard = document.getElementById('cctv-camara-select');
-                    if (camCard) camCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    if (!openUrl) {
-                        showToast(`📹 ${camId} seleccionada — agrega su IP con ✏️ para abrir el video directo en el navegador`, 'bg-cyan-700');
-                    }
+                    openCctvLiveModal(camId);
                 }, 120);
             }
         }
