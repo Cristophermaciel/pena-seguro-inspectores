@@ -1794,6 +1794,10 @@
                                     <span>CCTV</span>
                                     <span id="cad-badge-cctv" class="hidden px-1.5 py-0.2 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-black">0</span>
                                 </button>
+                                <button type="button" onclick="switchCencoModule('callcenter')" id="cad-nav-callcenter" class="cad-nav-link flex items-center gap-1.5">
+                                    <span>Call Center</span>
+                                    <span id="cad-badge-callcenter" class="hidden px-1.5 py-0.2 rounded-full bg-indigo-500 text-white text-[10px] font-black">0</span>
+                                </button>
                                 <button type="button" onclick="switchCencoModule('turnos')" id="cad-nav-turnos" class="cad-nav-link">Turnos</button>
                                 <button type="button" onclick="switchCencoModule('vehiculos')" id="cad-nav-vehiculos" class="cad-nav-link">Vehículos</button>
                                 <button type="button" onclick="switchCencoModule('incivilidades')" id="cad-nav-incivilidades" class="cad-nav-link">Incivilidades</button>
@@ -2728,6 +2732,187 @@
                     </div>
 
                     <!-- ================================================================ -->
+                    <!-- MÓDULO 3B: CALL CENTER — SOLICITUD DE SERVICIOS AGENDADOS (v75)  -->
+                    <!-- ================================================================ -->
+                    <div id="cad-mod-callcenter" class="cad-module hidden flex-1 p-5 space-y-4">
+                        <!-- Encabezado y Acciones Superiores -->
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-xl font-black cad-text flex items-center gap-2">
+                                    <i class="fa-solid fa-headset text-indigo-400"></i> Solicitud de Servicios Agendados
+                                </h2>
+                                <p class="text-xs cad-muted">Gestión completa de servicios especiales (Call Center 1410). Sincronizado en Google Sheets y conectado a Central de Despacho.</p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" id="cc-btn-toggle-history" onclick="toggleCallCenterHistoryMode()" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow transition">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> <span>Ver Historial</span>
+                                </button>
+                                <button type="button" onclick="backupCallCenterServices()" class="px-3.5 py-2 rounded-lg cad-elevated border cad-border hover:border-slate-400 cad-text text-xs font-bold flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-cloud-arrow-down text-sky-400"></i> Respaldo
+                                </button>
+                                <button type="button" onclick="exportCallCenterPDF()" class="px-3.5 py-2 rounded-lg cad-elevated border cad-border hover:border-red-400 cad-text text-xs font-bold flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-file-pdf text-red-400"></i> Exportar PDF
+                                </button>
+                                <button type="button" onclick="exportCallCenterExcel()" class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow transition">
+                                    <i class="fa-solid fa-file-excel"></i> Exportar Excel
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Layout Split: Izquierda Formulario + Derecha Tabla de Servicios -->
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                            <!-- Formulario + Nueva Solicitud -->
+                            <div class="lg:col-span-4 cad-surface border cad-border rounded-xl p-4 space-y-3">
+                                <div class="flex items-center justify-between border-b cad-border pb-2">
+                                    <h3 id="cc-form-title" class="text-sm font-black cad-text flex items-center gap-1.5">
+                                        <i class="fa-solid fa-plus text-blue-400"></i> Nueva Solicitud
+                                    </h3>
+                                    <button type="button" id="cc-btn-cancel-edit" onclick="resetCallCenterForm()" class="hidden text-[11px] font-bold text-amber-400 hover:underline">
+                                        Cancelar edición
+                                    </button>
+                                </div>
+
+                                <form id="form-callcenter-service" onsubmit="saveCallCenterService(event)" class="space-y-3 text-xs">
+                                    <input type="hidden" id="cc-edit-id" value="">
+
+                                    <div class="grid grid-cols-2 gap-2.5">
+                                        <div>
+                                            <label class="block text-[11px] font-bold cad-muted mb-1">Hora <span class="text-red-400">*</span></label>
+                                            <input type="time" id="cc-hora" required class="w-full px-3 py-2 rounded-lg cad-elevated border cad-border cad-text outline-none focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold cad-muted mb-1">Teléfono</label>
+                                            <input type="text" id="cc-telefono" placeholder="+56 9..." class="w-full px-3 py-2 rounded-lg cad-elevated border cad-border cad-text outline-none focus:border-blue-500">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2.5">
+                                        <div>
+                                            <label class="block text-[11px] font-bold cad-muted mb-1">Fecha Programada <span class="text-red-400">*</span></label>
+                                            <input type="date" id="cc-fecha" required class="w-full px-3 py-2 rounded-lg cad-elevated border cad-border cad-text outline-none focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold cad-muted mb-1">Cuadrante</label>
+                                            <select id="cc-cuadrante" class="w-full px-3 py-2 rounded-lg cad-elevated border cad-border cad-text outline-none focus:border-blue-500">
+                                                <option value="252A">252A</option>
+                                                <option value="252B">252B</option>
+                                                <option value="253A">253A</option>
+                                                <option value="253B">253B</option>
+                                                <option value="254A">254A</option>
+                                                <option value="254B">254B</option>
+                                                <option value="255A">255A</option>
+                                                <option value="255B">255B</option>
+                                                <option value="VOLANTE / TODA LA COMUNA">Volante / Comuna</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold cad-muted mb-1">Tipo de Requerimiento <span class="text-red-400">*</span></label>
+                                        <select id="cc-tipo" required class="w-full px-3 py-2.5 rounded-lg cad-elevated border cad-border cad-text font-semibold outline-none focus:border-blue-500">
+                                            <option value="Patrullaje">Patrullaje</option>
+                                            <option value="Vigilancia">Vigilancia</option>
+                                            <option value="Escolta">Escolta</option>
+                                            <option value="Punto Fijo">Punto Fijo</option>
+                                            <option value="Transporte">Transporte</option>
+                                            <option value="Apoyo a Actividades">Apoyo a Actividades</option>
+                                            <option value="Corte de Tránsito">Corte de Tránsito</option>
+                                            <option value="Apoyo Interinstitucional">Apoyo Interinstitucional</option>
+                                            <option value="Apoyo a Policías">Apoyo a Policías</option>
+                                            <option value="Requerimiento Junta de Vecinos">Requerimiento Junta de Vecinos</option>
+                                            <option value="Apoyo a Otras Instituciones">Apoyo a Otras Instituciones</option>
+                                            <option value="Fiscalización">Fiscalización</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold cad-muted mb-1">Dirección <span class="text-red-400">*</span></label>
+                                        <input type="text" id="cc-direccion" required placeholder="Ej. Parque Trapiche / Av. Vicuña Mackenna 123" class="w-full px-3 py-2 rounded-lg cad-elevated border cad-border cad-text outline-none focus:border-blue-500">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold cad-muted mb-1">Funcionario Solicitante <span class="text-red-400">*</span></label>
+                                        <input type="text" id="cc-funcionario" required oninput="updateCallCenterHistoryAnalysis()" placeholder="Nombre del funcionario o dirigente" class="w-full px-3 py-2 rounded-lg cad-elevated border cad-border cad-text outline-none focus:border-blue-500">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold cad-muted mb-1">Descripción</label>
+                                        <textarea id="cc-descripcion" rows="3" placeholder="Detalles extra, contacto en terreno, horarios o instrucciones especiales..." class="w-full px-3 py-2 rounded-lg cad-elevated border cad-border cad-text outline-none focus:border-blue-500"></textarea>
+                                    </div>
+
+                                    <!-- Análisis de Historial en vivo -->
+                                    <div id="cc-history-analysis" class="rounded-lg bg-slate-800/75 border border-slate-600/60 p-3 flex items-start gap-2.5 text-[11px]">
+                                        <i class="fa-solid fa-triangle-exclamation text-slate-300 mt-0.5"></i>
+                                        <div>
+                                            <div class="font-bold text-slate-200">Análisis de Historial</div>
+                                            <div class="text-slate-400">Ingrese funcionario para evaluar el historial.</div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" id="cc-btn-submit" class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-calendar-plus"></i> <span>Agendar Servicio</span>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Lista / Tabla de Servicios Agendados -->
+                            <div class="lg:col-span-8 cad-surface border cad-border rounded-xl overflow-hidden flex flex-col">
+                                <div class="p-3.5 border-b cad-border flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <span id="cc-list-heading" class="text-xs font-black uppercase tracking-wider cad-text">Servicios Agendados Activos</span>
+                                        <span id="cc-list-count" class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/35 text-[10px] font-black">0</span>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <select id="cc-filter-tipo" onchange="renderCallCenterModule()" class="px-2.5 py-1.5 rounded-lg cad-elevated border cad-border cad-text text-[11px] font-bold">
+                                            <option value="ALL">Todos los tipos</option>
+                                            <option value="Patrullaje">Patrullaje</option>
+                                            <option value="Vigilancia">Vigilancia</option>
+                                            <option value="Escolta">Escolta</option>
+                                            <option value="Punto Fijo">Punto Fijo</option>
+                                            <option value="Transporte">Transporte</option>
+                                            <option value="Apoyo a Actividades">Apoyo a Actividades</option>
+                                            <option value="Corte de Tránsito">Corte de Tránsito</option>
+                                            <option value="Apoyo Interinstitucional">Apoyo Interinstitucional</option>
+                                            <option value="Apoyo a Policías">Apoyo a Policías</option>
+                                            <option value="Requerimiento Junta de Vecinos">Requerimiento Junta de Vecinos</option>
+                                            <option value="Apoyo a Otras Instituciones">Apoyo a Otras Instituciones</option>
+                                            <option value="Fiscalización">Fiscalización</option>
+                                        </select>
+                                        <input type="text" id="cc-search" oninput="renderCallCenterModule()" placeholder="Buscar funcionario o dirección..." class="px-2.5 py-1.5 rounded-lg cad-elevated border cad-border cad-text text-[11px] w-48 outline-none focus:border-blue-500">
+                                    </div>
+                                </div>
+
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse text-xs">
+                                        <thead>
+                                            <tr class="border-b cad-border text-[10px] uppercase tracking-wider cad-muted bg-slate-900/40">
+                                                <th class="py-2.5 px-3">Funcionario</th>
+                                                <th class="py-2.5 px-3">Requerimiento</th>
+                                                <th class="py-2.5 px-3">Hora / Fecha</th>
+                                                <th class="py-2.5 px-3">Dirección</th>
+                                                <th class="py-2.5 px-3">Estado</th>
+                                                <th class="py-2.5 px-3 text-right">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cc-services-tbody" class="divide-y divide-slate-800/70"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Detalle de Servicio Agendado -->
+                    <div id="modal-callcenter-detail" class="hidden fixed inset-0 z-[120] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+                        <div class="w-full max-w-lg cad-surface border cad-border rounded-2xl shadow-2xl overflow-hidden">
+                            <div class="px-5 py-3.5 border-b cad-border flex items-center justify-between bg-indigo-950/50">
+                                <h3 class="text-sm font-black text-white flex items-center gap-2"><i class="fa-solid fa-calendar-check text-indigo-400"></i> Detalle de Servicio Agendado</h3>
+                                <button type="button" onclick="closeCallCenterDetailModal()" class="text-slate-400 hover:text-white text-lg px-1">&times;</button>
+                            </div>
+                            <div id="modal-callcenter-detail-body" class="p-5 space-y-3 text-xs"></div>
+                        </div>
+                    </div>
+
+                    <!-- ================================================================ -->
                     <!-- MÓDULO 4: TURNOS (TABLA GOVERNA + ACTAS PDF)                     -->
                     <!-- ================================================================ -->
                     <div id="cad-mod-turnos" class="cad-module hidden flex-1 p-5 space-y-4">
@@ -3471,6 +3656,7 @@
             CENCO_INCIDENTS: 'pena_seguro_cenco_incidents_v1',
             CENCO_SHIFTS: 'pena_seguro_cenco_shifts_v1',
             CENCO_CCTV_ALERTS: 'pena_seguro_cenco_cctv_alerts_v1',
+            CALLCENTER_SERVICES: 'pena_seguro_callcenter_services_v1',
             CENCO_CAMERAS: 'pena_seguro_cenco_cameras_v1',
             INTEL_MECHEROS: 'pena_seguro_intel_mecheros_v1',
             INTEL_ROBADOS: 'pena_seguro_intel_robados_v1',
@@ -7282,6 +7468,9 @@
             if (Array.isArray(data.cencoCctvAlerts)) {
                 mergeCencoCctvAlertsFromCloud(data.cencoCctvAlerts);
             }
+            if (Array.isArray(data.scheduledServices)) {
+                mergeCallCenterServicesFromCloud(data.scheduledServices);
+            }
             if (Array.isArray(data.cencoCameras) && data.cencoCameras.length > 0) {
                 saveCencoCamerasDB(data.cencoCameras);
             }
@@ -8831,6 +9020,422 @@
             saveCencoCctvAlertsDB(Array.from(map.values()));
         }
 
+        // ====================================================================
+        // CALL CENTER 1410: SOLICITUD DE SERVICIOS AGENDADOS (v75)
+        // ====================================================================
+        window._ccHistoryMode = false;
+
+        function getCallCenterServicesDB() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.CALLCENTER_SERVICES)) || []; } catch (e) { return []; }
+        }
+
+        function saveCallCenterServicesDB(list) {
+            localStorage.setItem(STORAGE_KEYS.CALLCENTER_SERVICES, JSON.stringify((list || []).slice(0, 300)));
+        }
+
+        function mergeCallCenterServicesFromCloud(cloudList) {
+            const nowMs = Date.now();
+            const local = getCallCenterServicesDB();
+            const map = new Map();
+            (cloudList || []).forEach(item => { if (item && item.id) map.set(item.id, item); });
+            local.forEach(item => {
+                if (!item || !item.id || map.has(item.id)) return;
+                const isInFlight = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
+                if (isInFlight) map.set(item.id, item);
+            });
+            saveCallCenterServicesDB(Array.from(map.values()));
+        }
+
+        function escCcHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function toggleCallCenterHistoryMode() {
+            window._ccHistoryMode = !window._ccHistoryMode;
+            const btn = document.getElementById('cc-btn-toggle-history');
+            const heading = document.getElementById('cc-list-heading');
+            if (btn) {
+                btn.innerHTML = window._ccHistoryMode
+                    ? '<i class="fa-solid fa-calendar-days"></i> <span>Ver Activos</span>'
+                    : '<i class="fa-solid fa-clock-rotate-left"></i> <span>Ver Historial</span>';
+                btn.className = window._ccHistoryMode
+                    ? 'px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow transition'
+                    : 'px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow transition';
+            }
+            if (heading) {
+                heading.innerText = window._ccHistoryMode ? 'Historial Completo de Servicios' : 'Servicios Agendados Activos';
+            }
+            renderCallCenterModule();
+        }
+
+        function updateCallCenterHistoryAnalysis() {
+            const box = document.getElementById('cc-history-analysis');
+            const nameRaw = (document.getElementById('cc-funcionario')?.value || '').trim();
+            if (!box) return;
+            if (nameRaw.length < 3) {
+                box.className = 'rounded-lg bg-slate-800/75 border border-slate-600/60 p-3 flex items-start gap-2.5 text-[11px]';
+                box.innerHTML = `
+                    <i class="fa-solid fa-triangle-exclamation text-slate-300 mt-0.5"></i>
+                    <div>
+                        <div class="font-bold text-slate-200">Análisis de Historial</div>
+                        <div class="text-slate-400">Ingrese funcionario para evaluar el historial.</div>
+                    </div>`;
+                return;
+            }
+            const needle = nameRaw.toLowerCase();
+            const matches = getCallCenterServicesDB().filter(s => String(s.funcionario || '').toLowerCase().includes(needle));
+            if (matches.length === 0) {
+                box.className = 'rounded-lg bg-blue-950/60 border border-blue-500/40 p-3 flex items-start gap-2.5 text-[11px]';
+                box.innerHTML = `
+                    <i class="fa-solid fa-circle-info text-blue-400 mt-0.5"></i>
+                    <div>
+                        <div class="font-bold text-blue-200">Análisis de Historial — Nuevo solicitante</div>
+                        <div class="text-blue-300/80">Sin solicitudes previas registradas para "${escCcHtml(nameRaw)}".</div>
+                    </div>`;
+            } else {
+                const last = matches[0];
+                box.className = 'rounded-lg bg-amber-950/55 border border-amber-500/45 p-3 flex items-start gap-2.5 text-[11px]';
+                box.innerHTML = `
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400 mt-0.5"></i>
+                    <div>
+                        <div class="font-bold text-amber-200">Historial detectado (${matches.length} ${matches.length === 1 ? 'servicio previo' : 'servicios previos'})</div>
+                        <div class="text-amber-100/85">Último: <strong>${escCcHtml(last.tipoRequerimiento)}</strong> el ${escCcHtml(last.fechaProgramada || '-')} ${escCcHtml(last.horaProgramada || '')} (${escCcHtml(last.direccion || '-')})</div>
+                    </div>`;
+            }
+        }
+
+        function resetCallCenterForm() {
+            const form = document.getElementById('form-callcenter-service');
+            if (form) form.reset();
+            const editId = document.getElementById('cc-edit-id');
+            if (editId) editId.value = '';
+            const title = document.getElementById('cc-form-title');
+            if (title) title.innerHTML = '<i class="fa-solid fa-plus text-blue-400"></i> Nueva Solicitud';
+            const btn = document.getElementById('cc-btn-submit');
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> <span>Agendar Servicio</span>';
+            document.getElementById('cc-btn-cancel-edit')?.classList.add('hidden');
+            const fEl = document.getElementById('cc-fecha');
+            if (fEl && !fEl.value) fEl.value = new Date().toISOString().slice(0, 10);
+            updateCallCenterHistoryAnalysis();
+        }
+
+        async function saveCallCenterService(e) {
+            e.preventDefault();
+            const editId = (document.getElementById('cc-edit-id')?.value || '').trim();
+            const horaProgramada = (document.getElementById('cc-hora')?.value || '').trim();
+            const telefono = (document.getElementById('cc-telefono')?.value || '').trim();
+            const fechaProgramada = (document.getElementById('cc-fecha')?.value || '').trim();
+            const cuadrante = (document.getElementById('cc-cuadrante')?.value || '252A').trim();
+            const tipoRequerimiento = (document.getElementById('cc-tipo')?.value || 'Patrullaje').trim();
+            const direccion = (document.getElementById('cc-direccion')?.value || '').trim();
+            const funcionario = (document.getElementById('cc-funcionario')?.value || '').trim();
+            const descripcion = (document.getElementById('cc-descripcion')?.value || '').trim();
+
+            if (!fechaProgramada || !horaProgramada || !direccion || !funcionario) {
+                showToast('Completa Fecha, Hora, Dirección y Funcionario Solicitante', 'bg-red-600');
+                return;
+            }
+
+            const list = getCallCenterServicesDB();
+            const existing = editId ? list.find(x => x.id === editId) : null;
+            const item = {
+                id: editId || `SRV-${Date.now()}`,
+                fechaCreacion: existing?.fechaCreacion || new Date().toLocaleString('es-CL'),
+                fechaProgramada,
+                horaProgramada,
+                tipoRequerimiento,
+                direccion,
+                cuadrante,
+                funcionario,
+                telefono,
+                descripcion,
+                estado: existing?.estado || 'AGENDADO',
+                agendadoPor: existing?.agendadoPor || AppState.userName || AppState.userRut || 'Call Center 1410',
+                folioDespacho: existing?.folioDespacho || '',
+                _localCreatedMs: Date.now()
+            };
+
+            if (existing) {
+                const idx = list.findIndex(x => x.id === editId);
+                if (idx >= 0) list[idx] = item;
+            } else {
+                list.unshift(item);
+            }
+            saveCallCenterServicesDB(list);
+            resetCallCenterForm();
+            renderAllCencoPanels();
+            renderCallCenterModule();
+            showToast(existing ? '✅ Servicio agendado actualizado' : '✅ Servicio agendado correctamente', 'bg-emerald-600');
+
+            try {
+                await sendPayloadToGoogleSheets(Object.assign({ action: 'CALLCENTER_SAVE_SERVICE' }, item));
+            } catch (err) {
+                console.warn('CALLCENTER_SAVE_SERVICE sync error:', err);
+            }
+        }
+
+        function editCallCenterService(id) {
+            const item = getCallCenterServicesDB().find(x => x.id === id);
+            if (!item) return;
+            document.getElementById('cc-edit-id').value = item.id;
+            document.getElementById('cc-hora').value = item.horaProgramada || '';
+            document.getElementById('cc-telefono').value = item.telefono || '';
+            document.getElementById('cc-fecha').value = item.fechaProgramada || '';
+            document.getElementById('cc-cuadrante').value = item.cuadrante || '252A';
+            document.getElementById('cc-tipo').value = item.tipoRequerimiento || 'Patrullaje';
+            document.getElementById('cc-direccion').value = item.direccion || '';
+            document.getElementById('cc-funcionario').value = item.funcionario || '';
+            document.getElementById('cc-descripcion').value = item.descripcion || '';
+            document.getElementById('cc-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-400"></i> Editando ${escCcHtml(item.id)}`;
+            document.getElementById('cc-btn-submit').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Guardar Cambios</span>';
+            document.getElementById('cc-btn-cancel-edit')?.classList.remove('hidden');
+            updateCallCenterHistoryAnalysis();
+        }
+
+        async function deleteCallCenterService(id) {
+            const item = getCallCenterServicesDB().find(x => x.id === id);
+            if (!item) return;
+            if (!confirm(`¿Eliminar el servicio agendado de "${item.funcionario}" (${item.tipoRequerimiento} — ${item.fechaProgramada} ${item.horaProgramada})?`)) return;
+            const list = getCallCenterServicesDB().filter(x => x.id !== id);
+            saveCallCenterServicesDB(list);
+            renderAllCencoPanels();
+            renderCallCenterModule();
+            showToast('🗑️ Servicio eliminado', 'bg-slate-700');
+            try {
+                await sendPayloadToGoogleSheets({ action: 'CALLCENTER_DELETE_SERVICE', id });
+            } catch (err) {
+                console.warn('CALLCENTER_DELETE_SERVICE sync error:', err);
+            }
+        }
+
+        function viewCallCenterServiceDetail(id) {
+            const item = getCallCenterServicesDB().find(x => x.id === id);
+            if (!item) return;
+            const modal = document.getElementById('modal-callcenter-detail');
+            const body = document.getElementById('modal-callcenter-detail-body');
+            if (!modal || !body) return;
+            const isDispatched = String(item.estado || '').toUpperCase() === 'DESPACHADO';
+            body.innerHTML = `
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">ID Solicitud</span><strong class="font-mono text-indigo-300">${escCcHtml(item.id)}</strong></div>
+                    <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">Estado</span><strong class="${isDispatched ? 'text-emerald-400' : 'text-amber-300'}">${escCcHtml(item.estado || 'AGENDADO')}</strong></div>
+                    <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">Fecha y Hora</span><strong class="cad-text">${escCcHtml(item.fechaProgramada)} • ${escCcHtml(item.horaProgramada)} hrs</strong></div>
+                    <div class="rounded-lg cad-elevated border cad-border p-2.5"><span class="text-[10px] cad-muted block uppercase">Tipo Requerimiento</span><strong class="text-blue-300">${escCcHtml(item.tipoRequerimiento)}</strong></div>
+                </div>
+                <div class="rounded-lg cad-elevated border cad-border p-3 space-y-1">
+                    <div><span class="cad-muted">Funcionario Solicitante:</span> <strong class="cad-text">${escCcHtml(item.funcionario)}</strong></div>
+                    <div><span class="cad-muted">Teléfono Contacto:</span> <strong class="cad-text">${escCcHtml(item.telefono || 'No registrado')}</strong></div>
+                    <div><span class="cad-muted">Dirección / Sector:</span> <strong class="cad-text">${escCcHtml(item.direccion)}</strong> ${item.cuadrante ? `<span class="text-cyan-300 font-bold">(${escCcHtml(item.cuadrante)})</span>` : ''}</div>
+                    <div><span class="cad-muted">Agendado por:</span> <span class="cad-text">${escCcHtml(item.agendadoPor || '-')}</span> <span class="cad-muted">(${escCcHtml(item.fechaCreacion || '')})</span></div>
+                    ${item.folioDespacho ? `<div><span class="cad-muted">Folio Despacho Central:</span> <strong class="font-mono text-emerald-400">${escCcHtml(item.folioDespacho)}</strong></div>` : ''}
+                </div>
+                <div class="rounded-lg cad-elevated border cad-border p-3">
+                    <span class="text-[10px] cad-muted block uppercase mb-1">Descripción / Instrucciones</span>
+                    <div class="cad-text whitespace-pre-wrap">${escCcHtml(item.descripcion || 'Sin observaciones adicionales.')}</div>
+                </div>
+                <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t cad-border">
+                    ${!isDispatched ? `<button type="button" onclick="closeCallCenterDetailModal(); dispatchCallCenterServiceToCentral('${escCcHtml(item.id)}')" class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1.5"><i class="fa-solid fa-tower-broadcast"></i> Enviar a Central (Despachador)</button>` : ''}
+                    <button type="button" onclick="closeCallCenterDetailModal()" class="px-3.5 py-2 rounded-lg cad-elevated border cad-border cad-text font-bold text-xs">Cerrar</button>
+                </div>`;
+            modal.classList.remove('hidden');
+        }
+
+        function closeCallCenterDetailModal() {
+            document.getElementById('modal-callcenter-detail')?.classList.add('hidden');
+        }
+
+        async function dispatchCallCenterServiceToCentral(id) {
+            const list = getCallCenterServicesDB();
+            const idx = list.findIndex(x => x.id === id);
+            if (idx < 0) return;
+            const item = list[idx];
+            if (!confirm(`¿Enviar este servicio agendado a la cola de Central (Despachador)?\n\n• ${item.tipoRequerimiento}\n• ${item.direccion} (${item.cuadrante || '252A'})\n• Solicitante: ${item.funcionario}`)) return;
+
+            const now = new Date();
+            const folioId = `CAD-${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}-${String(Date.now()).slice(-4)}`;
+            const fechaStr = now.toLocaleString('es-CL');
+            const detailText = `[SERVICIO AGENDADO CALL CENTER — ${item.fechaProgramada} ${item.horaProgramada} hrs]\nSolicitante: ${item.funcionario}${item.telefono ? ` (${item.telefono})` : ''}\n${item.descripcion || ''}`.trim();
+
+            const newIncident = {
+                folioId,
+                fechaIngreso: fechaStr,
+                origen: 'CALLCENTER AGENDADO',
+                estado: 'EN_COLA',
+                prioridad: 'ALTA',
+                categoria: item.tipoRequerimiento || 'Patrullaje',
+                subcategoria: `Servicio Agendado (${item.horaProgramada || ''})`,
+                cuadrante: item.cuadrante || '252A',
+                direccion: item.direccion || '',
+                referenciaCamara: `Servicio Agendado ${item.id}`,
+                denunciante: item.funcionario || '',
+                telefono: item.telefono || '',
+                detalle: detailText,
+                ingresadoPor: AppState.userName || AppState.userRut || 'Call Center 1410',
+                despachador: '',
+                movilesAsignados: '',
+                turnoCencoId: getActiveCencoShift()?.turnoCencoId || '',
+                _localCreatedMs: Date.now(),
+                historial: [{
+                    fecha: fechaStr,
+                    rol: AppState.userRole || 'CENCO_TELEFONISTA',
+                    usuario: AppState.userName || AppState.userRut || 'Call Center',
+                    accion: `Servicio agendado ${item.id} derivado a Central (Despachador)`
+                }]
+            };
+
+            const incList = getCencoIncidentsDB();
+            incList.unshift(newIncident);
+            saveCencoIncidentsDB(incList);
+
+            list[idx].estado = 'DESPACHADO';
+            list[idx].folioDespacho = folioId;
+            list[idx]._localCreatedMs = Date.now();
+            saveCallCenterServicesDB(list);
+
+            renderAllCencoPanels();
+            renderCallCenterModule();
+            showToast(`📡 Servicio derivado a Central (Despachador) — Folio ${folioId}`, 'bg-emerald-600');
+
+            try {
+                await sendPayloadToGoogleSheets(Object.assign({ action: 'CENCO_CREAR_INCIDENTE' }, newIncident));
+                await sendPayloadToGoogleSheets(Object.assign({ action: 'CALLCENTER_SAVE_SERVICE' }, list[idx]));
+            } catch (err) {
+                console.warn('Error syncing dispatched service:', err);
+            }
+        }
+
+        function renderCallCenterModule() {
+            const tbody = document.getElementById('cc-services-tbody');
+            if (!tbody) return;
+            const fEl = document.getElementById('cc-fecha');
+            if (fEl && !fEl.value) fEl.value = new Date().toISOString().slice(0, 10);
+
+            const fTipo = document.getElementById('cc-filter-tipo')?.value || 'ALL';
+            const qTxt = (document.getElementById('cc-search')?.value || '').trim().toLowerCase();
+
+            const all = getCallCenterServicesDB();
+            const filtered = all.filter(s => {
+                const st = String(s.estado || 'AGENDADO').toUpperCase();
+                if (!window._ccHistoryMode && st !== 'AGENDADO') return false;
+                if (fTipo !== 'ALL' && String(s.tipoRequerimiento || '') !== fTipo) return false;
+                if (qTxt && !`${s.funcionario} ${s.direccion} ${s.tipoRequerimiento} ${s.descripcion} ${s.telefono}`.toLowerCase().includes(qTxt)) return false;
+                return true;
+            }).sort((a, b) => `${a.fechaProgramada || ''} ${a.horaProgramada || ''}`.localeCompare(`${b.fechaProgramada || ''} ${b.horaProgramada || ''}`));
+
+            const countEl = document.getElementById('cc-list-count');
+            if (countEl) countEl.innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center cad-muted text-xs">No hay servicios ${window._ccHistoryMode ? 'en el historial' : 'agendados pendientes'}. Registra una nueva solicitud a la izquierda.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(s => {
+                const st = String(s.estado || 'AGENDADO').toUpperCase();
+                const isDisp = st === 'DESPACHADO';
+                const stBadge = isDisp
+                    ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-[10px] font-black">DESPACHADO</span>'
+                    : '<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35 text-[10px] font-black">AGENDADO</span>';
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-3">
+                            <div class="font-bold cad-text">${escCcHtml(s.funcionario || '-')}</div>
+                            ${s.telefono ? `<div class="text-[10px] cad-muted">${escCcHtml(s.telefono)}</div>` : ''}
+                        </td>
+                        <td class="py-3 px-3">
+                            <span class="inline-block px-2.5 py-0.5 rounded-full bg-blue-600/25 text-blue-300 border border-blue-500/35 text-[11px] font-bold">${escCcHtml(s.tipoRequerimiento || 'Patrullaje')}</span>
+                        </td>
+                        <td class="py-3 px-3 whitespace-nowrap">
+                            <div class="font-black cad-text font-mono">${escCcHtml(s.horaProgramada || '--:--')}</div>
+                            <div class="text-[10px] cad-muted font-mono">${escCcHtml(s.fechaProgramada || '')}</div>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="cad-text font-medium">${escCcHtml(s.direccion || '-')}</div>
+                            ${s.cuadrante ? `<div class="text-[10px] text-cyan-400 font-bold">${escCcHtml(s.cuadrante)}</div>` : ''}
+                        </td>
+                        <td class="py-3 px-3">${stBadge}</td>
+                        <td class="py-3 px-3 text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1">
+                                <button type="button" onclick="viewCallCenterServiceDetail('${escCcHtml(s.id)}')" title="Ver detalle" class="w-7 h-7 rounded-md bg-indigo-500/20 hover:bg-indigo-600 text-indigo-300 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-eye text-[11px]"></i></button>
+                                ${!isDisp ? `<button type="button" onclick="dispatchCallCenterServiceToCentral('${escCcHtml(s.id)}')" title="Despachar a Central" class="w-7 h-7 rounded-md bg-emerald-500/20 hover:bg-emerald-600 text-emerald-300 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-tower-broadcast text-[11px]"></i></button>` : ''}
+                                <button type="button" onclick="editCallCenterService('${escCcHtml(s.id)}')" title="Editar" class="w-7 h-7 rounded-md bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-pen-to-square text-[11px]"></i></button>
+                                <button type="button" onclick="deleteCallCenterService('${escCcHtml(s.id)}')" title="Eliminar" class="w-7 h-7 rounded-md bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white transition inline-flex items-center justify-center"><i class="fa-solid fa-trash text-[11px]"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function backupCallCenterServices() {
+            const list = getCallCenterServicesDB();
+            const blob = new Blob([JSON.stringify({ fechaRespaldo: new Date().toISOString(), total: list.length, servicios: list }, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Respaldo_CallCenter_1410_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            syncBootstrapFromCloud(true);
+            showToast('💾 Respaldo descargado y sincronizado con Google Sheets', 'bg-blue-600');
+        }
+
+        function exportCallCenterExcel() {
+            const list = getCallCenterServicesDB();
+            const headers = ['ID', 'Fecha Programada', 'Hora', 'Tipo Requerimiento', 'Funcionario Solicitante', 'Teléfono', 'Dirección', 'Cuadrante', 'Descripción', 'Estado', 'Agendado Por', 'Folio Despacho'];
+            const escCsv = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
+            const rows = [headers.map(escCsv).join(';'), ...list.map(s => [
+                s.id, s.fechaProgramada, s.horaProgramada, s.tipoRequerimiento,
+                s.funcionario, s.telefono, s.direccion, s.cuadrante,
+                s.descripcion, s.estado, s.agendadoPor, s.folioDespacho
+            ].map(escCsv).join(';'))];
+            const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Servicios_Agendados_CallCenter_1410_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            showToast('📊 Archivo Excel (CSV) exportado correctamente', 'bg-emerald-600');
+        }
+
+        function exportCallCenterPDF() {
+            if (!window.jspdf) { showToast('Librería PDF cargando, intenta nuevamente', 'bg-amber-600'); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const list = getCallCenterServicesDB();
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 297, 24, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PEÑA SEGURO 1410 — CALL CENTER: SOLICITUD DE SERVICIOS AGENDADOS', 14, 11);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generado: ${new Date().toLocaleString('es-CL')} | Total registros: ${list.length}`, 14, 18);
+
+            let y = 32;
+            doc.setTextColor(20, 30, 50);
+            doc.setFontSize(8.5);
+            doc.setFont('helvetica', 'bold');
+            doc.text('FECHA / HORA', 14, y);
+            doc.text('FUNCIONARIO', 50, y);
+            doc.text('REQUERIMIENTO', 105, y);
+            doc.text('DIRECCIÓN / CUADRANTE', 158, y);
+            doc.text('ESTADO', 248, y);
+            y += 3;
+            doc.line(14, y, 283, y);
+            y += 5;
+
+            doc.setFont('helvetica', 'normal');
+            list.forEach(s => {
+                if (y > 192) { doc.addPage(); y = 20; }
+                doc.text(`${s.fechaProgramada || ''} ${s.horaProgramada || ''}`, 14, y);
+                doc.text(String(s.funcionario || '-').slice(0, 28), 50, y);
+                doc.text(String(s.tipoRequerimiento || '-').slice(0, 26), 105, y);
+                doc.text(`${String(s.direccion || '-').slice(0, 42)} (${s.cuadrante || '-'})`, 158, y);
+                doc.text(String(s.estado || 'AGENDADO'), 248, y);
+                y += 6.5;
+            });
+            doc.save(`Servicios_Agendados_1410_${new Date().toISOString().slice(0, 10)}.pdf`);
+            showToast('📄 PDF de Servicios Agendados descargado', 'bg-blue-600');
+        }
+
         // --- Espejo local inmediato de Procedimientos de Inspectores -> Bitácora CENCO ---
         function mirrorInspectorProcedureToLocalCenco(payload, cloudRes) {
             try {
@@ -8876,19 +9481,22 @@
             } catch (e) {}
         }
 
-        // --- Control Estricto de Privilegios por Rol CENCO (v46 + SOSAFE v49) ---
+        // --- Control Estricto de Privilegios por Rol CENCO (v46 + SOSAFE v49 + CallCenter v75) ---
         function getAllowedCencoModulesForRole(role) {
             const r = String(role || AppState.userRole || '').trim().toUpperCase();
             if (r === 'ADMIN' || r === 'CENCO_SUPERVISOR') {
-                return ['central', 'procedimientos', 'cctv', 'turnos', 'vehiculos', 'incivilidades', 'inteligencia', 'seguridad', 'sosafe', 'reportes'];
+                return ['central', 'procedimientos', 'cctv', 'callcenter', 'turnos', 'vehiculos', 'incivilidades', 'inteligencia', 'seguridad', 'sosafe', 'reportes'];
             }
             if (r === 'CENCO_CCTV') {
                 return ['central', 'cctv', 'procedimientos', 'turnos', 'inteligencia', 'sosafe'];
             }
-            if (r === 'CENCO_TELEFONISTA' || r === 'CENCO_DESPACHADOR') {
-                return ['central', 'procedimientos', 'turnos', 'inteligencia', 'sosafe'];
+            if (r === 'CENCO_TELEFONISTA') {
+                return ['callcenter', 'central', 'procedimientos', 'turnos', 'inteligencia', 'sosafe'];
             }
-            return ['central', 'procedimientos', 'turnos', 'inteligencia', 'sosafe'];
+            if (r === 'CENCO_DESPACHADOR') {
+                return ['central', 'callcenter', 'procedimientos', 'turnos', 'inteligencia', 'sosafe'];
+            }
+            return ['central', 'callcenter', 'procedimientos', 'turnos', 'inteligencia', 'sosafe'];
         }
 
         function applyCencoRolePrivileges() {
@@ -8899,7 +9507,7 @@
             const allowed = getAllowedCencoModulesForRole(role);
 
             // Mostrar solo los módulos permitidos en la barra superior
-            const allMods = ['central', 'procedimientos', 'cctv', 'turnos', 'vehiculos', 'incivilidades', 'inteligencia', 'seguridad', 'sosafe', 'reportes'];
+            const allMods = ['central', 'procedimientos', 'cctv', 'callcenter', 'turnos', 'vehiculos', 'incivilidades', 'inteligencia', 'seguridad', 'sosafe', 'reportes'];
             allMods.forEach(m => {
                 const btn = document.getElementById(`cad-nav-${m}`);
                 if (btn) btn.classList.toggle('hidden', !allowed.includes(m));
@@ -8952,9 +9560,7 @@
                 switchCentralMainTab('procedimientos');
                 switchCentralProcSubtab('abiertos');
             } else if (effRole === 'CENCO_TELEFONISTA') {
-                switchCencoModule('central');
-                switchCentralMainTab('procedimientos');
-                switchCentralProcSubtab('crear');
+                switchCencoModule('callcenter');
             } else {
                 const allowed = getAllowedCencoModulesForRole(effRole);
                 const defMod = allowed.includes(CencoState.activeModule) ? CencoState.activeModule : 'central';
@@ -9048,6 +9654,8 @@
                 setTimeout(() => renderMacroSecurityModule(), 100);
             } else if (modName === 'sosafe') {
                 setTimeout(() => renderCencoSosafeModule(), 100);
+            } else if (modName === 'callcenter') {
+                renderCallCenterModule();
             } else if (modName === 'reportes') {
                 populateCencoReportCategories();
                 updateCencoReportPreview();
@@ -10567,6 +11175,9 @@
             if (bAbiertos) bAbiertos.innerText = openCount + cctvActiveCount;
             const bCctv = document.getElementById('cad-badge-cctv');
             if (bCctv) { bCctv.innerText = cctvActiveCount; bCctv.classList.toggle('hidden', cctvActiveCount === 0); }
+            const ccActiveCount = getCallCenterServicesDB().filter(s => String(s.estado || 'AGENDADO').toUpperCase() === 'AGENDADO').length;
+            const bCc = document.getElementById('cad-badge-callcenter');
+            if (bCc) { bCc.innerText = ccActiveCount; bCc.classList.toggle('hidden', ccActiveCount === 0); }
 
             populateCentralActiveVehiclesSelect();
             renderCentralOpenQueue();
@@ -10579,6 +11190,9 @@
             renderCadIncivilidadesModule();
             renderCencoReportsDashboard();
             renderCadMapMarkers();
+            if (!document.getElementById('cad-mod-callcenter')?.classList.contains('hidden') && typeof renderCallCenterModule === 'function') {
+                renderCallCenterModule();
+            }
             if (!document.getElementById('cad-mod-inteligencia')?.classList.contains('hidden') && typeof renderIntelWorkspace === 'function') {
                 renderIntelWorkspace('cenco');
             }
