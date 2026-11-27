@@ -976,7 +976,7 @@
                         </div>
 
                         <div class="flex items-start gap-3">
-                            ${thumb ? `<a href="${esc(a.foto)}" target="_blank" rel="noopener" title="Ver fotografía completa" class="shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-slate-600 bg-slate-950 hover:border-cyan-400 transition"><img src="${esc(thumb)}" alt="Falla" class="w-full h-full object-cover" onerror="this.parentElement.style.display='none'"></a>` : ''}
+                            ${thumb ? `<a href="${esc(a.foto)}" target="_blank" rel="noopener" title="Ver fotografía completa de la falla" class="shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-500 bg-slate-950 hover:border-cyan-400 transition block relative"><img src="${esc(thumb)}" alt="Falla" class="w-full h-full object-contain bg-slate-950" onerror="this.parentElement.style.display='none'"><span class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/75 text-[9px] text-white font-bold">🔍</span></a>` : ''}
                             <div class="flex-1 min-w-0 space-y-1.5">
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-sm font-black text-white">${esc(a.movil || 'Unidad')}</span>
