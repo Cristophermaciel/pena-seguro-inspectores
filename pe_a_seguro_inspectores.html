@@ -1851,6 +1851,11 @@
                         </div>
                     </header>
 
+                    <!-- BANNER DE ALERTA AUTOMÁTICA 5 MIN ANTES (SERVICIOS AGENDADOS -> DESPACHADOR / JEFES DE TURNO) -->
+                    <div id="cad-scheduled-5min-banner" class="hidden bg-gradient-to-r from-amber-600/95 via-orange-600/95 to-indigo-700/95 border-b border-amber-300/60 px-4 py-2.5 shadow-xl z-20">
+                        <div id="cad-scheduled-5min-banner-list" class="max-w-7xl mx-auto space-y-1.5"></div>
+                    </div>
+
                     <!-- ================================================================ -->
                     <!-- MÓDULO 1: CENTRAL (SPLIT-PANE 520px + MAPA TÁCTICO EN VIVO)      -->
                     <!-- ================================================================ -->
@@ -2054,8 +2059,17 @@
                                         </form>
                                     </div>
 
-                                    <!-- SUBTAB 2: ABIERTOS (Cola activa de Despacho + Alertas CCTV) -->
+                                    <!-- SUBTAB 2: ABIERTOS (Cola activa de Despacho + Alertas CCTV + Recordatorios 5 min) -->
                                     <div id="cad-proc-pane-abiertos" class="hidden space-y-3">
+                                        <!-- Alertas de Servicios Agendados (5 minutos antes -> Avisar a Jefes de Turno) -->
+                                        <div id="cad-abiertos-scheduled-wrap" class="hidden space-y-2 pb-2 border-b cad-border">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[11px] font-black text-amber-400 uppercase"><i class="fa-solid fa-bell fa-shake mr-1"></i> Servicios Agendados (5 min antes)</span>
+                                                <span id="cad-abiertos-scheduled-count" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-200">0</span>
+                                            </div>
+                                            <div id="cenco-despachador-scheduled-queue" class="space-y-2"></div>
+                                        </div>
+
                                         <!-- Alertas CCTV pendientes dentro de Abiertos -->
                                         <div id="cad-abiertos-cctv-wrap" class="hidden space-y-2 pb-2 border-b cad-border">
                                             <div class="flex items-center justify-between">
@@ -9746,6 +9760,129 @@
             showToast('📊 Archivo Excel (CSV) exportado correctamente', 'bg-emerald-600');
         }
 
+        // ====================================================================
+        // MONITOR AUTOMÁTICO DE ALERTAS 5 MIN ANTES (SERVICIOS AGENDADOS)
+        // ====================================================================
+        window._ccNotified5MinIds = window._ccNotified5MinIds || new Set();
+        window._ccMuted5MinIds = window._ccMuted5MinIds || new Set();
+
+        function parseScheduledServiceDateMs(s) {
+            if (!s || !s.fechaProgramada || !s.horaProgramada) return NaN;
+            const datePart = String(s.fechaProgramada).trim();
+            const timePart = String(s.horaProgramada).trim();
+            let y, m, d;
+            const iso = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            const cl = datePart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+            if (iso) { y = Number(iso[1]); m = Number(iso[2]); d = Number(iso[3]); }
+            else if (cl) { d = Number(cl[1]); m = Number(cl[2]); y = Number(cl[3]); }
+            else return NaN;
+            const tm = timePart.match(/^(\d{1,2}):(\d{2})/);
+            if (!tm) return NaN;
+            return new Date(y, m - 1, d, Number(tm[1]), Number(tm[2]), 0, 0).getTime();
+        }
+
+        function getUpcoming5MinCallCenterServices() {
+            const nowMs = Date.now();
+            const FIVE_MIN_MS = 5 * 60 * 1000;
+            const GRACE_PAST_MS = 30 * 60 * 1000;
+            return getCallCenterServicesDB().filter(s => {
+                if (String(s.estado || 'AGENDADO').toUpperCase() !== 'AGENDADO') return false;
+                if (window._ccMuted5MinIds.has(s.id)) return false;
+                const targetMs = parseScheduledServiceDateMs(s);
+                if (isNaN(targetMs)) return false;
+                const diffMs = targetMs - nowMs;
+                return diffMs <= FIVE_MIN_MS && diffMs >= -GRACE_PAST_MS;
+            }).map(s => {
+                const targetMs = parseScheduledServiceDateMs(s);
+                const minsLeft = Math.ceil((targetMs - nowMs) / 60000);
+                return Object.assign({}, s, { _minsLeft: minsLeft });
+            }).sort((a, b) => a._minsLeft - b._minsLeft);
+        }
+
+        function playScheduledServiceChime() {
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                const ctx = new Ctx();
+                [880, 1174.66, 1318.5].forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.001, ctx.currentTime + i * 0.16);
+                    gain.gain.exponentialRampToValueAtTime(0.14, ctx.currentTime + i * 0.16 + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.16 + 0.22);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + i * 0.16);
+                    osc.stop(ctx.currentTime + i * 0.16 + 0.24);
+                });
+            } catch (e) {}
+        }
+
+        function dismissScheduled5MinReminder(id) {
+            window._ccMuted5MinIds.add(id);
+            checkUpcomingCallCenterServices();
+            renderCentralOpenQueue();
+        }
+
+        function checkUpcomingCallCenterServices() {
+            const cencoView = document.getElementById('view-cenco');
+            if (!cencoView || !cencoView.classList.contains('active')) return;
+
+            const due = getUpcoming5MinCallCenterServices();
+            const banner = document.getElementById('cad-scheduled-5min-banner');
+            const bannerList = document.getElementById('cad-scheduled-5min-banner-list');
+
+            if (banner && bannerList) {
+                banner.classList.toggle('hidden', due.length === 0);
+                bannerList.innerHTML = due.map(s => {
+                    const timeBadge = s._minsLeft > 0
+                        ? `EN ${s._minsLeft} MIN (${escCcHtml(s.horaProgramada)} hrs)`
+                        : (s._minsLeft === 0 ? `¡AHORA! (${escCcHtml(s.horaProgramada)} hrs)` : `ATRASADO ${Math.abs(s._minsLeft)} MIN (${escCcHtml(s.horaProgramada)} hrs)`);
+                    return `
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-white text-xs">
+                            <div class="flex flex-wrap items-center gap-2 min-w-0">
+                                <span class="px-2 py-0.5 rounded-full bg-slate-950/80 text-amber-300 font-black text-[10px] shrink-0"><i class="fa-solid fa-bell fa-shake mr-1"></i>${timeBadge}</span>
+                                <span class="font-black">RECORDATORIO JEFE DE TURNO:</span>
+                                <span class="px-2 py-0.5 rounded bg-white/20 font-black text-[11px]">${escCcHtml(s.tipoRequerimiento)}</span>
+                                <span class="truncate"><strong>${escCcHtml(s.direccion)}</strong> (${escCcHtml(s.cuadrante || 'Peñaflor')}) — Solicita: ${escCcHtml(s.funcionario)}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" onclick="dispatchCallCenterServiceToCentral('${escCcHtml(s.id)}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] shadow">
+                                    <i class="fa-solid fa-tower-broadcast mr-1"></i>Despachar
+                                </button>
+                                <button type="button" onclick="dismissScheduled5MinReminder('${escCcHtml(s.id)}')" class="px-2.5 py-1 rounded-lg bg-slate-950/60 hover:bg-slate-950 text-amber-100 font-bold text-[11px]">
+                                    ✓ Avisado
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
+            let triggeredNew = false;
+            due.forEach(s => {
+                if (!window._ccNotified5MinIds.has(s.id)) {
+                    window._ccNotified5MinIds.add(s.id);
+                    triggeredNew = true;
+                    const msg = `⏰ RECORDATORIO 5 MIN (${s.horaProgramada} hrs): ${s.tipoRequerimiento} en ${s.direccion} — Avisar a Jefe de Turno`;
+                    showToast(msg, 'bg-amber-600');
+                    try {
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification('⏰ Servicio Agendado en 5 min — Central 1410', {
+                                body: `${s.tipoRequerimiento} • ${s.horaProgramada} hrs • ${s.direccion} (${s.cuadrante || 'Peñaflor'}) — Avisar a Jefe de Turno`,
+                                icon: 'logo-pena-seguro-1410.png'
+                            });
+                        }
+                    } catch (e) {}
+                }
+            });
+            if (triggeredNew) {
+                playScheduledServiceChime();
+                renderCentralOpenQueue();
+            }
+        }
+
         function exportCallCenterPDF() {
             if (!window.jspdf) { showToast('Librería PDF cargando, intenta nuevamente', 'bg-amber-600'); return; }
             const { jsPDF } = window.jspdf;
@@ -9964,6 +10101,14 @@
                     fetchLiveGpsFromCloud();
                 }
             }, gpsJitterMs);
+
+            if (CencoState.scheduledAlertTimer) clearInterval(CencoState.scheduledAlertTimer);
+            checkUpcomingCallCenterServices();
+            CencoState.scheduledAlertTimer = setInterval(() => {
+                if (document.getElementById('view-cenco')?.classList.contains('active')) {
+                    checkUpcomingCallCenterServices();
+                }
+            }, 15000);
         }
 
         function toggleCencoTheme() {
@@ -11534,7 +11679,9 @@
             const bCentral = document.getElementById('cad-badge-central');
             if (bCentral) { bCentral.innerText = openCount; bCentral.classList.toggle('hidden', openCount === 0); }
             const bAbiertos = document.getElementById('cad-abiertos-count-pill');
-            if (bAbiertos) bAbiertos.innerText = openCount + cctvActiveCount;
+            const dueScheduledCount = typeof getUpcoming5MinCallCenterServices === 'function' ? getUpcoming5MinCallCenterServices().length : 0;
+            if (bAbiertos) bAbiertos.innerText = openCount + cctvActiveCount + dueScheduledCount;
+            if (typeof checkUpcomingCallCenterServices === 'function') checkUpcomingCallCenterServices();
             const bCctv = document.getElementById('cad-badge-cctv');
             if (bCctv) { bCctv.innerText = cctvActiveCount; bCctv.classList.toggle('hidden', cctvActiveCount === 0); }
             const ccActiveCount = getCallCenterServicesDB().filter(s => String(s.estado || 'AGENDADO').toUpperCase() === 'AGENDADO').length;
@@ -11563,8 +11710,38 @@
             }
         }
 
-        // --- Render Central -> Subtab Abiertos (Tarjetas compactas + Alertas CCTV) ---
+        // --- Render Central -> Subtab Abiertos (Tarjetas compactas + Alertas CCTV + Recordatorios 5 min) ---
         function renderCentralOpenQueue() {
+            const schedWrap = document.getElementById('cad-abiertos-scheduled-wrap');
+            const schedQueue = document.getElementById('cenco-despachador-scheduled-queue');
+            const schedCount = document.getElementById('cad-abiertos-scheduled-count');
+            const dueSched = typeof getUpcoming5MinCallCenterServices === 'function' ? getUpcoming5MinCallCenterServices() : [];
+            if (schedWrap) schedWrap.classList.toggle('hidden', dueSched.length === 0);
+            if (schedCount) schedCount.innerText = dueSched.length;
+            if (schedQueue) {
+                schedQueue.innerHTML = dueSched.map(s => {
+                    const timeTxt = s._minsLeft > 0 ? `En ${s._minsLeft} min` : (s._minsLeft === 0 ? '¡AHORA!' : `Hace ${Math.abs(s._minsLeft)} min`);
+                    return `
+                        <div class="cad-elevated border border-amber-500/60 bg-amber-950/35 rounded-lg p-2.5 space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="font-black text-amber-300"><i class="fa-solid fa-clock mr-1"></i>${escCcHtml(s.horaProgramada)} hrs • ${timeTxt}</span>
+                                <span class="px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 text-[10px] font-black">${escCcHtml(s.tipoRequerimiento)}</span>
+                            </div>
+                            <div class="font-bold cad-text">${escCcHtml(s.direccion)} <span class="text-cyan-400">(${escCcHtml(s.cuadrante || 'Peñaflor')})</span></div>
+                            <div class="text-[11px] cad-muted">Solicita: <strong class="cad-text">${escCcHtml(s.funcionario)}</strong>${s.telefono ? ` • ${escCcHtml(s.telefono)}` : ''}</div>
+                            ${s.descripcion ? `<div class="text-[10px] cad-text/80 italic">${escCcHtml(s.descripcion)}</div>` : ''}
+                            <div class="flex items-center gap-1.5 pt-1">
+                                <button type="button" onclick="dispatchCallCenterServiceToCentral('${escCcHtml(s.id)}')" class="flex-1 py-1.5 px-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px]">
+                                    <i class="fa-solid fa-tower-broadcast mr-1"></i>Despachar a Central
+                                </button>
+                                <button type="button" onclick="dismissScheduled5MinReminder('${escCcHtml(s.id)}')" class="py-1.5 px-2.5 rounded-md cad-surface border cad-border text-amber-300 hover:text-white font-bold text-[11px]">
+                                    ✓ Avisado
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
             const cctvWrap = document.getElementById('cad-abiertos-cctv-wrap');
             const cctvQueue = document.getElementById('cenco-despachador-cctv-queue');
             const cctvCount = document.getElementById('cad-abiertos-cctv-count');
