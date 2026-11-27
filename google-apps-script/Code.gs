@@ -3750,3 +3750,87 @@ function apiGetSosafePublicData(rutFilter) {
     myReports: myReports
   };
 }
+
+/**
+ * LIMPIEZA QUIRÚRGICA PARA MARCHA BLANCA:
+ * Vacía inicios de turno/checklists, cierres, procedimientos, bitácora CAD, despachos y geocercas,
+ * PRESERVANDO únicamente los registros de HOY correspondientes al MÓVIL 1 (y el turno CENCO activo de hoy si existe).
+ * NO toca Usuarios, Flota, Dotación, Correos, Cámaras, Inteligencia LPR, SOSAFE ni Mantenciones.
+ */
+function limpiarParaMarchaBlanca() {
+  const ss = obtenerSpreadsheet();
+  const tz = Session.getScriptTimeZone();
+  const now = new Date();
+  const todayIso = Utilities.formatDate(now, tz, "yyyy-MM-dd");
+  const todayDash = Utilities.formatDate(now, tz, "dd-MM-yyyy");
+  const todaySlash = Utilities.formatDate(now, tz, "dd/MM/yyyy");
+  const todayCompact = Utilities.formatDate(now, tz, "yyyyMMdd");
+
+  const isTodayVal = (val) => {
+    if (val instanceof Date && !isNaN(val.getTime())) {
+      return Utilities.formatDate(val, tz, "yyyy-MM-dd") === todayIso;
+    }
+    const s = String(val || "");
+    return s.indexOf(todayIso) >= 0 || s.indexOf(todayDash) >= 0 || s.indexOf(todaySlash) >= 0 || s.indexOf(todayCompact) >= 0;
+  };
+
+  const isRowToday = (row) => {
+    for (let i = 0; i < Math.min(row.length, 4); i++) {
+      if (isTodayVal(row[i])) return true;
+    }
+    return false;
+  };
+
+  const isMovil1 = (val) => {
+    const s = String(val || "").trim();
+    return /\bM[OÓ]VIL\s*0?1\b/i.test(s) || /^0?1$/.test(s);
+  };
+
+  const isGeofenceRow = (row) => {
+    const joined = row.map(c => String(c || "")).join(" ").toUpperCase();
+    return joined.indexOf("CAD-GPS-") >= 0 || joined.indexOf("GEOCERCA") >= 0 || joined.indexOf("SALIDA DE CUADRANTE") >= 0 || joined.indexOf("FUERA DE CUADRANTE") >= 0 || joined.indexOf("FUERA DE LÍMITE COMUNAL") >= 0;
+  };
+
+  const filterSheet = (sheetName, keepPredicate) => {
+    const sh = ss.getSheetByName(sheetName);
+    if (!sh || sh.getLastRow() <= 1) return { sheet: sheetName, kept: 0, deleted: 0 };
+    const lastRow = sh.getLastRow();
+    const lastCol = sh.getLastColumn();
+    const rows = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    const keptRows = rows.filter(r => keepPredicate(r));
+    const deleted = rows.length - keptRows.length;
+    if (lastRow > 1) {
+      sh.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+    }
+    if (keptRows.length > 0) {
+      sh.getRange(2, 1, keptRows.length, lastCol).setValues(keptRows);
+    }
+    // Eliminar filas vacías sobrantes para mantener la hoja limpia
+    if (sh.getLastRow() > keptRows.length + 1) {
+      sh.deleteRows(keptRows.length + 2, sh.getLastRow() - (keptRows.length + 1));
+    }
+    return { sheet: sheetName, kept: keptRows.length, deleted: deleted };
+  };
+
+  const summary = [];
+  // 1. Turnos y Checklists (col index 4 = Móvil / Unidad)
+  summary.push(filterSheet(SHEETS.TURNOS, (r) => isRowToday(r) && isMovil1(r[4])));
+  // 2. Cierres de Turno (col index 4 = Móvil / Unidad)
+  summary.push(filterSheet(SHEETS.CIERRES, (r) => isRowToday(r) && isMovil1(r[4])));
+  // 3. Procedimientos Inspectores (col index 4 = Móvil / Unidad)
+  summary.push(filterSheet(SHEETS.PROCEDIMIENTOS, (r) => isRowToday(r) && isMovil1(r[4])));
+  // 4. Bitácora CAD CENCO (eliminar TODAS las geocercas; conservar solo hoy Móvil 1)
+  summary.push(filterSheet(SHEETS.CENCO_BITACORA, (r) => !isGeofenceRow(r) && isRowToday(r) && r.some(c => isMovil1(c))));
+  // 5. Despachos CENCO (col index 2 = Móvil)
+  summary.push(filterSheet(SHEETS.CENCO_DESPACHOS, (r) => isRowToday(r) && r.some(c => isMovil1(c))));
+  // 6. Turnos CENCO (conservar solo turno de hoy si está ACTIVO)
+  summary.push(filterSheet(SHEETS.CENCO_TURNOS, (r) => isRowToday(r) && String(r[8] || "").toUpperCase() === "ACTIVO"));
+
+  // 7. Vaciar autorizaciones de geocerca guardadas en ScriptProperties
+  PropertiesService.getScriptProperties().setProperty("CENCO_GEOFENCE_AUTHS_JSON", "[]");
+  invalidateBootstrapCache();
+
+  const report = summary.map(s => s.sheet + ": borradas " + s.deleted + ", conservadas " + s.kept).join(" | ");
+  Logger.log("MARCHA BLANCA LIMPIEZA OK (" + todayIso + "): " + report);
+  return report;
+}
