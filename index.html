@@ -2684,8 +2684,9 @@
                                     <option value="CON OBSERVACIONES">🟡 CON OBSERVACIONES</option>
                                     <option value="FUERA DE SERVICIO">🔴 FUERA DE SERVICIO</option>
                                 </select>
-                                <input type="text" id="new-cam-gps" class="cad-input md:col-span-2 font-mono" placeholder="GPS: -33.608441, -70.899745">
-                                <input type="text" id="new-cam-obs" class="cad-input md:col-span-2" placeholder="Observaciones (ej: problema eléctrico, reubicación...)">
+                                <input type="text" id="new-cam-gps" class="cad-input font-mono" placeholder="GPS: -33.6084, -70.8997">
+                                <input type="text" id="new-cam-ip" class="cad-input md:col-span-2 font-mono" placeholder="IP / URL Web (Ej: 192.168.1.50 o http://IP:8080)">
+                                <input type="text" id="new-cam-obs" class="cad-input" placeholder="Observaciones...">
                                 <button type="submit" id="btn-save-cam-submit" class="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-black px-3 py-2 rounded-md">
                                     <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar
                                 </button>
@@ -10098,6 +10099,7 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5 pt-1">
                             ${nearest ? `<button type="button" onclick="jumpToNearestCameraForIncident('${escCcHtml(inc.folioId)}', '${escCcHtml(nearest.id)}')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-[11px]"><i class="fa-solid fa-video mr-1"></i>Abrir ${escCcHtml(nearest.id)}</button>` : ''}
+                            ${nearest && parseCameraIpMeta(nearest).openUrl ? `<button type="button" onclick="openCameraIpInBrowser('${escCcHtml(nearest.id)}')" class="py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px]" title="Abrir IP en navegador"><i class="fa-solid fa-globe mr-1"></i>Ver IP</button>` : ''}
                             <button type="button" onclick="focusIncidentOnMap('${escCcHtml(inc.folioId)}')" class="py-1.5 px-2.5 rounded-lg cad-surface border cad-border hover:border-blue-400 cad-text font-bold text-[11px]"><i class="fa-solid fa-map-location-dot mr-1"></i>Mapa</button>
                             <button type="button" onclick="openCencoFolioModal('${escCcHtml(inc.folioId)}')" class="py-1.5 px-2.5 rounded-lg cad-surface border cad-border hover:border-indigo-400 cad-text font-bold text-[11px]"><i class="fa-regular fa-comments mr-1"></i>Bitácora</button>
                         </div>
@@ -12218,6 +12220,57 @@
         }
 
         // --- Render Módulo 3: CCTV ---
+        function parseCameraIpMeta(cam) {
+            const rawObs = String(cam?.observaciones || '').trim();
+            let ip = '';
+            let cleanObs = rawObs;
+            const tagMatch = rawObs.match(/\[IP:\s*([^\]]+)\]/i);
+            if (tagMatch) {
+                ip = tagMatch[1].trim();
+                cleanObs = rawObs.replace(tagMatch[0], '').replace(/^\s*\|\s*|\s*\|\s*$/g, '').trim();
+            } else {
+                const urlMatch = rawObs.match(/(https?:\/\/[^\s|]+|\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?(?:\/[^\s|]*)?)/i);
+                if (urlMatch) ip = urlMatch[1].trim();
+            }
+            const openUrl = ip ? (/^https?:\/\//i.test(ip) ? ip : `http://${ip}`) : '';
+            return { ip, openUrl, cleanObs };
+        }
+
+        function buildCameraObsWithIp(ipRaw, obsRaw) {
+            const ip = String(ipRaw || '').trim();
+            const obs = String(obsRaw || '').replace(/\[IP:\s*[^\]]+\]/ig, '').trim();
+            if (ip && obs) return `[IP: ${ip}] | ${obs}`;
+            if (ip) return `[IP: ${ip}]`;
+            return obs;
+        }
+
+        function openCameraIpInBrowser(camId) {
+            const cam = getCencoCamerasDB().find(c => c.id === camId);
+            if (!cam) return;
+            const { openUrl } = parseCameraIpMeta(cam);
+            if (!openUrl) {
+                editCencoCamera(camId);
+                setTimeout(() => document.getElementById('new-cam-ip')?.focus(), 180);
+                showToast(`Ingresa la IP de ${camId} para abrirla directo en el navegador`, 'bg-amber-600');
+                return;
+            }
+            window.open(openUrl, '_blank', 'noopener');
+        }
+
+        function copyCameraIpForDss(camId) {
+            const cam = getCencoCamerasDB().find(c => c.id === camId);
+            if (!cam) return;
+            const { ip } = parseCameraIpMeta(cam);
+            if (!ip) {
+                showToast(`${camId} aún no tiene IP configurada (edítala para agregarla)`, 'bg-amber-600');
+                return;
+            }
+            const cleanIp = ip.replace(/^https?:\/\//i, '').split('/')[0];
+            navigator.clipboard?.writeText(cleanIp).then(() => {
+                showToast(`📋 IP ${cleanIp} copiada para buscar en DSS`, 'bg-cyan-700');
+            }).catch(() => showToast(`IP: ${cleanIp}`, 'bg-cyan-700'));
+        }
+
         function renderCencoCamerasList() {
             const listEl = document.getElementById('cenco-cameras-list');
             const selectEl = document.getElementById('cctv-camara-select');
@@ -12235,6 +12288,7 @@
                 listEl.innerHTML = filtered.map(c => {
                     const sel = c.id === CencoState.selectedCameraId;
                     const st = String(c.estado || 'OPERATIVA').toUpperCase();
+                    const { ip, openUrl, cleanObs } = parseCameraIpMeta(c);
                     const stBadge = st.includes('FUERA')
                         ? '<span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[9px] font-bold">FUERA SERV.</span>'
                         : (st.includes('OBS') ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-bold">OBS.</span>' : '');
@@ -12248,11 +12302,13 @@
                                 </div>
                             </div>
                             <p class="text-[11px] font-semibold cad-text mt-1 line-clamp-2">${c.nombre}</p>
-                            ${c.observaciones ? `<p class="text-[10px] text-amber-400 mt-0.5 line-clamp-1" title="${c.observaciones}"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>${c.observaciones}</p>` : ''}
-                            <div class="flex items-center justify-between mt-1.5 pt-1 border-t cad-border/60">
-                                <span class="text-[10px] cad-muted">${c.tipo} • ${c.sector}</span>
-                                <div class="flex items-center gap-1" onclick="event.stopPropagation()">
-                                    <button type="button" onclick="editCencoCamera('${c.id}')" class="px-1.5 py-0.5 rounded bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 text-[10px] font-bold" title="Modificar cámara"><i class="fa-solid fa-pen"></i></button>
+                            ${ip ? `<p class="text-[10px] font-mono text-emerald-300 mt-0.5 truncate"><i class="fa-solid fa-network-wired mr-1"></i>${escCcHtml(ip)}</p>` : ''}
+                            ${cleanObs ? `<p class="text-[10px] text-amber-400 mt-0.5 line-clamp-1" title="${escCcHtml(cleanObs)}"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>${escCcHtml(cleanObs)}</p>` : ''}
+                            <div class="flex items-center justify-between mt-1.5 pt-1 border-t cad-border/60 gap-1">
+                                <span class="text-[10px] cad-muted truncate">${c.tipo} • ${c.sector}</span>
+                                <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+                                    ${openUrl ? `<button type="button" onclick="openCameraIpInBrowser('${c.id}')" class="px-1.5 py-0.5 rounded bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white text-[10px] font-bold" title="Abrir cámara por IP en navegador"><i class="fa-solid fa-globe"></i></button><button type="button" onclick="copyCameraIpForDss('${c.id}')" class="px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 text-[10px] font-bold" title="Copiar IP para DSS"><i class="fa-regular fa-copy"></i></button>` : ''}
+                                    <button type="button" onclick="editCencoCamera('${c.id}')" class="px-1.5 py-0.5 rounded bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 text-[10px] font-bold" title="Modificar cámara / IP"><i class="fa-solid fa-pen"></i></button>
                                     <button type="button" onclick="deleteCencoCamera('${c.id}')" class="px-1.5 py-0.5 rounded bg-red-500/15 hover:bg-red-500/35 text-red-300 text-[10px] font-bold" title="Eliminar cámara"><i class="fa-solid fa-trash"></i></button>
                                 </div>
                             </div>
@@ -12334,7 +12390,10 @@
             document.getElementById('new-cam-tipo').value = cam.tipo || 'PTZ 360°';
             document.getElementById('new-cam-estado').value = cam.estado || 'OPERATIVA';
             document.getElementById('new-cam-gps').value = cam.gps || '';
-            document.getElementById('new-cam-obs').value = cam.observaciones || '';
+            const { ip, cleanObs } = parseCameraIpMeta(cam);
+            const ipEl = document.getElementById('new-cam-ip');
+            if (ipEl) ipEl.value = ip || '';
+            document.getElementById('new-cam-obs').value = cleanObs || '';
             const titleEl = document.getElementById('cam-form-title');
             if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-pen-to-square mr-1"></i> Editando ${cam.id}`;
             form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -13653,7 +13712,7 @@
                     tipo: document.getElementById('new-cam-tipo').value,
                     estado: document.getElementById('new-cam-estado')?.value || 'OPERATIVA',
                     gps: gpsVal,
-                    observaciones: (document.getElementById('new-cam-obs')?.value || '').trim()
+                    observaciones: buildCameraObsWithIp(document.getElementById('new-cam-ip')?.value || '', document.getElementById('new-cam-obs')?.value || '')
                 };
                 const cams = getCencoCamerasDB();
                 const idx = cams.findIndex(c => c.id === cam.id);
