@@ -1,8 +1,11 @@
-const CACHE_NAME = 'pena-seguro-1410-cache-v79';
+const CACHE_NAME = 'pena-seguro-1410-cache-v80';
 const APP_SHELL = [
   './',
   './index.html',
   './pe_a_seguro_inspectores.html',
+  './vecinos.html',
+  './policia.html',
+  './mantenimiento.html',
   './manifest.json',
   './logo-pena-seguro-1410.png',
   'https://cdn.tailwindcss.com',

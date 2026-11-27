@@ -8906,10 +8906,23 @@
             if (modal) modal.classList.remove('hidden');
         }
 
-        // Persistir estado automáticamente cuando la app pasa a segundo plano o se cierra
+        // Persistir estado automáticamente cuando la app pasa a segundo plano y sincronizar al volver
+        window._lastResumeSyncMs = 0;
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden' && (AppState.isLoggedIn || AppState.turnoActivo)) {
                 saveActiveSessionState();
+            } else if (document.visibilityState === 'visible' && AppState.isLoggedIn) {
+                const now = Date.now();
+                if (now - (window._lastResumeSyncMs || 0) > 10000) {
+                    window._lastResumeSyncMs = now;
+                    syncBootstrapFromCloud(false);
+                }
+            }
+        });
+        window.addEventListener('online', () => {
+            if (AppState.isLoggedIn) {
+                window._lastResumeSyncMs = Date.now();
+                syncBootstrapFromCloud(false);
             }
         });
         window.addEventListener('pagehide', () => {
@@ -9195,9 +9208,20 @@
             const map = new Map();
             (cloudList || []).forEach(item => { if (item && item.alertaId) map.set(item.alertaId, item); });
             local.forEach(item => {
-                if (!item || !item.alertaId || map.has(item.alertaId)) return;
-                const isInFlight = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
-                if (isInFlight) map.set(item.alertaId, item);
+                if (!item || !item.alertaId) return;
+                const isInFlightCreate = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
+                const isInFlightUpdate = Number(item._localUpdatedMs || 0) > 0 && (nowMs - Number(item._localUpdatedMs)) <= 30000;
+                if (!map.has(item.alertaId)) {
+                    if (isInFlightCreate) map.set(item.alertaId, item);
+                } else if (isInFlightUpdate) {
+                    map.set(item.alertaId, Object.assign({}, map.get(item.alertaId), {
+                        estado: item.estado,
+                        movilSugerido: item.movilSugerido || map.get(item.alertaId).movilSugerido,
+                        folioVinculado: item.folioVinculado || map.get(item.alertaId).folioVinculado,
+                        atendidoPor: item.atendidoPor || map.get(item.alertaId).atendidoPor,
+                        _localUpdatedMs: item._localUpdatedMs
+                    }));
+                }
             });
             saveCencoCctvAlertsDB(Array.from(map.values()));
         }
@@ -9412,9 +9436,14 @@
             const map = new Map();
             (cloudList || []).forEach(item => { if (item && item.id) map.set(item.id, item); });
             local.forEach(item => {
-                if (!item || !item.id || map.has(item.id)) return;
-                const isInFlight = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
-                if (isInFlight) map.set(item.id, item);
+                if (!item || !item.id) return;
+                const isInFlightCreate = Number(item._localCreatedMs || 0) > 0 && (nowMs - Number(item._localCreatedMs)) <= 60000;
+                const isInFlightUpdate = Number(item._localUpdatedMs || 0) > 0 && (nowMs - Number(item._localUpdatedMs)) <= 30000;
+                if (!map.has(item.id)) {
+                    if (isInFlightCreate) map.set(item.id, item);
+                } else if (isInFlightUpdate) {
+                    map.set(item.id, Object.assign({}, map.get(item.id), item));
+                }
             });
             saveCallCenterServicesDB(Array.from(map.values()));
         }
@@ -10133,7 +10162,7 @@
             CencoState.clockTimer = setInterval(tick, 1000);
 
             // Polling optimizado para hasta 100 usuarios concurrentes (pausa en segundo plano + jitter escalonado)
-            const syncJitterMs = 40000 + Math.floor(Math.random() * 15000); // 40–55s
+            const syncJitterMs = 25000 + Math.floor(Math.random() * 10000); // 25–35s
             const gpsJitterMs = 18000 + Math.floor(Math.random() * 6000);   // 18–24s
 
             if (CencoState.pollTimer) clearInterval(CencoState.pollTimer);
