@@ -1608,6 +1608,7 @@ function apiHandleAction(payload) {
         tipo: categoria,
         cuadrante: cuadrante,
         lugar: direccion || gps || "Peñaflor",
+        gps: gps,
         movil: "Pendiente revisión CENCO",
         responsable: nombreVec + " (Identidad verificada con Carnet)",
         detalle: descripcion || "-",
@@ -2038,6 +2039,7 @@ function apiHandleAction(payload) {
         tipo: payload.tipo || "Procedimiento Terreno",
         cuadrante: payload.cuadrante || "-",
         lugar: payload.direccion || "-",
+        gps: payload.gps || "",
         movil: payload.movil || "-",
         responsable: payload.rut || "Inspector Municipal",
         detalle: payload.detalle || "Sin observaciones",
@@ -2122,6 +2124,7 @@ function apiHandleAction(payload) {
         tipo: payload.taskDesc || "Tarea Diaria de Cuadrante",
         cuadrante: payload.cuadrante || "-",
         lugar: payload.direccion || "-",
+        gps: payload.gps || "",
         movil: payload.movil || "-",
         responsable: payload.rut || "Inspector Municipal",
         detalle: payload.detalle || "Visto bueno otorgado en terreno.",
@@ -2592,6 +2595,7 @@ function apiHandleAction(payload) {
           tipo: (payload.categoria || "Procedimiento") + (payload.subcategoria ? " — " + payload.subcategoria : ""),
           cuadrante: payload.cuadrante || "-",
           lugar: payload.direccion || "-",
+          gps: payload.gps || "",
           movil: movilesStr || "Pendiente despacho",
           responsable: payload.ingresadoPor || "Operador CENCO",
           detalle: payload.detalle || "-",
@@ -3490,20 +3494,75 @@ function enviarRespaldoTelegram(datos, isTest) {
 
     const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const fullDetalle = String(datos.detalle || "-");
+    const folioUpper = String(datos.folio || "").toUpperCase();
+    const tituloUpper = String(datos.titulo || "").toUpperCase();
+    const tipoUpper = String(datos.tipo || "").toUpperCase();
+    const isExcludedFromGps =
+      Boolean(isTest) ||
+      folioUpper.indexOf("CAD-GPS-") === 0 ||
+      tituloUpper.indexOf("GEOCERCA") >= 0 ||
+      tituloUpper.indexOf("SALIDA DE CUADRANTE") >= 0 ||
+      tipoUpper.indexOf("GEOCERCA") >= 0 ||
+      tipoUpper.indexOf("FUERA DE CUADRANTE") >= 0 ||
+      tipoUpper.indexOf("FUERA DE LÍMITE COMUNAL") >= 0 ||
+      tituloUpper.indexOf("CONFORMACIÓN") >= 0 ||
+      tituloUpper.indexOf("CIERRE DE TURNO") >= 0;
+
+    // Detectar coordenadas GPS exactas o construir búsqueda por dirección en Peñaflor (para todo excepto geocercas)
+    let gpsLat = null, gpsLon = null, gpsLinksLine = "";
+    if (!isExcludedFromGps) {
+      const gpsSearchText = [datos.gps || "", datos.lugar || "", fullDetalle].join(" ");
+      const coordMatch = gpsSearchText.match(/(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/);
+      if (coordMatch) {
+        gpsLat = parseFloat(coordMatch[1]);
+        gpsLon = parseFloat(coordMatch[2]);
+        if (!isNaN(gpsLat) && !isNaN(gpsLon)) {
+          const gmapsUrl = "https://www.google.com/maps?q=" + gpsLat.toFixed(6) + "," + gpsLon.toFixed(6);
+          const wazeUrl = "https://waze.com/ul?ll=" + gpsLat.toFixed(6) + "," + gpsLon.toFixed(6) + "&navigate=yes";
+          gpsLinksLine = "🗺️ <b>Ubicación GPS:</b> <a href=\"" + gmapsUrl + "\">Google Maps</a>  |  <a href=\"" + wazeUrl + "\">Ir con Waze</a> (<code>" + gpsLat.toFixed(5) + ", " + gpsLon.toFixed(5) + "</code>)";
+        }
+      } else {
+        const cleanLugar = String(datos.lugar || "").trim();
+        if (cleanLugar && cleanLugar !== "-" && cleanLugar.toLowerCase() !== "sin dirección") {
+          const qAddr = cleanLugar.toLowerCase().indexOf("peñaflor") >= 0 ? cleanLugar + ", Chile" : cleanLugar + ", Peñaflor, Chile";
+          const gmapsSearch = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(qAddr);
+          const wazeSearch = "https://waze.com/ul?q=" + encodeURIComponent(qAddr) + "&navigate=yes";
+          gpsLinksLine = "🗺️ <b>Navegación GPS:</b> <a href=\"" + gmapsSearch + "\">Abrir en Google Maps</a>  |  <a href=\"" + wazeSearch + "\">Ir con Waze</a>";
+        }
+      }
+    }
+
     const lines = [
       "🛡️ <b>PEÑA SEGURO 1410 — " + esc(datos.titulo || "RESPALDO OPERATIVO") + "</b>",
       "🆔 <b>Folio:</b> <code>" + esc(datos.folio || "-") + "</code>",
       "📅 <b>Fecha y Hora:</b> " + esc(datos.fecha || "-"),
       "📌 <b>Categoría / Tipo:</b> " + esc(datos.tipo || "-"),
       "📍 <b>Cuadrante / Lugar:</b> [" + esc(datos.cuadrante || "-") + "] " + esc(datos.lugar || "-"),
-      "🚓 <b>Móvil:</b> " + esc(datos.movil || "-") + "  |  👤 <b>Resp.:</b> " + esc(datos.responsable || "-"),
-      "📝 <b>Detalle:</b>\n" + esc(fullDetalle)
+      "🚓 <b>Móvil:</b> " + esc(datos.movil || "-") + "  |  👤 <b>Resp.:</b> " + esc(datos.responsable || "-")
     ];
+    if (gpsLinksLine) lines.push(gpsLinksLine);
+    lines.push("📝 <b>Detalle:</b>\n" + esc(fullDetalle));
     if (datos.urlFotoDrive && datos.urlFotoDrive !== "Sin foto" && String(datos.urlFotoDrive).indexOf("http") === 0) {
       lines.push("🔗 <a href=\"" + datos.urlFotoDrive + "\">Ver evidencia en Google Drive</a>");
     }
     const textMsg = lines.join("\n");
     const apiBase = "https://api.telegram.org/bot" + encodeURIComponent(token);
+
+    const sendNativeGpsPin = () => {
+      if (isExcludedFromGps || gpsLat === null || gpsLon === null) return;
+      try {
+        UrlFetchApp.fetch(apiBase + "/sendLocation", {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify({
+            chat_id: chatId,
+            latitude: gpsLat,
+            longitude: gpsLon
+          }),
+          muteHttpExceptions: true
+        });
+      } catch (ignorePin) {}
+    };
 
     // Helper para dividir mensajes largos (>3900 chars) sin cortar líneas ni etiquetas
     const sendTextChunks = (fullText) => {
@@ -3580,9 +3639,11 @@ function enviarRespaldoTelegram(datos, isTest) {
           });
         } catch (ignoreExtra) {}
       }
+      sendNativeGpsPin();
       return { ok: Boolean(json1.ok), error: json1.description || "" };
     } else {
       const json = sendTextChunks(textMsg);
+      sendNativeGpsPin();
       return { ok: Boolean(json.ok), error: json.description || "" };
     }
   } catch (err) {
