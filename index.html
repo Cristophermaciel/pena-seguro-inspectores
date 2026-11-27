@@ -1801,7 +1801,7 @@
                                     <span>Inteligencia / LPR</span>
                                     <span id="cad-badge-robados" class="hidden px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[10px] font-black">0</span>
                                 </button>
-                                <button type="button" onclick="switchCencoModule('seguridad')" id="cad-nav-seguridad" class="cad-nav-link">Sensación Seguridad</button>
+                                <button type="button" onclick="switchCencoModule('seguridad')" id="cad-nav-seguridad" class="cad-nav-link">Sensación Inseguridad</button>
                                 <button type="button" onclick="switchCencoModule('sosafe')" id="cad-nav-sosafe" class="cad-nav-link flex items-center gap-1">
                                     <span>SOSAFE Peñaflor</span>
                                     <span id="cad-badge-sosafe" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">0</span>
@@ -2202,7 +2202,7 @@
                                 <button type="button" onclick="toggleCadMapOverlay('heatmap')" id="cad-layer-heatmap" style="opacity:0.45" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-orange-500 text-[11px] font-bold shadow flex items-center gap-1" title="Mapa de Calor: Vehículos Abandonados, Rucos e Incivilidades">
                                     <i class="fa-solid fa-fire text-orange-400"></i> Calor
                                 </button>
-                                <button type="button" onclick="toggleCadMapOverlay('security')" id="cad-layer-security" style="opacity:0.45" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-purple-400 text-[11px] font-bold shadow flex items-center gap-1" title="Mapa Macro de Sensación de Seguridad por Cuadrante">
+                                <button type="button" onclick="toggleCadMapOverlay('security')" id="cad-layer-security" style="opacity:0.45" class="px-2.5 py-1.5 rounded-md bg-slate-900/90 text-white border border-purple-400 text-[11px] font-bold shadow flex items-center gap-1" title="Mapa Macro de Sensación de Inseguridad por Cuadrante">
                                     <i class="fa-solid fa-gauge-high text-purple-400"></i> Seguridad
                                 </button>
                                 <button type="button" onclick="openWialonConfigModal()" class="w-8 h-8 rounded-md bg-slate-900/90 text-emerald-400 shadow border border-emerald-500/60 flex items-center justify-center hover:bg-slate-800" title="Configurar Token GPS Wialon en Vivo">
@@ -2953,7 +2953,7 @@
                     <div id="cad-mod-seguridad" class="cad-module hidden flex-1 p-5 space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h2 class="text-lg font-bold cad-text flex items-center gap-2"><i class="fa-solid fa-gauge-high text-emerald-400"></i> Mapa Macro de Sensación de Seguridad — Peñaflor</h2>
+                                <h2 class="text-lg font-bold cad-text flex items-center gap-2"><i class="fa-solid fa-gauge-high text-emerald-400"></i> Mapa Macro de Sensación de Inseguridad — Peñaflor</h2>
                                 <p class="text-xs cad-muted">Índice comunal y por cuadrante (0–1000, solo procedimientos policiales/municipales, excluye alertas GPS) calculado en tiempo real según robos, asaltos, portonazos, incivilidades, rucos, vehículos abandonados y consumo de drogas/alcohol.</p>
                             </div>
                             <button type="button" onclick="renderMacroSecurityModule()" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5">
@@ -12609,7 +12609,7 @@
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <div class="min-w-0">
                                 <h3 class="text-sm font-black ${isDark ? 'text-orange-400' : 'text-orange-700'} leading-snug"><i class="fa-solid fa-fire mr-1.5"></i>Puntos de Calor: Abandonados, Rucos e Incivilidades (${list.length})</h3>
-                                <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} mt-0.5">Alimenta automáticamente el <strong>Mapa de Calor</strong> y la <strong>Sensación de Seguridad</strong>.</p>
+                                <p class="text-[11px] ${isDark ? 'cad-muted' : 'text-slate-500'} mt-0.5">Alimenta automáticamente el <strong>Mapa de Calor</strong> y la <strong>Sensación de Inseguridad</strong>.</p>
                             </div>
                             <button type="button" onclick="document.getElementById('intel-form-calor-${ctx}').classList.toggle('hidden')" class="px-3 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-black shrink-0">+ Registrar Punto</button>
                         </div>
