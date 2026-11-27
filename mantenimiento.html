@@ -214,6 +214,10 @@
                         <span class="flex items-center gap-2.5"><i class="fa-solid fa-triangle-exclamation text-red-400 w-4 text-center"></i> Alertas y Resoluciones</span>
                         <span id="badge-alertas" class="px-2 py-0.5 rounded-full bg-red-500/25 text-red-300 text-[10px] font-black">0</span>
                     </button>
+                    <button type="button" onclick="switchTab('checklists')" id="nav-checklists" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-clipboard-check text-cyan-400 w-4 text-center"></i> Checklists Recibidos</span>
+                        <span id="badge-checklists" class="px-2 py-0.5 rounded-full bg-cyan-500/25 text-cyan-200 text-[10px] font-black">0</span>
+                    </button>
                     <button type="button" onclick="switchTab('mantencion')" id="nav-mantencion" class="nav-item w-full px-3 py-2.5 rounded-xl flex items-center justify-between text-left text-slate-300">
                         <span class="flex items-center gap-2.5"><i class="fa-solid fa-screwdriver-wrench text-emerald-400 w-4 text-center"></i> Registrar Mantención</span>
                     </button>
@@ -294,15 +298,52 @@
                 <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-red-400"></i> Alertas de Fallas y Resoluciones de Mantenimiento</h2>
-                        <p class="text-xs text-slate-300">Novedades mecánicas, eléctricas o de carrocería reportadas en checklists por los inspectores. Resuelve y emite ficha por correo/WhatsApp.</p>
+                        <p class="text-xs text-slate-300">Novedades mecánicas, eléctricas, fluidos, equipamiento/EPP y carrocería reportadas en checklists con parte exacta y fotografía.</p>
                     </div>
-                    <select id="alert-filter-status" onchange="renderAlertasTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
-                        <option value="PENDIENTE">🔴 Solo Pendientes</option>
-                        <option value="RESUELTO">🟢 Historial Resueltas</option>
-                        <option value="ALL">Todas</option>
-                    </select>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="alert-filter-status" onchange="renderAlertasTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="PENDIENTE">🔴 Solo Pendientes</option>
+                            <option value="RESUELTO">🟢 Historial Resueltas</option>
+                            <option value="ALL">Todas</option>
+                        </select>
+                        <select id="alert-filter-unit" onchange="renderAlertasTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">🚘 Todas las Unidades</option>
+                        </select>
+                        <select id="alert-filter-cat" onchange="renderAlertasTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">📂 Todas las Categorías</option>
+                            <option value="MECANICA_NEUMATICOS">🛞 Mecánica / Neumáticos</option>
+                            <option value="LUCES_ELECTRICO">💡 Luces / Eléctrico</option>
+                            <option value="FLUIDOS">💧 Fluidos / Combustible</option>
+                            <option value="EQUIPAMIENTO">🧰 Equipamiento / EPP</option>
+                            <option value="CARROCERIA">🚘 Carrocería / Vidrios</option>
+                            <option value="DOCUMENTACION">📄 Documentación</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="alertas-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+            </section>
+
+            <!-- ========================================================== -->
+            <!-- TAB 2B: CHECKLISTS RECIBIDOS (DETALLE COMPLETO)            -->
+            <!-- ========================================================== -->
+            <section id="tab-checklists" class="tab-panel hidden space-y-4">
+                <div class="glass-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2"><i class="fa-solid fa-clipboard-check text-cyan-400"></i> Checklists de Ingreso a Turno — Detalle Completo</h2>
+                        <p class="text-xs text-slate-300">Historial sincronizado de cada checklist de Automóviles, Camionetas y Motocicletas con todos sus ítems, novedades, EPP y fotografías.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="chk-filter-unit" onchange="renderChecklistsTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">🚘 Todas las Unidades</option>
+                        </select>
+                        <select id="chk-filter-status" onchange="renderChecklistsTab()" class="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold">
+                            <option value="ALL">Todos los estados</option>
+                            <option value="OBS">⚠️ Solo con Observaciones</option>
+                            <option value="OK">✅ Solo Sin Observaciones (OK)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="checklists-list" class="space-y-3"></div>
             </section>
 
             <!-- ========================================================== -->
@@ -550,8 +591,96 @@
             users: [],
             fleet: [],
             alerts: [],
+            shifts: [],
             emails: [],
             reportPhotoB64: ''
+        };
+
+        const CHECKLIST_ALERT_VALUES = new Set([
+            'Atrasada', 'No porta', '1/4', 'Malo', 'Roto', 'Desconfigurado',
+            'Sin Carga', 'Vencido', 'Sin Implementos', 'Faltan Implementos',
+            'Sin Conos', 'Menos de 4 Conos', 'No porta Triángulo', 'No Disponible'
+        ]);
+
+        const CHECKLIST_LABELS_MAP = {
+            // Documentación
+            auto_doc_padron: 'Padrón del vehículo',
+            auto_doc_permiso: 'Permiso de Circulación',
+            auto_doc_revtech: 'Revisión Técnica y Gases',
+            auto_doc_soap: 'Seguro Obligatorio (SOAP)',
+            auto_doc_patentes: 'Placas Patentes y Tarjeta Combustible',
+            moto_doc_padron: 'Padrón del vehículo',
+            moto_doc_permiso: 'Permiso de Circulación',
+            moto_doc_revtech: 'Revisión Técnica',
+            moto_doc_soap: 'Seguro Obligatorio (SOAP)',
+            moto_doc_patente: 'Placa Patente y soporte trasero',
+            // Fluidos y Tablero
+            auto_flu_combustible: 'Nivel de Combustible',
+            auto_flu_aceite: 'Aceite de motor',
+            auto_flu_frenos: 'Líquido de frenos',
+            auto_flu_refrigerante: 'Refrigerante / Agua de motor',
+            auto_flu_plumillas: 'Limpiaparabrisas, Plumillas y Sapito',
+            auto_mec_tablero: 'Batería, Arranque y Testigos en Tablero',
+            moto_niv_combustible: 'Nivel de Combustible',
+            moto_niv_aceite: 'Nivel de Aceite de motor',
+            moto_niv_frenos: 'Líquido de frenos (Del. y Tras.)',
+            // Eléctrico y Luces
+            auto_ele_luces: 'Luces principales (Altas, Bajas y Neblineros)',
+            auto_ele_intermitentes: 'Intermitentes y Hazard',
+            auto_ele_frenoreversa: 'Luces de freno, posición trasera y reversa',
+            auto_ele_baliza: 'Baliza LED destelladora',
+            auto_ele_sirena: 'Sirena y perifoneo / megáfono',
+            auto_ele_radio: 'Radio comunicador base / móvil y antena',
+            auto_ele_bocina_vidrios: 'Bocina, Alzavidrios y Cierre Centralizado',
+            auto_ele_clima: 'Aire Acondicionado / Calefacción / Desempañador',
+            moto_ele_luces: 'Luz delantera (Alta y Baja)',
+            moto_ele_freno: 'Luz trasera y luz de freno',
+            moto_ele_guinos: 'Guiños / Intermitentes',
+            moto_ele_baliza: 'Baliza destelladora LED de motocicleta',
+            moto_ele_sirena: 'Sirena y Claxon / Bocina',
+            moto_ele_radio: 'Radio Handie / Comunicador portable',
+            moto_ele_bateria: 'Batería, Encendido Eléctrico y Tablero',
+            // Neumáticos y Mecánica
+            auto_neu_delanteros: 'Neumáticos delanteros',
+            auto_neu_traseros: 'Neumáticos traseros',
+            auto_neu_repuesto: 'Neumático de repuesto funcional',
+            auto_mec_gata: 'Gata hidráulica, llave de ruedas y gancho',
+            auto_mec_frenomano: 'Freno de servicio y Freno de mano',
+            auto_mec_direccion: 'Dirección, Suspensión y Amortiguadores',
+            auto_mec_transmision: 'Embrague, Caja de Cambios y Tracción 4x4',
+            auto_mec_fugas: 'Fugas de aceite / agua o ruidos anormales',
+            moto_neu_delantero: 'Neumático delantero',
+            moto_neu_trasero: 'Neumático trasero',
+            moto_fre_delantero: 'Sistema Freno delantero',
+            moto_fre_trasero: 'Sistema Freno trasero',
+            moto_trans_cadena: 'Cadena, piñón, corona y transmisión',
+            moto_mec_suspension: 'Suspensión delantera y amortiguador trasero',
+            moto_mec_controles: 'Manillar, Acelerador, Embrague y Piolas',
+            moto_mec_escape_fugas: 'Escape / Silenciador y Fugas',
+            moto_mec_espejos: 'Espejos, pata, estanque y carenado',
+            // Equipamiento y EPP
+            auto_seg_extintor: 'Extintor con carga vigente',
+            auto_seg_botiquin: 'Botiquín de primeros auxilios',
+            auto_seg_conos: 'Conos de seguridad',
+            auto_seg_triangulos: 'Triángulo de seguridad',
+            auto_seg_chalecos: 'Chalecos reflectantes de alta visibilidad',
+            auto_seg_linterna: 'Linterna táctica y Cables puente batería',
+            moto_epp_casco: 'Casco certificado (EPP)',
+            moto_epp_guantes: 'Guantes de motorista (EPP)',
+            moto_epp_rodilleras: 'Rodilleras / Protecciones (EPP)',
+            moto_seg_chalecos: 'Chaleco reflectante de alta visibilidad (EPP)',
+            moto_seg_extintor: 'Extintor con carga vigente',
+            moto_seg_botiquin: 'Botiquín de primeros auxilios',
+            moto_seg_conos: 'Conos de seguridad',
+            moto_seg_triangulos: 'Triángulo de seguridad',
+            moto_seg_casco: 'Casco homologado y protecciones',
+            moto_seg_maleta: 'Maleta / Top Case y Defensas laterales',
+            // Carrocería
+            auto_car_parabrisas: 'Parabrisas, luneta y vidrios',
+            auto_car_espejos: 'Espejos retrovisores',
+            auto_car_carroceria: 'Carrocería, puertas, parachoques y gráfica 1410',
+            auto_car_cinturones: 'Cinturones de seguridad y asientos',
+            auto_car_aseo: 'Aseo interior y exterior'
         };
 
         const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -598,6 +727,7 @@
             State.users = Array.isArray(data.users) ? data.users : [];
             State.fleet = Array.isArray(data.fleet) ? data.fleet : [];
             State.alerts = Array.isArray(data.fleetAlerts) ? data.fleetAlerts : [];
+            State.shifts = Array.isArray(data.recentShifts) ? data.recentShifts : [];
             State.emails = Array.isArray(data.emailDirectory) ? data.emailDirectory : [];
             return data;
         }
@@ -684,13 +814,14 @@
 
         function switchTab(tab) {
             State.activeTab = tab;
-            ['flota', 'alertas', 'mantencion', 'reportes', 'unidades'].forEach(t => {
+            ['flota', 'alertas', 'checklists', 'mantencion', 'reportes', 'unidades'].forEach(t => {
                 document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== tab);
                 const nav = document.getElementById(`nav-${t}`);
                 if (nav) { nav.classList.toggle('active', t === tab); nav.classList.toggle('text-slate-300', t !== tab); }
             });
             toggleMobileSidebar(false);
             if (tab === 'reportes') generateReportFicha();
+            if (tab === 'checklists') renderChecklistsTab();
         }
 
         function isAlertResolved(a) {
@@ -700,12 +831,20 @@
         function formatAlertCategory(cat) {
             const c = String(cat || '').toUpperCase();
             if (c.includes('LUCES') || c.includes('ELECTR')) return '💡 Luces / Eléctrico';
-            if (c.includes('FRENO') || c.includes('NEUM')) return '🛞 Frenos / Neumáticos';
+            if (c.includes('FRENO') || c.includes('NEUM')) return '🛞 Mecánica / Neumáticos';
+            if (c.includes('FLUID')) return '💧 Fluidos / Combustible';
             if (c.includes('MOTOR') || c.includes('MECAN')) return '⚙️ Motor / Mecánica';
             if (c.includes('CARROC')) return '🚘 Carrocería / Vidrios';
-            if (c.includes('EQUIP')) return '🧰 Equipamiento / Baliza';
+            if (c.includes('EQUIP')) return '🧰 Equipamiento / EPP';
             if (c.includes('DOC')) return '📄 Documentación';
             return cat ? `🔧 ${cat.replace(/_/g, ' ')}` : '🔧 Falla General';
+        }
+
+        function splitAlertItemAndPart(rawLabel) {
+            const s = String(rawLabel || 'Falla reportada en checklist').trim();
+            const m = s.match(/^(.*?)\s*[—\-]+\s*\[([^\]]+)\]\s*$/);
+            if (m) return { baseLabel: m[1].trim(), exactPart: m[2].trim() };
+            return { baseLabel: s, exactPart: '' };
         }
 
         function driveThumbUrl(url) {
@@ -720,14 +859,43 @@
 
         function renderAll() {
             const pendAlerts = State.alerts.filter(a => !isAlertResolved(a)).length;
+            const chkCount = State.shifts.filter(s => s.hasChecklist || s.estadoChecklist || s.respuestasChecklist).length;
             document.getElementById('badge-flota').innerText = State.fleet.length;
             document.getElementById('badge-alertas').innerText = pendAlerts;
+            const chkBadge = document.getElementById('badge-checklists');
+            if (chkBadge) chkBadge.innerText = chkCount;
             populateUnitSelects();
+            populateFilterUnitSelects();
             populateEmailCheckboxes();
             renderFlotaTab();
             renderAlertasTab();
+            renderChecklistsTab();
             renderMaintPriorityList();
             generateReportFicha();
+        }
+
+        function populateFilterUnitSelects() {
+            const namesSet = new Set();
+            State.fleet.forEach(u => { if (u.nombre) namesSet.add(String(u.nombre).trim()); });
+            State.alerts.forEach(a => { if (a.movil) namesSet.add(String(a.movil).trim()); });
+            State.shifts.forEach(s => { if (s.movil) namesSet.add(String(s.movil).trim()); });
+            const names = [...namesSet].sort((a, b) => a.localeCompare(b, 'es'));
+            ['alert-filter-unit', 'chk-filter-unit'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const cur = el.value || 'ALL';
+                el.innerHTML = `<option value="ALL">🚘 Todas las Unidades</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+                if (cur !== 'ALL' && names.includes(cur)) el.value = cur;
+            });
+        }
+
+        function openAlertsForUnit(unitName) {
+            const sel = document.getElementById('alert-filter-unit');
+            if (sel) sel.value = unitName || 'ALL';
+            const st = document.getElementById('alert-filter-status');
+            if (st) st.value = 'PENDIENTE';
+            switchTab('alertas');
+            renderAlertasTab();
         }
 
         function populateUnitSelects() {
@@ -786,6 +954,7 @@
                 const st = String(u.estado || 'OPERATIVO').toUpperCase();
                 const m = calcMaintStatus(u);
                 const bp = getUnitBlueprint(u);
+                const unitPendAlerts = State.alerts.filter(a => !isAlertResolved(a) && String(a.movil || '').trim().toUpperCase() === String(u.nombre || '').trim().toUpperCase()).length;
                 const stBadge = st === 'OPERATIVO' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : (st === 'EN TALLER' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-red-500/20 text-red-300 border-red-500/40');
                 const barCls = m.level === 'VENCIDA' ? 'bg-red-500' : (m.level === 'PROXIMA' ? 'bg-amber-400' : 'bg-emerald-500');
                 return `
@@ -793,6 +962,7 @@
                         <div class="relative h-32 bg-slate-950">
                             <img src="${bp}" alt="${esc(u.nombre)}" class="w-full h-full object-cover opacity-90">
                             <span class="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full border text-[10px] font-black backdrop-blur-md ${stBadge}">${esc(st)}</span>
+                            ${unitPendAlerts > 0 ? `<button type="button" onclick="openAlertsForUnit('${esc(u.nombre)}')" class="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-red-600/95 hover:bg-red-500 text-white text-[10px] font-black shadow-lg border border-red-300/60">🔴 ${unitPendAlerts} ${unitPendAlerts === 1 ? 'alerta' : 'alertas'}</button>` : ''}
                             <span class="absolute bottom-2 left-2.5 px-2 py-0.5 rounded-md bg-slate-950/85 border border-slate-700 text-[10px] font-mono font-black text-amber-300">${esc(u.patente || 'SIN PATENTE')}</span>
                         </div>
                         <div class="p-4 space-y-2.5 text-xs flex-1 flex flex-col justify-between">
@@ -949,10 +1119,14 @@
 
         function renderAlertasTab() {
             const fSt = document.getElementById('alert-filter-status')?.value || 'PENDIENTE';
+            const fUnit = document.getElementById('alert-filter-unit')?.value || 'ALL';
+            const fCat = document.getElementById('alert-filter-cat')?.value || 'ALL';
             const list = State.alerts.filter(a => {
                 const isRes = isAlertResolved(a);
-                if (fSt === 'PENDIENTE') return !isRes;
-                if (fSt === 'RESUELTO') return isRes;
+                if (fSt === 'PENDIENTE' && isRes) return false;
+                if (fSt === 'RESUELTO' && !isRes) return false;
+                if (fUnit !== 'ALL' && String(a.movil || '').trim().toUpperCase() !== fUnit.toUpperCase()) return false;
+                if (fCat !== 'ALL' && String(a.categoria || '').trim().toUpperCase() !== fCat.toUpperCase()) return false;
                 return true;
             });
             const el = document.getElementById('alertas-list');
@@ -965,6 +1139,7 @@
                 const prio = String(a.prioridad || 'MEDIA').toUpperCase();
                 const prioCls = prio.includes('CRIT') ? 'bg-red-600 text-white' : (prio === 'ALTA' ? 'bg-orange-500 text-slate-950' : 'bg-amber-400/25 text-amber-200 border border-amber-400/40');
                 const thumb = driveThumbUrl(a.foto);
+                const { baseLabel, exactPart } = splitAlertItemAndPart(a.itemLabel);
                 return `
                     <div class="glass-card rounded-2xl p-4 space-y-2.5 text-xs border ${isRes ? 'border-emerald-500/40' : (prio.includes('CRIT') ? 'border-red-500/60' : 'border-amber-500/45')}">
                         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -984,9 +1159,10 @@
                                     <span class="font-mono text-[10px] text-slate-400 ml-auto">${esc(a.id)}</span>
                                 </div>
                                 <div class="text-[13px] font-black text-rose-300 leading-snug">
-                                    ${esc(a.itemLabel || 'Falla reportada en checklist')}
-                                    ${a.estadoReportado ? ` — <span class="underline text-red-300">${esc(a.estadoReportado)}</span>` : ''}
+                                    ${esc(baseLabel)}
+                                    ${a.estadoReportado ? `<span class="ml-1.5 inline-block px-2 py-0.5 rounded-md bg-red-600/35 border border-red-400/50 text-red-200 text-[11px] font-black">${esc(a.estadoReportado)}</span>` : ''}
                                 </div>
+                                ${exactPart ? `<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400/45 text-[11px] font-black text-amber-200"><i class="fa-solid fa-location-crosshairs text-amber-400"></i> Parte exacta: ${esc(exactPart)}</div>` : ''}
                             </div>
                         </div>
 
@@ -1026,6 +1202,104 @@
                                 </button>
                             </div>
                         `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderChecklistsTab() {
+            const el = document.getElementById('checklists-list');
+            if (!el) return;
+            const fUnit = document.getElementById('chk-filter-unit')?.value || 'ALL';
+            const fSt = document.getElementById('chk-filter-status')?.value || 'ALL';
+
+            const list = State.shifts.filter(s => {
+                if (!s.hasChecklist && !s.estadoChecklist && !s.respuestasChecklist) return false;
+                if (fUnit !== 'ALL' && String(s.movil || '').trim().toUpperCase() !== fUnit.toUpperCase()) return false;
+                const hasObs = String(s.estadoChecklist || '').toUpperCase().includes('OBS') || (s.itemsMalos && s.itemsMalos !== 'Ninguno');
+                if (fSt === 'OBS' && !hasObs) return false;
+                if (fSt === 'OK' && hasObs) return false;
+                return true;
+            });
+
+            if (list.length === 0) {
+                el.innerHTML = `<div class="glass-card rounded-2xl p-8 text-center text-xs text-slate-300">No hay checklists registrados en este filtro todavía.</div>`;
+                return;
+            }
+
+            el.innerHTML = list.map(s => {
+                const hasObs = String(s.estadoChecklist || '').toUpperCase().includes('OBS') || (s.itemsMalos && s.itemsMalos !== 'Ninguno');
+                let answersObj = {};
+                try {
+                    if (s.respuestasChecklist && typeof s.respuestasChecklist === 'string') {
+                        answersObj = JSON.parse(s.respuestasChecklist);
+                    } else if (s.respuestasChecklist && typeof s.respuestasChecklist === 'object') {
+                        answersObj = s.respuestasChecklist;
+                    }
+                } catch (e) { answersObj = {}; }
+                const entries = Object.entries(answersObj || {});
+                const badCount = entries.filter(([, val]) => CHECKLIST_ALERT_VALUES.has(String(val))).length;
+                const fotoGen = driveThumbUrl(s.fotoGeneral);
+                const fotoDef = driveThumbUrl(s.fotoDesperfecto);
+
+                const itemsHtml = entries.length > 0 ? entries.map(([k, val]) => {
+                    const label = CHECKLIST_LABELS_MAP[k] || k.replace(/_/g, ' ');
+                    const vStr = String(val || '-');
+                    const isBad = CHECKLIST_ALERT_VALUES.has(vStr);
+                    const isWarn = vStr === '1/2';
+                    const badgeCls = isBad
+                        ? 'bg-red-600/35 text-red-200 border-red-400/50'
+                        : (isWarn ? 'bg-amber-500/30 text-amber-200 border-amber-400/50' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/35');
+                    return `
+                        <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg ${isBad ? 'bg-red-950/55 border border-red-500/40' : 'bg-slate-900/70 border border-slate-800'} text-[11px]">
+                            <span class="${isBad ? 'font-black text-red-100' : 'text-slate-200'} truncate">${esc(label)}</span>
+                            <span class="shrink-0 px-2 py-0.5 rounded-md border text-[10px] font-black ${badgeCls}">${esc(vStr)}</span>
+                        </div>`;
+                }).join('') : `<div class="text-[11px] text-slate-400 italic">Detalle ítem por ítem no disponible para este registro antiguo.</div>`;
+
+                return `
+                    <div class="glass-card rounded-2xl p-4 space-y-3 text-xs border ${hasObs ? 'border-amber-500/50' : 'border-emerald-500/40'}">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-black text-white">${esc(s.movil || 'Unidad')}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-200 border border-cyan-400/35">${esc(s.cuadrante || 'Peñaflor')}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-amber-300">${Number(s.kmInicial || 0).toLocaleString('es-CL')} km</span>
+                            </div>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${hasObs ? 'bg-red-500/25 text-red-200 border border-red-400/50' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'}">
+                                ${hasObs ? `⚠️ CON OBSERVACIONES${badCount > 0 ? ` (${badCount})` : ''}` : '✅ CHECKLIST OK'}
+                            </span>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-300">
+                            <div><i class="fa-solid fa-user-shield text-cyan-400 mr-1"></i> Inspector: <strong class="text-white">${esc(s.rut || '-')}</strong> • Turno ${esc(s.rangoHorario || '-')}</div>
+                            <div><i class="fa-regular fa-clock text-slate-400 mr-1"></i> ${esc(s.fechaInicio || '')}</div>
+                        </div>
+
+                        ${hasObs && s.itemsMalos && s.itemsMalos !== 'Ninguno' ? `
+                            <div class="rounded-xl bg-red-950/55 border border-red-500/40 p-2.5 text-[11px] text-red-200">
+                                <strong class="text-red-300">Novedades detectadas:</strong> ${esc(s.itemsMalos)}
+                            </div>` : ''}
+
+                        ${s.observaciones ? `
+                            <div class="rounded-xl bg-slate-900/80 border border-slate-700/80 p-2.5 text-[11px] text-slate-200">
+                                <strong class="text-amber-300">Observaciones del Inspector:</strong> ${esc(s.observaciones)}
+                            </div>` : ''}
+
+                        ${(fotoGen || fotoDef) ? `
+                            <div class="flex flex-wrap items-center gap-3">
+                                ${fotoGen ? `<a href="${esc(s.fotoGeneral)}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-slate-900/85 border border-slate-700 hover:border-cyan-400 transition"><img src="${esc(fotoGen)}" alt="Foto General" class="w-12 h-12 rounded-lg object-contain bg-slate-950"><span class="text-[10px] font-bold text-slate-200">📷 Foto General<br><span class="text-cyan-300">Abrir completa</span></span></a>` : ''}
+                                ${fotoDef ? `<a href="${esc(s.fotoDesperfecto)}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-red-950/60 border border-red-500/40 hover:border-red-300 transition"><img src="${esc(fotoDef)}" alt="Foto Desperfecto" class="w-12 h-12 rounded-lg object-contain bg-slate-950"><span class="text-[10px] font-bold text-red-200">⚠️ Foto Desperfecto<br><span class="text-amber-300">Abrir completa</span></span></a>` : ''}
+                            </div>` : ''}
+
+                        <details class="rounded-xl bg-slate-950/60 border border-slate-700/70 p-2.5">
+                            <summary class="cursor-pointer font-black text-cyan-300 text-[11px] select-none flex items-center justify-between">
+                                <span><i class="fa-solid fa-list-check mr-1.5"></i> Ver Detalle Completo del Checklist (${entries.length} ítems revisados)</span>
+                                <span class="text-[10px] text-slate-400 font-normal">Clic para desplegar</span>
+                            </summary>
+                            <div class="mt-2.5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1.5">
+                                ${itemsHtml}
+                            </div>
+                        </details>
                     </div>
                 `;
             }).join('');
