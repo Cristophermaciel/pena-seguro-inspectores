@@ -4149,8 +4149,10 @@
             moto_doc_revtech: { label: 'Revisión Técnica', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Gestionar Revisión Técnica vencida (urgente)', accionNoPorta: 'Reponer certificado de Revisión Técnica' },
             auto_doc_soap: { label: 'Seguro Obligatorio (SOAP)', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Renovar Seguro Obligatorio SOAP vencido', accionNoPorta: 'Reponer póliza SOAP en móvil' },
             moto_doc_soap: { label: 'Seguro Obligatorio (SOAP)', categoria: 'DOCUMENTACION', prioridad: 'CRITICA', accionAtrasada: 'Renovar Seguro Obligatorio SOAP vencido', accionNoPorta: 'Reponer póliza SOAP en moto' },
+            auto_doc_patentes: { label: 'Placas Patentes y Tarjeta Combustible', categoria: 'DOCUMENTACION', prioridad: 'ALTA', accion: 'Reponer o fijar placa patente / gestionar tarjeta combustible' },
+            moto_doc_patente: { label: 'Placa Patente y Soporte trasero (Moto)', categoria: 'DOCUMENTACION', prioridad: 'ALTA', accion: 'Fijar o reponer placa patente trasera de moto' },
 
-            // Fluidos
+            // Fluidos y Motor
             auto_flu_combustible: { label: 'Nivel de Combustible', categoria: 'FLUIDOS', prioridad: 'MEDIA', accion: 'Cargar combustible antes de patrullaje' },
             moto_niv_combustible: { label: 'Nivel de Combustible', categoria: 'FLUIDOS', prioridad: 'MEDIA', accion: 'Cargar combustible en motocicleta' },
             auto_flu_aceite: { label: 'Aceite de motor', categoria: 'FLUIDOS', prioridad: 'CRITICA', accion: 'Rellenar o cambiar aceite de motor (nivel crítico)' },
@@ -4158,33 +4160,44 @@
             auto_flu_frenos: { label: 'Líquido de frenos', categoria: 'FLUIDOS', prioridad: 'CRITICA', accion: 'Revisar fuga y rellenar líquido de frenos' },
             moto_niv_frenos: { label: 'Líquido de frenos', categoria: 'FLUIDOS', prioridad: 'CRITICA', accion: 'Revisar y rellenar líquido de frenos en moto' },
             auto_flu_refrigerante: { label: 'Refrigerante / Agua de motor', categoria: 'FLUIDOS', prioridad: 'ALTA', accion: 'Rellenar refrigerante y revisar temperatura' },
+            auto_flu_plumillas: { label: 'Limpiaparabrisas, Plumillas y Sapito', categoria: 'FLUIDOS', prioridad: 'MEDIA', accion: 'Cambiar plumillas o rellenar agua limpiaparabrisas' },
+            auto_mec_tablero: { label: 'Batería, Arranque y Testigos en Tablero', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Diagnóstico escáner / revisión batería y testigos tablero' },
 
             // Luces y Sistema Eléctrico
-            auto_ele_luces: { label: 'Luces principales (Altas y Bajas)', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de ampolletas / reparación de luces principales' },
+            auto_ele_luces: { label: 'Luces principales (Altas, Bajas y Neblineros)', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de ampolletas / reparación de luces principales' },
             moto_ele_luces: { label: 'Luz delantera (Alta y Baja)', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de foco / ampolleta delantera de moto' },
             auto_ele_intermitentes: { label: 'Intermitentes y Hazard', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Cambio de luces intermitentes / revisión eléctrica' },
             moto_ele_guinos: { label: 'Guiños / Intermitentes', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Cambio de guiños / intermitentes de moto' },
-            auto_ele_frenoreversa: { label: 'Luces de freno y reversa', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de luces de freno / reversa' },
+            auto_ele_frenoreversa: { label: 'Luces de freno, posición y reversa', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de luces de freno / reversa' },
             moto_ele_freno: { label: 'Luz trasera y luz de freno', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Cambio de luz trasera / sensor de freno' },
             auto_ele_baliza: { label: 'Baliza LED destelladora', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Reparar o reemplazar baliza LED de emergencia' },
             moto_ele_baliza: { label: 'Baliza LED de motocicleta', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Reparar o reemplazar baliza LED de moto' },
             auto_ele_sirena: { label: 'Sirena y perifoneo / megáfono', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Revisar sirena / módulo de perifoneo' },
             moto_ele_sirena: { label: 'Sirena y Claxon / Bocina', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Reparar sirena / bocina de moto' },
-            auto_ele_radio: { label: 'Radio comunicador base / móvil', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Revisar o reemplazar radio comunicador 1410' },
+            auto_ele_radio: { label: 'Radio comunicador base / móvil y antena', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Revisar o reemplazar radio comunicador 1410' },
             moto_ele_radio: { label: 'Radio Handie / Comunicador', categoria: 'LUCES_ELECTRICO', prioridad: 'ALTA', accion: 'Revisar o reponer radio portátil / batería' },
+            auto_ele_bocina_vidrios: { label: 'Bocina, Alzavidrios y Cierre Centralizado', categoria: 'LUCES_ELECTRICO', prioridad: 'MEDIA', accion: 'Reparar bocina, motor alzavidrios o cierre centralizado' },
+            auto_ele_clima: { label: 'Aire Acondicionado / Calefacción / Desempañador', categoria: 'LUCES_ELECTRICO', prioridad: 'MEDIA', accion: 'Revisar sistema de climatización y desempañador' },
+            moto_ele_bateria: { label: 'Batería, Encendido Eléctrico y Tablero (Moto)', categoria: 'LUCES_ELECTRICO', prioridad: 'CRITICA', accion: 'Revisar batería, motor de partida o tablero de moto' },
 
             // Neumáticos y Mecánica
             auto_neu_delanteros: { label: 'Neumáticos delanteros', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio o reparación de neumáticos delanteros' },
             auto_neu_traseros: { label: 'Neumáticos traseros', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio o reparación de neumáticos traseros' },
             auto_neu_repuesto: { label: 'Neumático de repuesto', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Reponer o reparar neumático de repuesto' },
-            auto_mec_gata: { label: 'Gata hidráulica y llave de ruedas', categoria: 'MECANICA_NEUMATICOS', prioridad: 'MEDIA', accion: 'Reponer gata hidráulica / llave de ruedas' },
-            auto_mec_frenomano: { label: 'Freno de mano / estacionamiento', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Regular o reparar freno de mano en taller' },
+            auto_mec_gata: { label: 'Gata hidráulica, llave de ruedas y gancho', categoria: 'MECANICA_NEUMATICOS', prioridad: 'MEDIA', accion: 'Reponer gata hidráulica / llave de ruedas' },
+            auto_mec_frenomano: { label: 'Freno de servicio (pedal) y Freno de mano', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisar pastillas, discos y regular freno en taller' },
+            auto_mec_direccion: { label: 'Dirección, Suspensión y Amortiguadores', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisión de tren delantero, amortiguadores y alineación' },
+            auto_mec_transmision: { label: 'Embrague, Caja de Cambios y Tracción 4x4', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisión de embrague, caja de cambios o selector 4x4' },
+            auto_mec_fugas: { label: 'Fugas de fluidos o ruidos anormales', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Inspección mecánica urgente por fuga o ruido anormal' },
             moto_neu_delantero: { label: 'Neumático delantero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de neumático delantero de moto' },
             moto_neu_trasero: { label: 'Neumático trasero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de neumático trasero de moto' },
             moto_fre_delantero: { label: 'Freno delantero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de pastillas / revisión freno delantero' },
             moto_fre_trasero: { label: 'Freno trasero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Cambio de pastillas / revisión freno trasero' },
-            moto_trans_cadena: { label: 'Cadena y transmisión (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Tensar, lubricar o cambiar kit de arrastre' },
-            moto_mec_espejos: { label: 'Espejos, pata y estanque (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Reparar o reemplazar espejos / pata de apoyo' },
+            moto_trans_cadena: { label: 'Cadena, piñón y corona (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Tensar, lubricar o cambiar kit de arrastre' },
+            moto_mec_suspension: { label: 'Suspensión delantera y amortiguador trasero (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Revisar retenes telescópica / amortiguador trasero' },
+            moto_mec_controles: { label: 'Manillar, Acelerador, Embrague y Piolas (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'CRITICA', accion: 'Regular o reemplazar piolas de embrague / acelerador' },
+            moto_mec_escape_fugas: { label: 'Escape / Silenciador y Fugas (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Revisar escape y posibles fugas de aceite o bencina' },
+            moto_mec_espejos: { label: 'Espejos, pata, estanque y carenado (Moto)', categoria: 'MECANICA_NEUMATICOS', prioridad: 'ALTA', accion: 'Reparar o reemplazar espejos, pata o carenado' },
 
             // Equipamiento y Seguridad
             auto_seg_extintor: { label: 'Extintor de incendios', categoria: 'EQUIPAMIENTO', prioridad: 'ALTA', accion: 'Recargar o reemplazar extintor vencido/descargado' },
@@ -4195,7 +4208,9 @@
             moto_seg_triangulos: { label: 'Triángulos / Conos de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer conos de seguridad' },
             auto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chalecos reflectantes en móvil' },
             moto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chaleco reflectante' },
+            auto_seg_linterna: { label: 'Linterna táctica y Cables puente batería', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer linterna táctica o cables puente' },
             moto_seg_casco: { label: 'Casco homologado y protecciones', categoria: 'EQUIPAMIENTO', prioridad: 'CRITICA', accion: 'Reponer casco homologado / guantes de motorista' },
+            moto_seg_maleta: { label: 'Maleta / Top Case y Defensas laterales (Moto)', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reparar chapa de maleta o fijación de defensas' },
 
             // Carrocería e Interior
             auto_car_parabrisas: { label: 'Parabrisas y vidrios', categoria: 'CARROCERIA', prioridad: 'ALTA', accion: 'Reparar o cambiar parabrisas / vidrio trizado' },
@@ -4334,7 +4349,8 @@
                             { id: "moto_doc_padron", label: "Padrón del vehículo" },
                             { id: "moto_doc_permiso", label: "Permiso de Circulación" },
                             { id: "moto_doc_revtech", label: "Revisión Técnica" },
-                            { id: "moto_doc_soap", label: "Seguro Obligatorio (SOAP)" }
+                            { id: "moto_doc_soap", label: "Seguro Obligatorio (SOAP)" },
+                            { id: "moto_doc_patente", label: "Placa Patente y soporte trasero", options: ["Bueno", "Malo"] }
                         ]
                     },
                     {
@@ -4348,33 +4364,37 @@
                         ]
                     },
                     {
-                        title: "3. Sistema Eléctrico y Luces",
+                        title: "3. Sistema Eléctrico, Luces y Emergencia",
                         icon: "fa-bolt",
                         defaultOptions: ["Bueno", "Malo"],
                         items: [
                             { id: "moto_ele_luces", label: "Luz delantera (Alta y Baja)" },
                             { id: "moto_ele_freno", label: "Luz trasera y luz de freno" },
-                            { id: "moto_ele_guinos", label: "Guiños / Intermitentes (Izq / Der)" },
+                            { id: "moto_ele_guinos", label: "Guiños / Intermitentes (Del./Tras. — Izq./Der.)" },
                             { id: "moto_ele_baliza", label: "Baliza destelladora LED de motocicleta" },
                             { id: "moto_ele_sirena", label: "Sirena y Claxon / Bocina" },
-                            { id: "moto_ele_radio", label: "Radio Handie / Comunicador portable" }
+                            { id: "moto_ele_radio", label: "Radio Handie / Comunicador portable" },
+                            { id: "moto_ele_bateria", label: "Batería, Encendido Eléctrico y Tablero / Velocímetro" }
                         ]
                     },
                     {
-                        title: "4. Neumáticos y Mecánica",
+                        title: "4. Neumáticos, Frenos, Suspensión y Mecánica",
                         icon: "fa-circle-dot",
                         defaultOptions: ["Bueno", "Malo"],
                         items: [
-                            { id: "moto_neu_delantero", label: "Neumático delantero (Presión y dibujo)" },
-                            { id: "moto_neu_trasero", label: "Neumático trasero (Presión y dibujo)" },
-                            { id: "moto_fre_delantero", label: "Sistema Freno delantero (Manillar)" },
-                            { id: "moto_fre_trasero", label: "Sistema Freno trasero (Pedal)" },
-                            { id: "moto_trans_cadena", label: "Tensión y lubricación de cadena / transmisión" },
-                            { id: "moto_mec_espejos", label: "Espejos retrovisores, pata de apoyo y estanque" }
+                            { id: "moto_neu_delantero", label: "Neumático delantero (Presión, dibujo, llanta y rayos)" },
+                            { id: "moto_neu_trasero", label: "Neumático trasero (Presión, dibujo, llanta y rayos)" },
+                            { id: "moto_fre_delantero", label: "Sistema Freno delantero (Manillar, disco y pastillas)" },
+                            { id: "moto_fre_trasero", label: "Sistema Freno trasero (Pedal, balatas / disco)" },
+                            { id: "moto_trans_cadena", label: "Cadena, piñón, corona y transmisión" },
+                            { id: "moto_mec_suspension", label: "Suspensión delantera (Telescópica) y amortiguador trasero" },
+                            { id: "moto_mec_controles", label: "Manillar, Acelerador, Embrague y Piolas" },
+                            { id: "moto_mec_escape_fugas", label: "Escape / Silenciador y Fugas de aceite o combustible" },
+                            { id: "moto_mec_espejos", label: "Espejos retrovisores, pata de apoyo, estanque y carenado" }
                         ]
                     },
                     {
-                        title: "5. Equipamiento de Emergencia y Seguridad",
+                        title: "5. Equipamiento de Emergencia y EPP Motorista",
                         icon: "fa-kit-medical",
                         defaultOptions: ["Disponible", "No Disponible"],
                         items: [
@@ -4382,7 +4402,8 @@
                             { id: "moto_seg_botiquin", label: "Botiquín de primeros auxilios completo", options: ["Completo", "Sin Implementos"] },
                             { id: "moto_seg_triangulos", label: "Triángulos / Conos de seguridad", options: ["4 Conos", "Sin Conos"] },
                             { id: "moto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Disponible", "No Disponible"] },
-                            { id: "moto_seg_casco", label: "Casco homologado, guantes y protecciones", options: ["Disponible", "No Disponible"] }
+                            { id: "moto_seg_casco", label: "Casco homologado, guantes y protecciones", options: ["Disponible", "No Disponible"] },
+                            { id: "moto_seg_maleta", label: "Maleta / Top Case y Defensas laterales", options: ["Bueno", "Malo"] }
                         ]
                     }
                 ];
@@ -4390,50 +4411,58 @@
                 // CHECKLIST PARA MÓVILES Y CAMIONETAS
                 categories = [
                     {
-                        title: "1. Documentación del Vehículo",
+                        title: "1. Documentación y Patentes del Vehículo",
                         icon: "fa-file-lines",
                         defaultOptions: ["Al día", "Atrasada", "No porta"],
                         items: [
                             { id: "auto_doc_padron", label: "Padrón del vehículo" },
                             { id: "auto_doc_permiso", label: "Permiso de Circulación" },
-                            { id: "auto_doc_revtech", label: "Revisión Técnica" },
-                            { id: "auto_doc_soap", label: "Seguro Obligatorio (SOAP)" }
+                            { id: "auto_doc_revtech", label: "Revisión Técnica y Gases" },
+                            { id: "auto_doc_soap", label: "Seguro Obligatorio (SOAP)" },
+                            { id: "auto_doc_patentes", label: "Placas Patentes (Del./Tras.) y Tarjeta Combustible", options: ["Bueno", "Malo"] }
                         ]
                     },
                     {
-                        title: "2. Niveles de Fluido",
+                        title: "2. Niveles de Fluido, Batería y Tablero",
                         icon: "fa-droplet",
                         defaultOptions: ["1/4", "1/2", "Full"],
                         items: [
                             { id: "auto_flu_combustible", label: "Nivel de Combustible" },
                             { id: "auto_flu_aceite", label: "Aceite de motor" },
                             { id: "auto_flu_frenos", label: "Líquido de frenos" },
-                            { id: "auto_flu_refrigerante", label: "Refrigerante / Agua de motor" }
+                            { id: "auto_flu_refrigerante", label: "Refrigerante / Agua de motor" },
+                            { id: "auto_flu_plumillas", label: "Limpiaparabrisas, Plumillas y Sapito", options: ["Bueno", "Malo"] },
+                            { id: "auto_mec_tablero", label: "Batería, Arranque y Testigos en Tablero", options: ["Bueno", "Malo"] }
                         ]
                     },
                     {
-                        title: "3. Sistema Eléctrico y Luces",
+                        title: "3. Sistema Eléctrico, Luces y Emergencia",
                         icon: "fa-lightbulb",
                         defaultOptions: ["Bueno", "Malo"],
                         items: [
-                            { id: "auto_ele_luces", label: "Luces principales (Altas y Bajas)" },
+                            { id: "auto_ele_luces", label: "Luces principales (Altas, Bajas y Neblineros)" },
                             { id: "auto_ele_intermitentes", label: "Intermitentes y Hazard" },
-                            { id: "auto_ele_frenoreversa", label: "Luces de freno y luz de reversa" },
+                            { id: "auto_ele_frenoreversa", label: "Luces de freno, posición trasera y reversa" },
                             { id: "auto_ele_baliza", label: "Baliza de seguridad LED destelladora" },
                             { id: "auto_ele_sirena", label: "Sirena y sistema de perifoneo / megáfono" },
-                            { id: "auto_ele_radio", label: "Radio comunicador base / móvil" }
+                            { id: "auto_ele_radio", label: "Radio comunicador base / móvil y antena" },
+                            { id: "auto_ele_bocina_vidrios", label: "Bocina, Alzavidrios y Cierre Centralizado" },
+                            { id: "auto_ele_clima", label: "Aire Acondicionado / Calefacción / Desempañador" }
                         ]
                     },
                     {
-                        title: "4. Neumáticos y Mecánica",
+                        title: "4. Neumáticos, Frenos, Dirección y Mecánica",
                         icon: "fa-wrench",
                         defaultOptions: ["Bueno", "Malo"],
                         items: [
-                            { id: "auto_neu_delanteros", label: "Neumáticos delanteros (Presión y dibujo)" },
-                            { id: "auto_neu_traseros", label: "Neumáticos traseros (Presión y dibujo)" },
+                            { id: "auto_neu_delanteros", label: "Neumáticos delanteros (Presión, dibujo y llantas)" },
+                            { id: "auto_neu_traseros", label: "Neumáticos traseros (Presión, dibujo y llantas)" },
                             { id: "auto_neu_repuesto", label: "Neumático de repuesto funcional" },
-                            { id: "auto_mec_gata", label: "Gata hidráulica y llave de ruedas" },
-                            { id: "auto_mec_frenomano", label: "Freno de mano / estacionamiento" }
+                            { id: "auto_mec_gata", label: "Gata hidráulica, llave de ruedas y gancho remolque" },
+                            { id: "auto_mec_frenomano", label: "Freno de servicio (pedal) y Freno de mano" },
+                            { id: "auto_mec_direccion", label: "Dirección, Suspensión y Amortiguadores" },
+                            { id: "auto_mec_transmision", label: "Embrague, Caja de Cambios y Tracción 4x4" },
+                            { id: "auto_mec_fugas", label: "Sin fugas de aceite / agua ni ruidos anormales" }
                         ]
                     },
                     {
@@ -4444,18 +4473,19 @@
                             { id: "auto_seg_extintor", label: "Extintor con carga vigente", options: ["Con Carga", "Sin Carga"] },
                             { id: "auto_seg_botiquin", label: "Botiquín de primeros auxilios completo", options: ["Completo", "Sin Implementos"] },
                             { id: "auto_seg_triangulos", label: "Triángulos / Conos de seguridad", options: ["4 Conos", "Sin Conos"] },
-                            { id: "auto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Disponible", "No Disponible"] }
+                            { id: "auto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Disponible", "No Disponible"] },
+                            { id: "auto_seg_linterna", label: "Linterna táctica y Cables puente batería", options: ["Disponible", "No Disponible"] }
                         ]
                     },
                     {
-                        title: "6. Carrocería e Interior",
+                        title: "6. Carrocería, Vidrios e Interior",
                         icon: "fa-car",
                         defaultOptions: ["Bueno", "Malo"],
                         items: [
-                            { id: "auto_car_parabrisas", label: "Parabrisas y vidrios sin trizaduras" },
+                            { id: "auto_car_parabrisas", label: "Parabrisas, luneta y vidrios sin trizaduras" },
                             { id: "auto_car_espejos", label: "Espejos retrovisores (Interior y Laterales)" },
-                            { id: "auto_car_carroceria", label: "Carrocería en buen estado (Sin nuevos abollones)" },
-                            { id: "auto_car_cinturones", label: "Cinturones de seguridad operativos" },
+                            { id: "auto_car_carroceria", label: "Carrocería, puertas, parachoques y gráfica 1410" },
+                            { id: "auto_car_cinturones", label: "Cinturones de seguridad y asientos" },
                             { id: "auto_car_aseo", label: "Aseo interior y exterior del vehículo" }
                         ]
                     }
@@ -4511,27 +4541,43 @@
         }
 
         const CHECKLIST_PART_OPTIONS = {
+            auto_doc_patentes: ['Patente Delantera suelta/dañada', 'Patente Trasera suelta/dañada', 'Tarjeta Combustible faltante'],
+            moto_doc_patente: ['Patente doblada / suelta', 'Soporte quebrado', 'Luz patente quemada'],
+            auto_flu_plumillas: ['Plumilla Piloto', 'Plumilla Copiloto', 'Plumilla Trasera', 'Sapito sin agua / tapado'],
+            auto_mec_tablero: ['Testigo Check Engine', 'Testigo Batería / Alternador', 'Testigo ABS / Frenos', 'Testigo Airbag', 'Cuesta arrancar'],
             auto_ele_luces: ['Foco Delantero Izq. (Piloto)', 'Foco Delantero Der. (Copiloto)', 'Luz Baja', 'Luz Alta', 'Neblinero Izq.', 'Neblinero Der.'],
             auto_ele_intermitentes: ['Delantero Izquierdo', 'Delantero Derecho', 'Trasero Izquierdo', 'Trasero Derecho', 'Lateral Izquierdo', 'Lateral Derecho', 'Botón / Relay Hazard'],
-            auto_ele_frenoreversa: ['Freno Izquierdo', 'Freno Derecho', 'Tercera Luz de Freno', 'Reversa Izquierda', 'Reversa Derecha'],
+            auto_ele_frenoreversa: ['Freno Izquierdo', 'Freno Derecho', 'Tercera Luz de Freno', 'Reversa Izquierda', 'Reversa Derecha', 'Luz Posición Trasera'],
             auto_ele_baliza: ['Módulo LED Delantero', 'Módulo LED Trasero', 'Control / Consola', 'No enciende'],
             auto_ele_sirena: ['Sirena sin sonido', 'Micrófono / Perifoneo', 'Parlante dañado'],
             auto_ele_radio: ['Sin señal / Antena', 'Micrófono / PTT', 'No enciende'],
-            auto_neu_delanteros: ['Delantero Izquierdo (Piloto)', 'Delantero Derecho (Copiloto)', 'Ambos Delanteros', 'Desgaste liso', 'Pinchado / Baja presión'],
-            auto_neu_traseros: ['Trasero Izquierdo', 'Trasero Derecho', 'Ambos Traseros', 'Desgaste liso', 'Pinchado / Baja presión'],
+            auto_ele_bocina_vidrios: ['Bocina / Claxon', 'Alzavidrio Piloto', 'Alzavidrio Copiloto', 'Alzavidrio Trasero', 'Cierre Centralizado'],
+            auto_ele_clima: ['Aire Acondicionado no enfría', 'Calefacción', 'Desempañador parabrisas', 'Ventilador'],
+            auto_neu_delanteros: ['Delantero Izquierdo (Piloto)', 'Delantero Derecho (Copiloto)', 'Ambos Delanteros', 'Desgaste liso', 'Pinchado / Baja presión', 'Llanta dañada'],
+            auto_neu_traseros: ['Trasero Izquierdo', 'Trasero Derecho', 'Ambos Traseros', 'Desgaste liso', 'Pinchado / Baja presión', 'Llanta dañada'],
             auto_neu_repuesto: ['Pinchado / Desinflado', 'No porta repuesto', 'Llanta dañada'],
+            auto_mec_frenomano: ['Pedal de freno largo/esponjoso', 'Chillido pastillas', 'Freno de mano destensado'],
+            auto_mec_direccion: ['Volante vibración / desalineado', 'Amortiguador Delantero', 'Amortiguador Trasero', 'Ruido tren delantero'],
+            auto_mec_transmision: ['Embrague patina / duro', 'Caja de cambios / Marchas', 'Selector Tracción 4x4'],
+            auto_mec_fugas: ['Fuga aceite motor', 'Fuga refrigerante / agua', 'Fuga líquido frenos', 'Ruido motor / escape'],
             auto_car_parabrisas: ['Parabrisas Delantero', 'Luneta Trasera', 'Vidrio Piloto', 'Vidrio Copiloto', 'Vidrio Trasero Izq.', 'Vidrio Trasero Der.'],
             auto_car_espejos: ['Espejo Lateral Izq. (Piloto)', 'Espejo Lateral Der. (Copiloto)', 'Espejo Retrovisor Interior'],
-            auto_car_carroceria: ['Parachoques Delantero', 'Parachoques Trasero', 'Puerta Piloto', 'Puerta Copiloto', 'Puerta Trasera Izq.', 'Puerta Trasera Der.', 'Costado / Tapabarro', 'Capó / Techo'],
-            auto_car_cinturones: ['Piloto', 'Copiloto', 'Trasero Izquierdo', 'Trasero Derecho', 'Trasero Central'],
+            auto_car_carroceria: ['Parachoques Delantero', 'Parachoques Trasero', 'Puerta Piloto', 'Puerta Copiloto', 'Puerta Trasera Izq.', 'Puerta Trasera Der.', 'Costado / Tapabarro', 'Capó / Techo', 'Gráfica 1410'],
+            auto_car_cinturones: ['Piloto', 'Copiloto', 'Trasero Izquierdo', 'Trasero Derecho', 'Trasero Central', 'Asiento dañado'],
             moto_ele_luces: ['Luz Baja', 'Luz Alta', 'Foco delantero trizado'],
             moto_ele_freno: ['Luz de posición trasera', 'Luz de freno', 'Mica rota'],
             moto_ele_guinos: ['Delantero Izquierdo', 'Delantero Derecho', 'Trasero Izquierdo', 'Trasero Derecho'],
-            moto_neu_delantero: ['Pinchado / Baja presión', 'Desgaste liso', 'Llanta / Rayos'],
-            moto_neu_trasero: ['Pinchado / Baja presión', 'Desgaste liso', 'Llanta / Rayos'],
-            moto_fre_delantero: ['Pastillas gastadas', 'Manillar / Piola', 'Disco dañado'],
+            moto_ele_bateria: ['Batería descargada', 'Botón encendido', 'Velocímetro / Tablero'],
+            moto_neu_delantero: ['Pinchado / Baja presión', 'Desgaste liso', 'Llanta / Rayos sueltos'],
+            moto_neu_trasero: ['Pinchado / Baja presión', 'Desgaste liso', 'Llanta / Rayos sueltos'],
+            moto_fre_delantero: ['Pastillas gastadas', 'Manillar / Bomba freno', 'Disco dañado'],
             moto_fre_trasero: ['Pastillas / Balatas', 'Pedal / Regulación'],
-            moto_mec_espejos: ['Espejo Izquierdo', 'Espejo Derecho', 'Pata de apoyo', 'Estanque / Tapa']
+            moto_trans_cadena: ['Cadena suelta / destensada', 'Falta lubricación', 'Piñón / Corona gastados'],
+            moto_mec_suspension: ['Telescópica Izq. (retén/aceite)', 'Telescópica Der. (retén/aceite)', 'Amortiguador Trasero'],
+            moto_mec_controles: ['Manillar chueco', 'Piola Acelerador', 'Piola / Manilla Embrague', 'Puños dañados'],
+            moto_mec_escape_fugas: ['Escape suelto / ruido', 'Fuga de aceite motor', 'Fuga de bencina / carburador'],
+            moto_mec_espejos: ['Espejo Izquierdo', 'Espejo Derecho', 'Pata de apoyo', 'Estanque / Tapa', 'Carenado / Gráfica'],
+            moto_seg_maleta: ['Chapa maleta dañada', 'Soporte Top Case suelto', 'Defensa lateral Izq.', 'Defensa lateral Der.']
         };
 
         function getChecklistPartOptions(itemId) {
