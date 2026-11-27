@@ -4211,8 +4211,11 @@
             auto_seg_triangulos: { label: 'Triángulo de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer triángulo reflectante de seguridad' },
             moto_seg_triangulos: { label: 'Triángulo de seguridad', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer triángulo reflectante de seguridad' },
             auto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chalecos reflectantes en móvil' },
-            moto_seg_chalecos: { label: 'Chalecos reflectantes', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chaleco reflectante' },
+            moto_seg_chalecos: { label: 'Chaleco reflectante de alta visibilidad (Moto)', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer chaleco reflectante de motorista' },
             auto_seg_linterna: { label: 'Linterna táctica y Cables puente batería', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reponer linterna táctica o cables puente' },
+            moto_epp_casco: { label: 'Casco certificado (EPP Moto)', categoria: 'EQUIPAMIENTO', prioridad: 'CRITICA', accion: 'Reponer casco certificado de motorista' },
+            moto_epp_guantes: { label: 'Guantes de motorista (EPP Moto)', categoria: 'EQUIPAMIENTO', prioridad: 'ALTA', accion: 'Reponer guantes de protección para motorista' },
+            moto_epp_rodilleras: { label: 'Rodilleras / Protecciones (EPP Moto)', categoria: 'EQUIPAMIENTO', prioridad: 'ALTA', accion: 'Reponer rodilleras / protecciones de motorista' },
             moto_seg_casco: { label: 'Casco homologado y protecciones', categoria: 'EQUIPAMIENTO', prioridad: 'CRITICA', accion: 'Reponer casco homologado / guantes de motorista' },
             moto_seg_maleta: { label: 'Maleta / Top Case y Defensas laterales (Moto)', categoria: 'EQUIPAMIENTO', prioridad: 'MEDIA', accion: 'Reparar chapa de maleta o fijación de defensas' },
 
@@ -4307,7 +4310,7 @@
 
         // --- Generate Dynamic Exhaustive Checklist based on Vehicle Type ---
         const CHECKLIST_ALERT_VALUES = new Set([
-            'Atrasada', 'No porta', '1/4', 'Malo',
+            'Atrasada', 'No porta', '1/4', 'Malo', 'Roto', 'Desconfigurado',
             'Sin Carga', 'Vencido', 'Sin Implementos', 'Faltan Implementos',
             'Sin Conos', 'Menos de 4 Conos', 'No porta Triángulo', 'No Disponible'
         ]);
@@ -4376,9 +4379,9 @@
                             { id: "moto_ele_luces", label: "Luz delantera (Alta y Baja)" },
                             { id: "moto_ele_freno", label: "Luz trasera y luz de freno" },
                             { id: "moto_ele_guinos", label: "Guiños / Intermitentes (Del./Tras. — Izq./Der.)" },
-                            { id: "moto_ele_baliza", label: "Baliza destelladora LED de motocicleta" },
-                            { id: "moto_ele_sirena", label: "Sirena y Claxon / Bocina" },
-                            { id: "moto_ele_radio", label: "Radio Handie / Comunicador portable" },
+                            { id: "moto_ele_baliza", label: "Baliza destelladora LED de motocicleta", options: ["Bueno", "Malo"], noDetail: true },
+                            { id: "moto_ele_sirena", label: "Sirena y Claxon / Bocina", options: ["Bueno", "Malo", "Roto"], noDetail: true },
+                            { id: "moto_ele_radio", label: "Radio Handie / Comunicador portable", options: ["Bueno", "Malo", "Desconfigurado"], noDetail: true },
                             { id: "moto_ele_bateria", label: "Batería, Encendido Eléctrico y Tablero / Velocímetro" }
                         ]
                     },
@@ -4399,17 +4402,14 @@
                         ]
                     },
                     {
-                        title: "5. Equipamiento de Emergencia y EPP Motorista",
-                        icon: "fa-kit-medical",
+                        title: "5. EPP Motorista",
+                        icon: "fa-helmet-safety",
                         defaultOptions: ["Porta", "No porta"],
                         items: [
-                            { id: "moto_seg_extintor", label: "Extintor con carga vigente", options: ["Con Carga", "Sin Carga", "Vencido"], noDetail: true },
-                            { id: "moto_seg_botiquin", label: "Botiquín de primeros auxilios completo", options: ["Completo", "Faltan Implementos"], noDetail: true },
-                            { id: "moto_seg_conos", label: "Conos de seguridad", options: ["Porta 4 Conos", "Menos de 4 Conos", "No porta"], noDetail: true },
-                            { id: "moto_seg_triangulos", label: "Triángulo de seguridad", options: ["Porta Triángulo", "No porta Triángulo"], noDetail: true },
-                            { id: "moto_seg_chalecos", label: "Chalecos reflectantes de alta visibilidad", options: ["Porta", "No porta"], noDetail: true },
-                            { id: "moto_seg_casco", label: "Casco homologado, guantes y protecciones", options: ["Porta", "No porta"], noDetail: true },
-                            { id: "moto_seg_maleta", label: "Maleta / Top Case y Defensas laterales", options: ["Bueno", "Malo"] }
+                            { id: "moto_epp_casco", label: "Casco certificado", options: ["Porta", "No porta"], noDetail: true },
+                            { id: "moto_epp_guantes", label: "Guantes de motorista", options: ["Porta", "No porta"], noDetail: true },
+                            { id: "moto_epp_rodilleras", label: "Rodilleras / Protecciones", options: ["Porta", "No porta"], noDetail: true },
+                            { id: "moto_seg_chalecos", label: "Chaleco reflectante de alta visibilidad", options: ["Porta", "No porta"], noDetail: true }
                         ]
                     }
                 ];
