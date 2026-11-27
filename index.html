@@ -1856,6 +1856,11 @@
                         <div id="cad-scheduled-5min-banner-list" class="max-w-7xl mx-auto space-y-1.5"></div>
                     </div>
 
+                    <!-- BANNER DE ALERTA DERIVACIÓN CALL CENTER -> DESPACHADOR Y CCTV (ESTILO GEOCERCA + CÁMARA MÁS CERCANA) -->
+                    <div id="cad-pending-dispatch-banner" class="hidden bg-gradient-to-r from-red-700/95 via-blue-800/95 to-cyan-800/95 border-b border-cyan-300/60 px-4 py-2.5 shadow-xl z-20">
+                        <div id="cad-pending-dispatch-banner-list" class="max-w-7xl mx-auto space-y-1.5"></div>
+                    </div>
+
                     <!-- ================================================================ -->
                     <!-- MÓDULO 1: CENTRAL (SPLIT-PANE 520px + MAPA TÁCTICO EN VIVO)      -->
                     <!-- ================================================================ -->
@@ -2611,6 +2616,23 @@
                                     + Nueva Cámara
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Bandeja en Vivo: Derivaciones Call Center / Central con Cámara Más Cercana (v81) -->
+                        <div id="cenco-cctv-incoming-procs-card" class="cad-surface border border-cyan-500/55 rounded-xl p-4 space-y-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b cad-border pb-2.5">
+                                <div>
+                                    <h3 class="text-sm font-black text-cyan-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-tower-broadcast fa-beat-fade"></i> Derivaciones Call Center / Central — Cámara Disponible Más Cercana
+                                        <span id="cenco-cctv-incoming-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white">0 activos</span>
+                                    </h3>
+                                    <p class="text-[11px] cad-muted">Cada procedimiento ingresado por Call Center indica automáticamente su dirección/ubicación y la cámara CCTV operativa más cercana.</p>
+                                </div>
+                                <button type="button" onclick="syncBootstrapFromCloud(true)" class="px-2.5 py-1.5 rounded-md bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/40 text-[11px] font-bold">
+                                    <i class="fa-solid fa-rotate mr-1"></i> Actualizar
+                                </button>
+                            </div>
+                            <div id="cenco-cctv-incoming-procs-list" class="grid grid-cols-1 lg:grid-cols-2 gap-2.5 max-h-[340px] overflow-y-auto pr-1"></div>
                         </div>
 
                         <!-- Bandeja Directa: Solicitudes Policiales de Respaldo de Video (Carabineros & PDI) -->
@@ -9960,6 +9982,206 @@
             }
         }
 
+        // ====================================================================
+        // DERIVACIÓN CALL CENTER -> DESPACHADOR + CCTV (CÁMARA MÁS CERCANA v81)
+        // ====================================================================
+        window._cadNotifiedPendingIds = window._cadNotifiedPendingIds || new Set();
+        window._cadDismissedPendingIds = window._cadDismissedPendingIds || new Set();
+
+        function calcGeoDistanceMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const toRad = d => (d * Math.PI) / 180;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        }
+
+        function formatApproxDistance(meters) {
+            if (!isFinite(meters) || meters < 0) return '';
+            if (meters < 1000) return `${meters} m`;
+            return `${(meters / 1000).toFixed(1)} km`;
+        }
+
+        function findNearestOperationalCameras(inc, maxResults = 2) {
+            const cams = getCencoCamerasDB().filter(c => String(c.estado || 'OPERATIVA').trim().toUpperCase() === 'OPERATIVA');
+            if (cams.length === 0) return { nearest: null, list: [] };
+            const hasExactGps = /-\d+\.\d+\s*,\s*-\d+\.\d+/.test(String(inc?.direccion || ''));
+            const incCoords = parseGpsOrQuadrantCoords(inc?.direccion || '', inc?.cuadrante || '252A', 0);
+            const incQuad = String(inc?.cuadrante || '').trim().toUpperCase();
+
+            const scored = cams.map(cam => {
+                const camCoords = parseGpsOrQuadrantCoords(cam.gps || cam.nombre || '', cam.cuadrante || '252A', 0);
+                const distM = calcGeoDistanceMeters(incCoords[0], incCoords[1], camCoords[0], camCoords[1]);
+                const sameQuad = incQuad && String(cam.cuadrante || '').trim().toUpperCase() === incQuad;
+                return Object.assign({}, cam, {
+                    _distMeters: distM,
+                    _distLabel: hasExactGps ? formatApproxDistance(distM) : (sameQuad ? `Cuadrante ${incQuad} (~${formatApproxDistance(distM)})` : `~${formatApproxDistance(distM)}`),
+                    _sameQuad: sameQuad
+                });
+            }).sort((a, b) => {
+                if (!hasExactGps && a._sameQuad !== b._sameQuad) return a._sameQuad ? -1 : 1;
+                return a._distMeters - b._distMeters;
+            });
+
+            return { nearest: scored[0] || null, list: scored.slice(0, maxResults) };
+        }
+
+        function dismissPendingDispatchBanner(folioId) {
+            window._cadDismissedPendingIds.add(folioId);
+            checkPendingCallCenterDerivations();
+        }
+
+        function jumpToNearestCameraForIncident(folioId, camId) {
+            switchCencoModule('cctv');
+            if (camId) {
+                setTimeout(() => {
+                    const sel = document.getElementById('cctv-camara-select');
+                    if (sel && Array.from(sel.options).some(o => o.value === camId)) {
+                        sel.value = camId;
+                    }
+                    if (typeof onCencoCctvCameraSelect === 'function') onCencoCctvCameraSelect(camId);
+                    const camCard = document.getElementById('cctv-camara-select');
+                    if (camCard) camCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 120);
+            }
+        }
+
+        function renderCctvIncomingProceduresPanel() {
+            const listEl = document.getElementById('cenco-cctv-incoming-procs-list');
+            const badgeEl = document.getElementById('cenco-cctv-incoming-badge');
+            if (!listEl) return;
+
+            const activeProcs = getCencoIncidentsDB().filter(i => {
+                if (isClosedOrArchivedIncident(i)) return false;
+                const isGeo = String(i.folioId || '').toUpperCase().startsWith('CAD-GPS-') || String(i.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA';
+                return !isGeo;
+            });
+
+            if (badgeEl) {
+                badgeEl.innerText = `${activeProcs.length} ${activeProcs.length === 1 ? 'activo' : 'activos'}`;
+                badgeEl.classList.toggle('hidden', activeProcs.length === 0);
+            }
+
+            if (activeProcs.length === 0) {
+                listEl.innerHTML = `<div class="col-span-full text-center py-6 cad-muted text-xs">Sin procedimientos activos derivados desde Call Center o Central en este momento.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = activeProcs.slice(0, 12).map(inc => {
+                const { nearest, list: topCams } = findNearestOperationalCameras(inc, 2);
+                const backupCam = topCams[1] || null;
+                const cleanDir = String(inc.direccion || 'Sin dirección').replace(/\s*\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)\s*$/, '').trim();
+                const isPending = String(inc.estado || '').toUpperCase() === 'PENDIENTE_DESPACHO';
+                return `
+                    <div class="cad-elevated border ${isPending ? 'border-red-500/60 bg-red-950/20' : 'border-cyan-500/35'} rounded-xl p-3 space-y-2 text-xs">
+                        <div class="flex flex-wrap items-center justify-between gap-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-mono font-black text-blue-400">${escCcHtml(inc.folioId)}</span>
+                                ${getGovernaStatusPill(inc.estado)}
+                                <span class="px-1.5 py-0.5 rounded cad-surface border cad-border text-[10px] font-bold text-cyan-300">${escCcHtml(inc.cuadrante || 'S/C')}</span>
+                            </div>
+                            <span class="text-[10px] cad-muted font-mono">${escCcHtml(inc.fechaIngreso || '')}</span>
+                        </div>
+                        <div class="font-black cad-text">${escCcHtml(inc.categoria || '')}${inc.subcategoria ? ` — <span class="text-indigo-300">${escCcHtml(inc.subcategoria)}</span>` : ''}</div>
+                        <div class="text-[11px] cad-text"><i class="fa-solid fa-location-dot text-red-400 mr-1"></i><strong>Ubicación:</strong> ${escCcHtml(cleanDir)}</div>
+                        ${inc.detalle ? `<div class="text-[11px] cad-muted line-clamp-2">${escCcHtml(inc.detalle)}</div>` : ''}
+                        <div class="rounded-lg bg-cyan-950/60 border border-cyan-400/45 p-2 space-y-1">
+                            <div class="text-[10px] font-black uppercase text-cyan-300 flex items-center gap-1">
+                                <i class="fa-solid fa-video"></i> Cámara Disponible Más Cercana
+                            </div>
+                            ${nearest ? `
+                                <div class="font-black text-white text-xs">${escCcHtml(nearest.id)} — ${escCcHtml(nearest.nombre)}</div>
+                                <div class="text-[10px] text-cyan-200/90">Sector: ${escCcHtml(nearest.sector || nearest.cuadrante || 'Peñaflor')} • Distancia: <strong>${escCcHtml(nearest._distLabel)}</strong></div>
+                                ${backupCam ? `<div class="text-[10px] text-slate-300">2ª opción: ${escCcHtml(backupCam.id)} (${escCcHtml(backupCam.nombre)})</div>` : ''}
+                            ` : `<div class="text-[11px] text-amber-300 font-bold">Sin cámaras operativas registradas en el catálogo.</div>`}
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                            ${nearest ? `<button type="button" onclick="jumpToNearestCameraForIncident('${escCcHtml(inc.folioId)}', '${escCcHtml(nearest.id)}')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-[11px]"><i class="fa-solid fa-video mr-1"></i>Abrir ${escCcHtml(nearest.id)}</button>` : ''}
+                            <button type="button" onclick="focusIncidentOnMap('${escCcHtml(inc.folioId)}')" class="py-1.5 px-2.5 rounded-lg cad-surface border cad-border hover:border-blue-400 cad-text font-bold text-[11px]"><i class="fa-solid fa-map-location-dot mr-1"></i>Mapa</button>
+                            <button type="button" onclick="openCencoFolioModal('${escCcHtml(inc.folioId)}')" class="py-1.5 px-2.5 rounded-lg cad-surface border cad-border hover:border-indigo-400 cad-text font-bold text-[11px]"><i class="fa-regular fa-comments mr-1"></i>Bitácora</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function checkPendingCallCenterDerivations() {
+            const cencoView = document.getElementById('view-cenco');
+            if (!cencoView || !cencoView.classList.contains('active')) return;
+            const role = String(AppState.userRole || '').trim().toUpperCase();
+            if (role === 'CENCO_TELEFONISTA') {
+                document.getElementById('cad-pending-dispatch-banner')?.classList.add('hidden');
+                return;
+            }
+
+            const pending = getCencoIncidentsDB().filter(i => {
+                if (String(i.estado || '').trim().toUpperCase() !== 'PENDIENTE_DESPACHO') return false;
+                const isGeo = String(i.folioId || '').toUpperCase().startsWith('CAD-GPS-') || String(i.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA';
+                if (isGeo) return false;
+                if (window._cadDismissedPendingIds.has(i.folioId)) return false;
+                return true;
+            });
+
+            const banner = document.getElementById('cad-pending-dispatch-banner');
+            const bannerList = document.getElementById('cad-pending-dispatch-banner-list');
+            const isCctv = role === 'CENCO_CCTV';
+
+            if (banner && bannerList) {
+                banner.classList.toggle('hidden', pending.length === 0);
+                bannerList.innerHTML = pending.slice(0, 3).map(inc => {
+                    const { nearest } = findNearestOperationalCameras(inc, 1);
+                    const cleanDir = String(inc.direccion || 'Sin dirección').replace(/\s*\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)\s*$/, '').trim();
+                    const camTxt = nearest ? `${nearest.id} (${nearest.nombre} • ${nearest._distLabel})` : 'Sin cámara operativa cercana';
+                    return `
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-white text-xs">
+                            <div class="flex flex-wrap items-center gap-2 min-w-0">
+                                <span class="px-2 py-0.5 rounded-full bg-red-600 text-white font-black text-[10px] shrink-0 animate-pulse">
+                                    <i class="fa-solid ${isCctv ? 'fa-video' : 'fa-bell'} mr-1"></i>${isCctv ? 'DERIVACIÓN CCTV' : 'PROCEDIMIENTO PENDIENTE'}
+                                </span>
+                                <span class="font-mono font-black text-amber-300">${escCcHtml(inc.folioId)}</span>
+                                <span class="px-2 py-0.5 rounded bg-white/15 font-black text-[11px]">${escCcHtml(inc.categoria || 'Emergencia')}</span>
+                                <span class="truncate"><i class="fa-solid fa-location-dot text-amber-300 mr-1"></i><strong>${escCcHtml(cleanDir)}</strong> (${escCcHtml(inc.cuadrante || 'S/C')})</span>
+                                <span class="px-2 py-0.5 rounded bg-cyan-500/25 border border-cyan-300/50 text-cyan-100 font-black text-[11px]"><i class="fa-solid fa-video mr-1"></i>Cámara más cercana: ${escCcHtml(camTxt)}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                ${isCctv && nearest
+                                    ? `<button type="button" onclick="jumpToNearestCameraForIncident('${escCcHtml(inc.folioId)}', '${escCcHtml(nearest.id)}')" class="px-2.5 py-1 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-[11px] shadow"><i class="fa-solid fa-video mr-1"></i>Ver ${escCcHtml(nearest.id)}</button>`
+                                    : `<button type="button" onclick="openCencoDispatchModal('${escCcHtml(inc.folioId)}', '', '${escCcHtml(inc.cuadrante || '252A')}', '')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] shadow"><i class="fa-solid fa-car-side mr-1"></i>Despachar</button>`
+                                }
+                                <button type="button" onclick="focusIncidentOnMap('${escCcHtml(inc.folioId)}')" class="px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-[11px]" title="Ubicar en mapa"><i class="fa-solid fa-location-crosshairs"></i></button>
+                                <button type="button" onclick="dismissPendingDispatchBanner('${escCcHtml(inc.folioId)}')" class="px-2 py-1 rounded-lg bg-slate-950/60 hover:bg-slate-950 text-slate-200 font-bold text-[11px]">✓ Visto</button>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
+            let triggeredNew = false;
+            pending.forEach(inc => {
+                if (!window._cadNotifiedPendingIds.has(inc.folioId)) {
+                    window._cadNotifiedPendingIds.add(inc.folioId);
+                    triggeredNew = true;
+                    const { nearest } = findNearestOperationalCameras(inc, 1);
+                    const cleanDir = String(inc.direccion || 'Sin dirección').replace(/\s*\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)\s*$/, '').trim();
+                    const camInfo = nearest ? ` | Cámara más cercana: ${nearest.id} (${nearest.nombre})` : '';
+                    const msg = isCctv
+                        ? `📹 DERIVACIÓN CALL CENTER (${inc.folioId}): ${inc.categoria} en ${cleanDir}${camInfo}`
+                        : `🚨 PROCEDIMIENTO PENDIENTE (${inc.folioId}): ${inc.categoria} en ${cleanDir} (${inc.cuadrante || 'Peñaflor'})`;
+                    showToast(msg, isCctv ? 'bg-cyan-700' : 'bg-red-600');
+                    try {
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(isCctv ? '📹 Derivación Call Center — CCTV 1410' : '🚨 Procedimiento Pendiente — Despachador 1410', {
+                                body: `${inc.categoria} en ${cleanDir} (${inc.cuadrante || 'Peñaflor'})${camInfo}`,
+                                icon: 'logo-pena-seguro-1410.png'
+                            });
+                        }
+                    } catch (e) {}
+                }
+            });
+            if (triggeredNew) {
+                playScheduledServiceChime();
+            }
+        }
+
         function exportCallCenterPDF() {
             if (!window.jspdf) { showToast('Librería PDF cargando, intenta nuevamente', 'bg-amber-600'); return; }
             const { jsPDF } = window.jspdf;
@@ -11759,6 +11981,8 @@
             const dueScheduledCount = typeof getUpcoming5MinCallCenterServices === 'function' ? getUpcoming5MinCallCenterServices().length : 0;
             if (bAbiertos) bAbiertos.innerText = openCount + cctvActiveCount + dueScheduledCount;
             if (typeof checkUpcomingCallCenterServices === 'function') checkUpcomingCallCenterServices();
+            if (typeof checkPendingCallCenterDerivations === 'function') checkPendingCallCenterDerivations();
+            if (typeof renderCctvIncomingProceduresPanel === 'function') renderCctvIncomingProceduresPanel();
             const bCctv = document.getElementById('cad-badge-cctv');
             if (bCctv) { bCctv.innerText = cctvActiveCount; bCctv.classList.toggle('hidden', cctvActiveCount === 0); }
             const ccActiveCount = getCallCenterServicesDB().filter(s => String(s.estado || 'AGENDADO').toUpperCase() === 'AGENDADO').length;
