@@ -11597,11 +11597,16 @@
         // ========================================================================
         function normalizeVehicleKey(name) {
             return String(name || '')
+                .replace(/\([^)]*\)/g, '')
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                 .toUpperCase()
                 .replace(/\b0+(\d+)\b/g, '$1')
                 .replace(/\s+/g, ' ')
                 .trim();
+        }
+
+        function normalizeVehicleCompactKey(name) {
+            return normalizeVehicleKey(name).replace(/[^A-Z0-9]/g, '');
         }
 
         function isPointInPolygon(lat, lon, polygon) {
@@ -11726,21 +11731,21 @@
         }
 
         function getActiveGeofenceAuthForMovil(movil, nowMs = Date.now()) {
-            const key = normalizeVehicleKey(movil);
+            const key = normalizeVehicleCompactKey(movil);
             if (!key) return null;
             const list = getGeofenceAuthsDB();
             for (let i = 0; i < list.length; i++) {
                 const a = list[i];
                 if (!a || a.revocada) continue;
-                if (normalizeVehicleKey(a.movil) !== key) continue;
+                const aKey = normalizeVehicleCompactKey(a.movil);
+                if (!aKey || (aKey !== key && !aKey.includes(key) && !key.includes(aKey))) continue;
                 if (String(a.modo || '').toUpperCase() === 'TODO_TURNO') {
-                    // Válida durante todo el turno (hasta endMs o 12h desde creación, sin fallar por turnoCencoId)
                     const endT = Number(a.endMs || (Number(a.createdMs || 0) + 12 * 60 * 60 * 1000));
                     if (endT && nowMs <= endT) return a;
                 } else {
                     const sMs = Number(a.startMs || 0);
                     const eMs = Number(a.endMs || 0);
-                    if (sMs && eMs && nowMs >= sMs - 120000 && nowMs <= eMs) return a;
+                    if (sMs && eMs && nowMs >= sMs - 300000 && nowMs <= eMs) return a;
                 }
             }
             return null;
@@ -12133,7 +12138,8 @@
                 };
 
                 // Guardar autorización local (silencia alerta de inmediato mientras esté vigente)
-                const authList = getGeofenceAuthsDB().filter(a => !(normalizeVehicleKey(a.movil) === normalizeVehicleKey(movil) && !a.revocada));
+                const movCompact = normalizeVehicleCompactKey(movil);
+                const authList = getGeofenceAuthsDB().filter(a => !(normalizeVehicleCompactKey(a.movil) === movCompact && !a.revocada));
                 authList.unshift(authObj);
                 saveGeofenceAuthsDB(authList);
 
@@ -12141,15 +12147,16 @@
                 const nowStr = now.toLocaleString('es-CL');
                 const resumenLocal = `✅ AUTORIZADO: ${tipoAutorizacion} | Despachador: ${despachador} | Jefe de Turno: ${jefeTurno} | Vigencia: ${vigenciaTexto}${observaciones ? ' | Obs: ' + observaciones : ''}`;
                 const incList = getCencoIncidentsDB();
-                const movUp = movil.toUpperCase();
                 let linkedFolioId = '';
                 let changedInc = false;
                 incList.forEach(i => {
+                    const incMovCompact = normalizeVehicleCompactKey(i.movilesAsignados || '');
                     if (String(i.folioId || '').startsWith('CAD-GPS-') &&
-                        String(i.movilesAsignados || '').toUpperCase().includes(movUp) &&
+                        movCompact && incMovCompact.includes(movCompact) &&
                         !['FINALIZADO', 'AUTORIZADO'].includes(String(i.estado || '').toUpperCase())) {
                         if (!linkedFolioId) linkedFolioId = i.folioId;
                         i.estado = 'AUTORIZADO';
+                        i._localUpdatedMs = Date.now();
                         i.despachador = despachador;
                         i.horaCierre = nowStr;
                         i.resolucion = resumenLocal;
