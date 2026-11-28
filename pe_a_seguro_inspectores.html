@@ -3830,7 +3830,7 @@
                             <h4 class="font-black text-[#0a2463] uppercase text-[11px] flex items-center gap-1.5">
                                 <i class="fa-solid fa-gauge-high text-blue-700"></i> Kilometraje de Término — Vehículos Activos (<span id="cenco-close-veh-count">0</span>)
                             </h4>
-                            <span class="text-[10px] font-bold text-blue-700">Obligatorio antes de cerrar</span>
+                            <span class="text-[10px] font-bold text-blue-700">Opcional al cerrar turno</span>
                         </div>
                         <div id="cenco-close-vehicles-list" class="space-y-2"></div>
                     </div>
@@ -13473,11 +13473,11 @@
                                     <p class="text-[10px] text-slate-600 truncate mt-0.5">${esc(v.rut || 'Inspector en turno')} • Km Inicio: <strong class="font-mono text-slate-800">${kmIni.toLocaleString('es-CL')}</strong></p>
                                 </div>
                                 <div class="sm:col-span-4">
-                                    <label class="block text-[9px] font-bold uppercase text-slate-500 mb-0.5">Km Término <span class="text-red-500">*</span></label>
-                                    <input type="number" min="${kmIni}" step="1" required placeholder="${kmIni > 0 ? kmIni : 'Ej: 45210'}" oninput="updateCencoCloseKmDelta(this)" class="cenco-close-km-input w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 text-xs">
+                                    <label class="block text-[9px] font-bold uppercase text-slate-500 mb-0.5">Km Término <span class="text-slate-400 font-normal">(Opcional)</span></label>
+                                    <input type="number" min="${kmIni}" step="1" placeholder="${kmIni > 0 ? `Opcional (≥ ${kmIni})` : 'Opcional'}" oninput="updateCencoCloseKmDelta(this)" class="cenco-close-km-input w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 text-xs">
                                 </div>
                                 <div class="sm:col-span-2 text-right">
-                                    <span class="cenco-close-km-delta text-[10px] font-bold text-slate-400">Pendiente</span>
+                                    <span class="cenco-close-km-delta text-[10px] font-bold text-slate-400">Opcional</span>
                                 </div>
                             </div>
                         `;
@@ -14319,16 +14319,18 @@
             // 7. Cierre de Turno CENCO + PDF + Cierre de Vehículos Activos + Limpieza de Geocercas y Mapa
             document.getElementById('form-cenco-close-shift')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                // Validar y recolectar Km de término de todos los vehículos activos
+                // Recolectar Km de término de los vehículos activos (opcionales al cierre)
                 const vehRows = Array.from(document.querySelectorAll('#cenco-close-vehicles-list .cenco-close-vehicle-row'));
                 const vehiculosCierre = [];
                 for (let i = 0; i < vehRows.length; i++) {
                     const row = vehRows[i];
                     const kmIni = Number(row.dataset.kmInicial || 0);
                     const inp = row.querySelector('.cenco-close-km-input');
-                    const kmTerm = Number(inp?.value || 0);
-                    if (!inp || !inp.value || isNaN(kmTerm) || kmTerm < kmIni) {
-                        showToast(`⚠️ Ingresa un Km de término válido (≥ ${kmIni}) para ${row.dataset.movil}`, 'bg-red-600');
+                    const rawVal = (inp?.value || '').trim();
+                    const hasKmTerm = rawVal !== '';
+                    const kmTerm = hasKmTerm ? Number(rawVal) : '';
+                    if (hasKmTerm && (isNaN(kmTerm) || kmTerm < kmIni)) {
+                        showToast(`⚠️ El Km de término de ${row.dataset.movil} debe ser ≥ ${kmIni} (o dejarlo vacío)`, 'bg-red-600');
                         inp?.focus();
                         return;
                     }
@@ -14339,8 +14341,8 @@
                         cuadrante: row.dataset.cuadrante || '',
                         rangoHorario: row.dataset.rango || 'MANANA',
                         kmInicial: kmIni,
-                        kmTermino: kmTerm,
-                        kmRecorridos: Math.max(0, kmTerm - kmIni)
+                        kmTermino: hasKmTerm ? kmTerm : '',
+                        kmRecorridos: hasKmTerm ? Math.max(0, kmTerm - kmIni) : 0
                     });
                 }
 
