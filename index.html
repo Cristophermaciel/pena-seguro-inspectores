@@ -1836,7 +1836,10 @@
                                 <i class="fa-solid fa-user-gear"></i> <span class="hidden md:inline">Admin</span>
                             </button>
 
-                            <!-- Perfil del Operador (Réplica Governa) -->
+                            <!-- Perfil del Operador (Réplica Governa) + Cambio Rápido de Puesto -->
+                            <button type="button" id="cad-btn-switch-role" onclick="openCencoRolePickerModal(true)" class="hidden px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-400/40 text-[11px] font-bold items-center gap-1.5 transition" title="Cambiar puesto operativo (Despachador / Call Center / CCTV)">
+                                <i class="fa-solid fa-repeat"></i> <span class="hidden md:inline">Puesto</span>
+                            </button>
                             <div class="hidden md:flex items-center gap-2.5 pl-2 border-l cad-border">
                                 <div class="text-right leading-tight">
                                     <div id="cad-user-name" class="text-xs font-bold cad-text max-w-[170px] truncate">Operador CENCO</div>
@@ -3806,6 +3809,47 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Modal Selector de Puesto CENCO al Iniciar Sesión (Call Center / Despachador / CCTV v90) -->
+        <div id="modal-cenco-role-picker" class="hidden fixed inset-0 z-[1050] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="w-full max-w-xl bg-slate-900 border border-blue-500/45 rounded-2xl shadow-2xl overflow-hidden text-white">
+                <div class="px-5 py-4 bg-gradient-to-r from-[#0a2463] via-blue-900 to-indigo-900 border-b border-blue-400/30 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-black flex items-center gap-2"><i class="fa-solid fa-id-badge text-amber-300"></i> Seleccionar Puesto CENCO 1410</h3>
+                        <p id="cenco-role-picker-welcome" class="text-xs text-blue-200 mt-0.5">Elige el rol que cubrirás en este turno</p>
+                    </div>
+                    <button type="button" id="cenco-role-picker-close" onclick="closeCencoRolePickerModal()" class="hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black">&times;</button>
+                </div>
+                <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button type="button" onclick="confirmCencoOperatorRole('CENCO_DESPACHADOR')" id="role-card-CENCO_DESPACHADOR" class="group text-left p-4 rounded-xl bg-slate-800/90 hover:bg-blue-700/40 border-2 border-slate-700 hover:border-blue-400 transition space-y-2 relative">
+                        <span class="role-default-badge hidden absolute top-2 right-2 px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9px] font-black uppercase">Habitual</span>
+                        <div class="w-11 h-11 rounded-xl bg-blue-500/20 border border-blue-400/40 text-blue-300 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                        </div>
+                        <div class="font-black text-sm text-white">Despachador</div>
+                        <p class="text-[11px] text-slate-300 leading-snug">Central de despacho, cola Abiertos, asignación de móviles y cierre de turno.</p>
+                    </button>
+
+                    <button type="button" onclick="confirmCencoOperatorRole('CENCO_TELEFONISTA')" id="role-card-CENCO_TELEFONISTA" class="group text-left p-4 rounded-xl bg-slate-800/90 hover:bg-indigo-700/40 border-2 border-slate-700 hover:border-indigo-400 transition space-y-2 relative">
+                        <span class="role-default-badge hidden absolute top-2 right-2 px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9px] font-black uppercase">Habitual</span>
+                        <div class="w-11 h-11 rounded-xl bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-headset"></i>
+                        </div>
+                        <div class="font-black text-sm text-white">Call Center</div>
+                        <p class="text-[11px] text-slate-300 leading-snug">Recepción 1410, procedimientos categorizados y Servicios Agendados.</p>
+                    </button>
+
+                    <button type="button" onclick="confirmCencoOperatorRole('CENCO_CCTV')" id="role-card-CENCO_CCTV" class="group text-left p-4 rounded-xl bg-slate-800/90 hover:bg-cyan-700/40 border-2 border-slate-700 hover:border-cyan-400 transition space-y-2 relative">
+                        <span class="role-default-badge hidden absolute top-2 right-2 px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[9px] font-black uppercase">Habitual</span>
+                        <div class="w-11 h-11 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-video"></i>
+                        </div>
+                        <div class="font-black text-sm text-white">Operador CCTV</div>
+                        <p class="text-[11px] text-slate-300 leading-snug">Consola de cámaras, visor en vivo, derivaciones y respaldos policiales.</p>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -7957,10 +8001,16 @@
                 maybeShowLoginMaintenanceAlert('ADMIN');
             } else if (isCencoRole(AppState.userRole)) {
                 AppState.turnoActivo = false;
-                document.getElementById('header-shift-display').innerText = AppState.userRole.replace('CENCO_', 'CENCO ');
-                saveActiveSessionState('view-cenco');
-                showToast(`Bienvenido Central CENCO: ${AppState.userName}`, 'bg-cyan-700');
-                navigateTo('view-cenco');
+                const flexRoles = ['CENCO_CCTV', 'CENCO_TELEFONISTA', 'CENCO_DESPACHADOR'];
+                if (flexRoles.includes(String(AppState.userRole || '').toUpperCase())) {
+                    AppState.baseCencoRole = String(AppState.userRole || '').toUpperCase();
+                    openCencoRolePickerModal(false);
+                } else {
+                    document.getElementById('header-shift-display').innerText = AppState.userRole.replace('CENCO_', 'CENCO ');
+                    saveActiveSessionState('view-cenco');
+                    showToast(`Bienvenido Central CENCO: ${AppState.userName}`, 'bg-cyan-700');
+                    navigateTo('view-cenco');
+                }
             } else {
                 saveActiveSessionState('view-setup');
                 showToast(`Sesión Iniciada: ${AppState.userName}`, 'bg-blue-700');
@@ -10802,6 +10852,51 @@
             } catch (e) {}
         }
 
+        function openCencoRolePickerModal(allowCancel = false) {
+            const modal = document.getElementById('modal-cenco-role-picker');
+            if (!modal) return;
+            const welcomeEl = document.getElementById('cenco-role-picker-welcome');
+            if (welcomeEl) welcomeEl.innerText = `Hola ${AppState.userName || AppState.userRut} — elige el puesto que cubrirás en este turno`;
+            const closeBtn = document.getElementById('cenco-role-picker-close');
+            if (closeBtn) closeBtn.classList.toggle('hidden', !allowCancel);
+
+            const baseRole = String(AppState.baseCencoRole || AppState.userRole || '').toUpperCase();
+            ['CENCO_DESPACHADOR', 'CENCO_TELEFONISTA', 'CENCO_CCTV'].forEach(r => {
+                const card = document.getElementById(`role-card-${r}`);
+                if (!card) return;
+                const badge = card.querySelector('.role-default-badge');
+                const isDef = r === baseRole;
+                if (badge) badge.classList.toggle('hidden', !isDef);
+                card.classList.toggle('border-amber-400', isDef);
+                card.classList.toggle('border-slate-700', !isDef);
+            });
+            modal.classList.remove('hidden');
+        }
+
+        function closeCencoRolePickerModal() {
+            document.getElementById('modal-cenco-role-picker')?.classList.add('hidden');
+        }
+
+        function confirmCencoOperatorRole(chosenRole) {
+            AppState.userRole = chosenRole;
+            const labelMap = {
+                'CENCO_DESPACHADOR': 'DESPACHADOR CENTRAL',
+                'CENCO_TELEFONISTA': 'CALL CENTER 1410',
+                'CENCO_CCTV': 'OPERADOR CCTV'
+            };
+            const lbl = labelMap[chosenRole] || chosenRole.replace('CENCO_', '');
+            const shiftDisp = document.getElementById('header-shift-display');
+            if (shiftDisp) shiftDisp.innerText = `CENCO ${lbl}`;
+            closeCencoRolePickerModal();
+            saveActiveSessionState('view-cenco');
+            showToast(`✓ Ingresando como ${lbl}: ${AppState.userName || AppState.userRut}`, 'bg-cyan-700');
+            if (document.getElementById('view-cenco')?.classList.contains('active')) {
+                initCencoView();
+            } else {
+                navigateTo('view-cenco');
+            }
+        }
+
         // --- Control Estricto de Privilegios por Rol CENCO (v46 + SOSAFE v49 + CallCenter v75) ---
         function getAllowedCencoModulesForRole(role) {
             const r = String(role || AppState.userRole || '').trim().toUpperCase();
@@ -10849,6 +10944,12 @@
             const tgBtn = document.getElementById('cad-btn-telegram-config');
             if (tgBtn) {
                 tgBtn.classList.toggle('hidden', !isSuper);
+            }
+            const swRoleBtn = document.getElementById('cad-btn-switch-role');
+            const isFlexOp = ['CENCO_CCTV', 'CENCO_TELEFONISTA', 'CENCO_DESPACHADOR'].includes(role);
+            if (swRoleBtn) {
+                swRoleBtn.classList.toggle('hidden', !isFlexOp);
+                swRoleBtn.classList.toggle('inline-flex', isFlexOp);
             }
         }
 
