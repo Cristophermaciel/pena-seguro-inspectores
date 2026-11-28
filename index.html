@@ -1869,6 +1869,11 @@
                         <div id="cad-daily-tasks-banner-list" class="max-w-7xl mx-auto space-y-1.5"></div>
                     </div>
 
+                    <!-- BANNER DE ALERTA REPORTES DE PATRULLAJE / PROCEDIMIENTOS EN TERRENO -> DESPACHADOR (v91) -->
+                    <div id="cad-field-patrol-banner" class="hidden bg-gradient-to-r from-sky-700/95 via-blue-700/95 to-indigo-800/95 border-b border-sky-300/60 px-4 py-2.5 shadow-xl z-20">
+                        <div id="cad-field-patrol-banner-list" class="max-w-7xl mx-auto space-y-1.5"></div>
+                    </div>
+
                     <!-- ================================================================ -->
                     <!-- MÓDULO 1: CENTRAL (SPLIT-PANE 520px + MAPA TÁCTICO EN VIVO)      -->
                     <!-- ================================================================ -->
@@ -10765,6 +10770,117 @@
             }
         }
 
+        // ====================================================================
+        // ALERTA EN VIVO AL DESPACHADOR POR PATRULLAJES / PROCEDIMIENTOS TERRENO (v91)
+        // ====================================================================
+        window._cadSeenFieldProcIds = window._cadSeenFieldProcIds || null;
+        window._cadDismissedFieldProcIds = window._cadDismissedFieldProcIds || new Set();
+        window._cadActiveFieldProcAlerts = window._cadActiveFieldProcAlerts || new Map();
+
+        function parseClDateToMsSimple(str) {
+            if (!str) return NaN;
+            const m = String(str).trim().match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+            if (m) {
+                let hh = Number(m[4] || 0);
+                const lower = String(str).toLowerCase();
+                if (lower.includes('p. m.') || lower.includes('pm')) { if (hh < 12) hh += 12; }
+                else if (lower.includes('a. m.') || lower.includes('am')) { if (hh === 12) hh = 0; }
+                return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), hh, Number(m[5] || 0), Number(m[6] || 0)).getTime();
+            }
+            const t = Date.parse(str);
+            return isNaN(t) ? NaN : t;
+        }
+
+        function dismissFieldPatrolBanner(folioId) {
+            window._cadDismissedFieldProcIds.add(folioId);
+            window._cadActiveFieldProcAlerts.delete(folioId);
+            renderFieldPatrolBannerUI();
+        }
+
+        function renderFieldPatrolBannerUI() {
+            const banner = document.getElementById('cad-field-patrol-banner');
+            const listEl = document.getElementById('cad-field-patrol-banner-list');
+            if (!banner || !listEl) return;
+            const active = Array.from(window._cadActiveFieldProcAlerts.values()).filter(i => !window._cadDismissedFieldProcIds.has(i.folioId));
+            banner.classList.toggle('hidden', active.length === 0);
+            listEl.innerHTML = active.slice(0, 3).map(inc => {
+                const cleanDir = String(inc.direccion || 'En terreno').replace(/\s*\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)\s*$/, '').trim();
+                const mov = inc.movilesAsignados || String(inc.referenciaCamara || '').replace(/^Móvil en terreno:\s*/i, '') || 'Patrullero';
+                const insp = String(inc.ingresadoPor || '').replace(/^INSPECTOR:\s*/i, '') || 'Inspector';
+                return `
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-white text-xs">
+                        <div class="flex flex-wrap items-center gap-2 min-w-0">
+                            <span class="px-2 py-0.5 rounded-full bg-sky-400 text-slate-950 font-black text-[10px] shrink-0"><i class="fa-solid fa-car-side mr-1"></i>PATRULLAJE REALIZADO</span>
+                            <span class="font-black text-amber-300">${escCcHtml(mov)}</span>
+                            <span class="px-2 py-0.5 rounded bg-white/15 font-black text-[11px]">${escCcHtml(inc.subcategoria || inc.categoria || 'Patrullaje')}</span>
+                            <span class="truncate"><i class="fa-solid fa-location-dot text-sky-300 mr-1"></i><strong>${escCcHtml(cleanDir)}</strong> (${escCcHtml(inc.cuadrante || 'Peñaflor')}) • ${escCcHtml(insp)}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="openCencoFolioModal('${escCcHtml(inc.folioId)}')" class="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-black text-[11px]">
+                                <i class="fa-regular fa-eye mr-1"></i>Ver Detalle
+                            </button>
+                            <button type="button" onclick="focusIncidentOnMap('${escCcHtml(inc.folioId)}')" class="px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-[11px]" title="Ubicar en mapa"><i class="fa-solid fa-location-crosshairs"></i></button>
+                            <button type="button" onclick="dismissFieldPatrolBanner('${escCcHtml(inc.folioId)}')" class="px-2.5 py-1 rounded-lg bg-slate-950/60 hover:bg-slate-950 text-sky-100 font-bold text-[11px]">✓ Entendido</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function checkNewInspectorFieldProcedures() {
+            const cencoView = document.getElementById('view-cenco');
+            if (!cencoView || !cencoView.classList.contains('active')) return;
+            const role = String(AppState.userRole || '').trim().toUpperCase();
+            if (!['CENCO_DESPACHADOR', 'CENCO_SUPERVISOR', 'ADMIN'].includes(role)) {
+                document.getElementById('cad-field-patrol-banner')?.classList.add('hidden');
+                return;
+            }
+
+            const fieldProcs = getCencoIncidentsDB().filter(i =>
+                String(i.origen || '').trim().toUpperCase().includes('INSPECTOR')
+            );
+            const nowMs = Date.now();
+            const RECENT_WINDOW_MS = 15 * 60 * 1000; // 15 min al iniciar sesión
+
+            if (window._cadSeenFieldProcIds === null) {
+                window._cadSeenFieldProcIds = new Set();
+                fieldProcs.forEach(inc => {
+                    const ms = parseClDateToMsSimple(inc.fechaIngreso);
+                    const isVeryRecent = !isNaN(ms) && (nowMs - ms) >= -60000 && (nowMs - ms) <= RECENT_WINDOW_MS;
+                    if (isVeryRecent && !window._cadDismissedFieldProcIds.has(inc.folioId)) {
+                        window._cadActiveFieldProcAlerts.set(inc.folioId, inc);
+                    }
+                    window._cadSeenFieldProcIds.add(inc.folioId);
+                });
+                renderFieldPatrolBannerUI();
+                return;
+            }
+
+            let foundNew = false;
+            fieldProcs.forEach(inc => {
+                if (!window._cadSeenFieldProcIds.has(inc.folioId)) {
+                    window._cadSeenFieldProcIds.add(inc.folioId);
+                    if (!window._cadDismissedFieldProcIds.has(inc.folioId)) {
+                        window._cadActiveFieldProcAlerts.set(inc.folioId, inc);
+                        foundNew = true;
+                        const mov = inc.movilesAsignados || 'Patrullero';
+                        const cleanDir = String(inc.direccion || 'En terreno').replace(/\s*\(-?\d+\.\d+\s*,\s*-?\d+\.\d+\)\s*$/, '').trim();
+                        showToast(`🚓 ${mov} registró ${inc.subcategoria || inc.categoria || 'Patrullaje'} en ${cleanDir} (${inc.cuadrante || 'Peñaflor'})`, 'bg-sky-700');
+                        try {
+                            if ('Notification' in window && Notification.permission === 'granted') {
+                                new Notification(`🚓 Patrullaje realizado — ${mov}`, {
+                                    body: `${inc.subcategoria || inc.categoria || 'Patrullaje'} en ${cleanDir} (${inc.cuadrante || 'Peñaflor'})`,
+                                    icon: 'logo-pena-seguro-1410.png'
+                                });
+                            }
+                        } catch (e) {}
+                    }
+                }
+            });
+
+            if (foundNew) playScheduledServiceChime();
+            renderFieldPatrolBannerUI();
+        }
+
         function exportCallCenterPDF() {
             if (!window.jspdf) { showToast('Librería PDF cargando, intenta nuevamente', 'bg-amber-600'); return; }
             const { jsPDF } = window.jspdf;
@@ -12620,6 +12736,7 @@
             if (typeof checkUpcomingCallCenterServices === 'function') checkUpcomingCallCenterServices();
             if (typeof checkDailyTasksDispatcherAlerts === 'function') checkDailyTasksDispatcherAlerts();
             if (typeof checkPendingCallCenterDerivations === 'function') checkPendingCallCenterDerivations();
+            if (typeof checkNewInspectorFieldProcedures === 'function') checkNewInspectorFieldProcedures();
             if (typeof renderCctvIncomingProceduresPanel === 'function') renderCctvIncomingProceduresPanel();
             const bCctv = document.getElementById('cad-badge-cctv');
             if (bCctv) { bCctv.innerText = cctvActiveCount; bCctv.classList.toggle('hidden', cctvActiveCount === 0); }
