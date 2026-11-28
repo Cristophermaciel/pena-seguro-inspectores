@@ -5243,11 +5243,43 @@
                 return;
             }
             const activeCencoShift = getActiveCencoShift();
-            if (activeCencoShift && document.getElementById('view-cenco')?.classList.contains('active')) {
-                showToast('Tiene un turno CENCO activo. Cierre su turno y genere el Acta PDF antes de salir.', 'bg-amber-600');
+            const isCencoView = document.getElementById('view-cenco')?.classList.contains('active');
+            const effRole = String(AppState.userRole || '').trim().toUpperCase();
+
+            // Solo el DESPACHADOR tiene como requisito llenar el Cierre de Turno completo + Acta PDF
+            if (activeCencoShift && isCencoView && effRole === 'CENCO_DESPACHADOR') {
+                showToast('Tiene un turno de Despachador activo. Complete el Cierre de Turno antes de salir.', 'bg-amber-600');
                 openCencoCloseShiftModal();
                 return;
             }
+
+            // Para otros operadores (Call Center, CCTV, Supervisor, Admin): registrar fecha/hora de término de su turno y salir sin llenar el cierre del despachador
+            if (isCencoView && ['CENCO_TELEFONISTA', 'CENCO_CCTV', 'CENCO_SUPERVISOR'].includes(effRole)) {
+                const nowStr = new Date().toLocaleString('es-CL');
+                const h = new Date().getHours();
+                const rangoAuto = activeCencoShift?.rangoHorario || ((h >= 7 && h < 15) ? 'MANANA' : ((h >= 15 && h < 23) ? 'TARDE' : 'NOCHE'));
+                const opCloseId = `OP-FIN-${Date.now().toString().slice(-6)}`;
+                const opCloseRecord = {
+                    action: 'CENCO_CERRAR_TURNO',
+                    turnoCencoId: opCloseId,
+                    fechaInicio: activeCencoShift?.fechaInicio || nowStr,
+                    fechaCierre: nowStr,
+                    rut: AppState.userRut || '',
+                    operador: AppState.userName || AppState.userRut || 'Operador',
+                    rolCenco: effRole,
+                    puesto: effRole.replace('CENCO_', ''),
+                    rangoHorario: rangoAuto,
+                    resumenCierre: `Término de turno operador (${effRole.replace('CENCO_', '')}) registrado el ${nowStr}`
+                };
+                try {
+                    const shifts = getCencoShiftsDB();
+                    shifts.unshift(Object.assign({}, opCloseRecord, { estado: 'FINALIZADO' }));
+                    saveCencoShiftsDB(shifts);
+                    sendPayloadToGoogleSheets(opCloseRecord);
+                } catch (e) {}
+                showToast(`✓ Término de turno registrado (${nowStr})`, 'bg-emerald-600');
+            }
+
             AppState.isLoggedIn = false;
             AppState.turnoActivo = false;
             AppState.maintAlertShownThisLogin = false;
