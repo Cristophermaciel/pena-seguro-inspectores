@@ -2502,12 +2502,12 @@
                                     <label class="block text-[10px] font-bold uppercase text-cyan-300">Vigencia / Rango Horario de la Autorización <span class="text-red-400">*</span></label>
                                     <div class="grid grid-cols-2 gap-2">
                                         <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-emerald-500">
-                                            <input type="radio" name="geo-auth-modo" value="RANGO" checked onchange="toggleGeofenceAuthVigencia()" class="accent-emerald-500">
-                                            <span class="font-bold text-white text-[11px]">⏱️ Rango Horario</span>
+                                            <input type="radio" name="geo-auth-modo" value="TODO_TURNO" checked onchange="toggleGeofenceAuthVigencia()" class="accent-emerald-500">
+                                            <span class="font-bold text-white text-[11px]">🛡️ Todo el Turno</span>
                                         </label>
                                         <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-emerald-500">
-                                            <input type="radio" name="geo-auth-modo" value="TODO_TURNO" onchange="toggleGeofenceAuthVigencia()" class="accent-emerald-500">
-                                            <span class="font-bold text-white text-[11px]">🛡️ Todo el Turno</span>
+                                            <input type="radio" name="geo-auth-modo" value="RANGO" onchange="toggleGeofenceAuthVigencia()" class="accent-emerald-500">
+                                            <span class="font-bold text-white text-[11px]">⏱️ Rango Horario</span>
                                         </label>
                                     </div>
 
@@ -9359,7 +9359,13 @@
 
         function isClosedOrArchivedIncident(inc) {
             const est = String(inc?.estado || '').trim().toUpperCase();
-            return ['FINALIZADO', 'CANCELADO', 'DESCARTADA', 'AUTORIZADO'].includes(est);
+            if (['FINALIZADO', 'CANCELADO', 'DESCARTADA', 'AUTORIZADO'].includes(est)) return true;
+            // Si es una alerta GPS geocerca de un móvil que ya tiene autorización activa, ocultarla de Abiertos
+            const isGeo = String(inc?.folioId || '').toUpperCase().startsWith('CAD-GPS-') || String(inc?.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA';
+            if (isGeo && inc?.movilesAsignados && typeof getActiveGeofenceAuthForMovil === 'function') {
+                if (getActiveGeofenceAuthForMovil(inc.movilesAsignados)) return true;
+            }
+            return false;
         }
 
         function mergeCencoIncidentsFromCloud(cloudList) {
@@ -11748,6 +11754,29 @@
                     if (sMs && eMs && nowMs >= sMs - 300000 && nowMs <= eMs) return a;
                 }
             }
+            // Respaldo adicional: si en la bitácora del turno actual ya existe una alerta GPS marcada AUTORIZADO para este móvil (últimas 10h)
+            const incs = getCencoIncidentsDB();
+            for (let j = 0; j < incs.length; j++) {
+                const inc = incs[j];
+                if (!inc || String(inc.estado || '').trim().toUpperCase() !== 'AUTORIZADO') continue;
+                const isGeo = String(inc.folioId || '').toUpperCase().startsWith('CAD-GPS-') || String(inc.origen || '').toUpperCase() === 'ALERTA GPS GEOCERCA';
+                if (!isGeo) continue;
+                const incKey = normalizeVehicleCompactKey(inc.movilesAsignados || '');
+                if (!incKey || (incKey !== key && !incKey.includes(key) && !key.includes(incKey))) continue;
+                const ts = parseClDateToMsSimple(inc.horaCierre || inc.fechaIngreso);
+                if (!isNaN(ts) && (nowMs - ts) <= 10 * 60 * 60 * 1000) {
+                    return {
+                        id: `INC-${inc.folioId}`,
+                        movil: inc.movilesAsignados || movil,
+                        tipoAutorizacion: inc.resolucion || 'AUTORIZADO EN BITÁCORA',
+                        despachador: inc.despachador || 'CENCO',
+                        jefeTurno: 'Jefe de Turno',
+                        modo: 'TODO_TURNO',
+                        vigenciaTexto: 'TODO EL TURNO',
+                        revocada: false
+                    };
+                }
+            }
             return null;
         }
 
@@ -12052,10 +12081,10 @@
                 jefeSel.innerHTML = buildStaffSelectOptions(['SUPERVISOR', 'INSPECTOR DESPACHADOR', 'INSPECTOR'], '', '-- Elegir Jefe de Turno --');
             }
 
-            const radioRango = document.querySelector('input[name="geo-auth-modo"][value="RANGO"]');
-            if (radioRango) radioRango.checked = true;
+            const radioTodo = document.querySelector('input[name="geo-auth-modo"][value="TODO_TURNO"]');
+            if (radioTodo) radioTodo.checked = true;
             toggleGeofenceAuthVigencia();
-            setGeofenceAuthQuickDuration(30);
+            setGeofenceAuthQuickDuration(60);
 
             modal.classList.remove('hidden');
         }
