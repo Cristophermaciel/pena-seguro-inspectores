@@ -5925,10 +5925,13 @@
             resetAdminStaffForm();
             showToast(`✅ Funcionario "${nombre}" (${cargo}) guardado.`, 'success');
 
-            await sendToGoogleSheets({
+            const res = await sendPayloadToGoogleSheets({
                 action: 'ADMIN_SAVE_STAFF',
                 ...record
             });
+            if (res && res.ok === false) {
+                showToast(`⚠️ Error guardando en Google Sheets: ${res.error || 'Intenta nuevamente'}`, 'bg-red-600');
+            }
         }
 
         async function deleteAdminStaff(id) {
@@ -5942,7 +5945,7 @@
             renderAdminStaffList();
             showToast(`🗑️ Funcionario "${target.nombre}" eliminado.`, 'info');
 
-            await sendToGoogleSheets({
+            await sendPayloadToGoogleSheets({
                 action: 'ADMIN_DELETE_STAFF',
                 id: id
             });
