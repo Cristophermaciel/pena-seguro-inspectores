@@ -1861,6 +1861,11 @@
                         <div id="cad-pending-dispatch-banner-list" class="max-w-7xl mx-auto space-y-1.5"></div>
                     </div>
 
+                    <!-- BANNER DE ALERTA TAREAS DIARIAS (HORARIO FIJO + ALEATORIO DENTRO DEL TURNO SIN CHOQUES v87) -->
+                    <div id="cad-daily-tasks-banner" class="hidden bg-gradient-to-r from-emerald-700/95 via-teal-700/95 to-blue-800/95 border-b border-emerald-300/60 px-4 py-2.5 shadow-xl z-20">
+                        <div id="cad-daily-tasks-banner-list" class="max-w-7xl mx-auto space-y-1.5"></div>
+                    </div>
+
                     <!-- ================================================================ -->
                     <!-- MÓDULO 1: CENTRAL (SPLIT-PANE 520px + MAPA TÁCTICO EN VIVO)      -->
                     <!-- ================================================================ -->
@@ -2073,6 +2078,15 @@
                                                 <span id="cad-abiertos-scheduled-count" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-200">0</span>
                                             </div>
                                             <div id="cenco-despachador-scheduled-queue" class="space-y-2"></div>
+                                        </div>
+
+                                        <!-- Alertas de Tareas Diarias (Horario Fijo + Aleatorio Dentro del Turno v87) -->
+                                        <div id="cad-abiertos-dailytasks-wrap" class="hidden space-y-2 pb-2 border-b cad-border">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[11px] font-black text-emerald-400 uppercase"><i class="fa-solid fa-clipboard-list mr-1"></i> Alertas Tareas Diarias del Turno</span>
+                                                <span id="cad-abiertos-dailytasks-count" class="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-200">0</span>
+                                            </div>
+                                            <div id="cenco-despachador-dailytasks-queue" class="space-y-2"></div>
                                         </div>
 
                                         <!-- Alertas CCTV pendientes dentro de Abiertos -->
@@ -10403,6 +10417,272 @@
             }
         }
 
+        // ====================================================================
+        // ALERTAS DE TAREAS DIARIAS PARA DESPACHADOR (FIJAS + ALEATORIAS v87)
+        // ====================================================================
+        window._cadNotifiedDailyTaskIds = window._cadNotifiedDailyTaskIds || new Set();
+        window._cadDismissedDailyTaskIds = window._cadDismissedDailyTaskIds || new Set();
+
+        function getCurrentShiftRangoForDailyTasks() {
+            const h = new Date().getHours();
+            if (h >= 7 && h < 15) return 'MANANA';
+            if (h >= 15 && h < 23) return 'TARDE';
+            return 'NOCHE';
+        }
+
+        function getShiftWindowMinutes(rango) {
+            if (rango === 'MANANA') return { start: 7 * 60, end: 15 * 60 };
+            if (rango === 'TARDE') return { start: 15 * 60, end: 23 * 60 };
+            return { start: 23 * 60, end: 31 * 60 }; // 23:00 a 07:00 (+24h)
+        }
+
+        function getCurrentMinutesInShift(rango) {
+            const now = new Date();
+            let mins = now.getHours() * 60 + now.getMinutes();
+            if (rango === 'NOCHE' && now.getHours() < 7) mins += 24 * 60;
+            return mins;
+        }
+
+        function formatShiftMinutesHHMM(totalMins) {
+            const norm = ((totalMins % 1440) + 1440) % 1440;
+            const hh = String(Math.floor(norm / 60)).padStart(2, '0');
+            const mm = String(norm % 60).padStart(2, '0');
+            return `${hh}:${mm}`;
+        }
+
+        function taskMatchesTodayDayOfWeek(desc) {
+            const dNorm = String(desc || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const days = [
+                { idx: 0, kw: 'domingo' }, { idx: 1, kw: 'lunes' }, { idx: 2, kw: 'martes' },
+                { idx: 3, kw: 'miercoles' }, { idx: 4, kw: 'jueves' }, { idx: 5, kw: 'viernes' }, { idx: 6, kw: 'sabado' }
+            ];
+            const mentioned = days.filter(d => dNorm.includes(d.kw));
+            if (mentioned.length === 0) return true;
+            const todayIdx = new Date().getDay();
+            return mentioned.some(d => d.idx === todayIdx);
+        }
+
+        function parseTaskFixedTimeWindow(desc, rango) {
+            const s = String(desc || '');
+            const rangeMatch = s.match(/(\d{1,2}):(\d{2})\s*[-a–]\s*(\d{1,2}):(\d{2})/i);
+            const toShiftMin = (hh, mm) => {
+                let v = Number(hh) * 60 + Number(mm);
+                if (rango === 'NOCHE' && Number(hh) < 7) v += 24 * 60;
+                return v;
+            };
+            if (rangeMatch) {
+                const startMin = toShiftMin(rangeMatch[1], rangeMatch[2]);
+                let endMin = toShiftMin(rangeMatch[3], rangeMatch[4]);
+                if (endMin < startMin) endMin += 24 * 60;
+                return { isFixed: true, startMin, endMin };
+            }
+            const singleMatch = s.match(/\b(\d{1,2}):(\d{2})\b/);
+            if (singleMatch) {
+                const startMin = toShiftMin(singleMatch[1], singleMatch[2]);
+                return { isFixed: true, startMin, endMin: startMin + 25 };
+            }
+            return { isFixed: false, startMin: null, endMin: null };
+        }
+
+        function getDailyTasksScheduleForShift(rango) {
+            const todayKey = new Date().toISOString().slice(0, 10);
+            const storeKey = `pena_seguro_daily_task_slots_v1_${todayKey}_${rango}`;
+            let savedRandomSlots = {};
+            try { savedRandomSlots = JSON.parse(localStorage.getItem(storeKey) || '{}') || {}; } catch (e) { savedRandomSlots = {}; }
+
+            const completedSet = new Set(getCompletedTaskIds());
+            const activeTasks = getTasksCatalogDB().filter(t =>
+                String(t.estado || 'ACTIVA').toUpperCase() !== 'INACTIVA' &&
+                String(t.rango || '').toUpperCase() === rango &&
+                taskMatchesTodayDayOfWeek(t.desc) &&
+                !completedSet.has(t.id)
+            );
+
+            const win = getShiftWindowMinutes(rango);
+            const fixedTasks = [];
+            const randomTasks = [];
+
+            activeTasks.forEach(t => {
+                const parsed = parseTaskFixedTimeWindow(t.desc, rango);
+                if (parsed.isFixed && parsed.startMin >= win.start - 15 && parsed.startMin <= win.end) {
+                    fixedTasks.push(Object.assign({}, t, { _isFixed: true, _alertMin: parsed.startMin, _endMin: parsed.endMin }));
+                } else {
+                    randomTasks.push(t);
+                }
+            });
+
+            // Construir bloques ocupados por tareas con horario fijo (para evitar choques)
+            const blockedWindows = fixedTasks.map(ft => {
+                const dur = (ft._endMin || ft._alertMin) - ft._alertMin;
+                // Si la tarea fija dura <= 90 min bloqueamos todo el bloque + 15 min margen;
+                // si cubre casi todo el turno (ej. 08:00-15:00), bloqueamos su ventana de inicio (+/- 25 min)
+                return dur <= 90
+                    ? { from: ft._alertMin - 15, to: ft._endMin + 15 }
+                    : { from: ft._alertMin - 20, to: ft._alertMin + 25 };
+            });
+
+            const assignedRandomMins = [];
+            let dirty = false;
+            const scheduledRandom = randomTasks.map(t => {
+                let slot = Number(savedRandomSlots[t.id]);
+                const slotValid = isFinite(slot) && slot >= win.start + 15 && slot <= win.end - 20;
+                if (!slotValid) {
+                    const candidates = [];
+                    for (let m = win.start + 20; m <= win.end - 25; m += 5) {
+                        const hitsFixed = blockedWindows.some(b => m >= b.from && m <= b.to);
+                        const hitsOtherRand = assignedRandomMins.some(r => Math.abs(m - r) < 25);
+                        if (!hitsFixed && !hitsOtherRand) candidates.push(m);
+                    }
+                    if (candidates.length === 0) {
+                        // Fallback relajado: al menos no chocar con inicios fijos (+/- 15 min)
+                        for (let m = win.start + 20; m <= win.end - 25; m += 5) {
+                            const hitsFixedStart = fixedTasks.some(ft => Math.abs(m - ft._alertMin) < 15);
+                            const hitsOtherRand = assignedRandomMins.some(r => Math.abs(m - r) < 15);
+                            if (!hitsFixedStart && !hitsOtherRand) candidates.push(m);
+                        }
+                    }
+                    if (candidates.length === 0) {
+                        slot = win.start + 30 + Math.floor(Math.random() * Math.max(10, (win.end - win.start - 60) / 5)) * 5;
+                    } else {
+                        slot = candidates[Math.floor(Math.random() * candidates.length)];
+                    }
+                    savedRandomSlots[t.id] = slot;
+                    dirty = true;
+                }
+                assignedRandomMins.push(slot);
+                return Object.assign({}, t, { _isFixed: false, _alertMin: slot, _endMin: slot + 20 });
+            });
+
+            if (dirty) {
+                try { localStorage.setItem(storeKey, JSON.stringify(savedRandomSlots)); } catch (e) {}
+            }
+            return [...fixedTasks, ...scheduledRandom].sort((a, b) => a._alertMin - b._alertMin);
+        }
+
+        function getDueDailyTasksForDispatcher() {
+            const rango = getCurrentShiftRangoForDailyTasks();
+            const nowMin = getCurrentMinutesInShift(rango);
+            const all = getDailyTasksScheduleForShift(rango);
+            return all.filter(t => {
+                if (window._cadDismissedDailyTaskIds.has(t.id)) return false;
+                const diffMin = t._alertMin - nowMin;
+                // Avisa desde 5 min antes hasta 25 min después de su hora programada/aleatoria
+                return diffMin <= 5 && diffMin >= -25;
+            }).map(t => Object.assign({}, t, {
+                _minsLeft: t._alertMin - nowMin,
+                _horaLabel: formatShiftMinutesHHMM(t._alertMin)
+            }));
+        }
+
+        function dismissDailyTaskAlert(taskId) {
+            window._cadDismissedDailyTaskIds.add(taskId);
+            checkDailyTasksDispatcherAlerts();
+            renderCentralOpenQueue();
+        }
+
+        async function dispatchDailyTaskToCentral(taskId) {
+            const rango = getCurrentShiftRangoForDailyTasks();
+            const task = getDailyTasksScheduleForShift(rango).find(t => t.id === taskId);
+            if (!task) return;
+            const now = new Date();
+            const folioId = `TAR-${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}-${String(Date.now()).slice(-4)}`;
+            const fechaStr = now.toLocaleString('es-CL');
+            const quad = (task.cuadrante && task.cuadrante !== 'TODOS' && task.cuadrante !== 'DEFAULT') ? task.cuadrante : '252A';
+            const payload = {
+                action: 'CENCO_CREAR_INCIDENTE',
+                folioId, fechaIngreso: fechaStr,
+                origen: 'TAREA DIARIA TURNO',
+                estado: 'PENDIENTE_DESPACHO',
+                prioridad: 'ALTA',
+                categoria: 'Patrullaje',
+                subcategoria: task._isFixed ? `Tarea Diaria (${formatShiftMinutesHHMM(task._alertMin)} hrs)` : `Tarea Diaria Aleatoria (${formatShiftMinutesHHMM(task._alertMin)} hrs)`,
+                cuadrante: quad,
+                direccion: `${quad} — Tarea Diaria Programada`,
+                referenciaCamara: '',
+                denunciante: 'Planificación Diaria 1410',
+                telefono: '',
+                detalle: task.desc,
+                ingresadoPor: AppState.userName || AppState.userRut || 'Central 1410',
+                despachador: AppState.userName || AppState.userRut || '',
+                movilesAsignados: '',
+                turnoCencoId: getActiveCencoShift()?.turnoCencoId || '',
+                _localCreatedMs: Date.now(),
+                historial: [{
+                    fecha: fechaStr, rol: AppState.userRole || 'DESPACHADOR',
+                    usuario: AppState.userName || AppState.userRut || 'Despachador',
+                    accion: `Tarea diaria ${task.id} derivada a cola de despacho Central`
+                }]
+            };
+            const list = getCencoIncidentsDB();
+            list.unshift(Object.assign({}, payload, { imagenes: [] }));
+            saveCencoIncidentsDB(list);
+            window._cadDismissedDailyTaskIds.add(taskId);
+            renderAllCencoPanels();
+            showToast(`📋 Tarea diaria enviada a Central (${folioId})`, 'bg-emerald-600');
+            try { await sendPayloadToGoogleSheets(payload); } catch (e) {}
+        }
+
+        function checkDailyTasksDispatcherAlerts() {
+            const cencoView = document.getElementById('view-cenco');
+            if (!cencoView || !cencoView.classList.contains('active')) return;
+            const role = String(AppState.userRole || '').trim().toUpperCase();
+            if (!['CENCO_DESPACHADOR', 'CENCO_SUPERVISOR', 'ADMIN'].includes(role)) {
+                document.getElementById('cad-daily-tasks-banner')?.classList.add('hidden');
+                return;
+            }
+
+            const due = getDueDailyTasksForDispatcher();
+            const banner = document.getElementById('cad-daily-tasks-banner');
+            const bannerList = document.getElementById('cad-daily-tasks-banner-list');
+
+            if (banner && bannerList) {
+                banner.classList.toggle('hidden', due.length === 0);
+                bannerList.innerHTML = due.slice(0, 3).map(t => {
+                    const modePill = t._isFixed
+                        ? `<span class="px-2 py-0.5 rounded bg-slate-950/75 text-amber-300 font-black text-[10px]">⏰ FIJA ${t._horaLabel} hrs</span>`
+                        : `<span class="px-2 py-0.5 rounded bg-slate-950/75 text-cyan-300 font-black text-[10px]">🎲 ALEATORIA TURNO ${t._horaLabel} hrs</span>`;
+                    return `
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-white text-xs">
+                            <div class="flex flex-wrap items-center gap-2 min-w-0">
+                                ${modePill}
+                                <span class="px-2 py-0.5 rounded bg-white/20 font-black text-[10px]">${escCcHtml(t.cuadrante || 'TODOS')}</span>
+                                <span class="font-bold truncate">${escCcHtml(t.desc)}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" onclick="dispatchDailyTaskToCentral('${escCcHtml(t.id)}')" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] shadow">
+                                    <i class="fa-solid fa-tower-broadcast mr-1"></i>A Despacho
+                                </button>
+                                <button type="button" onclick="dismissDailyTaskAlert('${escCcHtml(t.id)}')" class="px-2.5 py-1 rounded-lg bg-slate-950/60 hover:bg-slate-950 text-emerald-100 font-bold text-[11px]">
+                                    ✓ Avisado
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+
+            let triggeredNew = false;
+            due.forEach(t => {
+                if (!window._cadNotifiedDailyTaskIds.has(t.id)) {
+                    window._cadNotifiedDailyTaskIds.add(t.id);
+                    triggeredNew = true;
+                    const kind = t._isFixed ? `Hora fija ${t._horaLabel}` : `Turno aleatorio ${t._horaLabel}`;
+                    showToast(`📋 TAREA DIARIA (${kind} • ${t.cuadrante}): ${String(t.desc || '').slice(0, 95)}`, 'bg-emerald-700');
+                    try {
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(`📋 Tarea Diaria — Cuadrante ${t.cuadrante} (${t._horaLabel} hrs)`, {
+                                body: t.desc,
+                                icon: 'logo-pena-seguro-1410.png'
+                            });
+                        }
+                    } catch (e) {}
+                }
+            });
+            if (triggeredNew) {
+                playScheduledServiceChime();
+                renderCentralOpenQueue();
+            }
+        }
+
         function exportCallCenterPDF() {
             if (!window.jspdf) { showToast('Librería PDF cargando, intenta nuevamente', 'bg-amber-600'); return; }
             const { jsPDF } = window.jspdf;
@@ -10624,9 +10904,11 @@
 
             if (CencoState.scheduledAlertTimer) clearInterval(CencoState.scheduledAlertTimer);
             checkUpcomingCallCenterServices();
+            checkDailyTasksDispatcherAlerts();
             CencoState.scheduledAlertTimer = setInterval(() => {
                 if (document.getElementById('view-cenco')?.classList.contains('active')) {
                     checkUpcomingCallCenterServices();
+                    checkDailyTasksDispatcherAlerts();
                 }
             }, 15000);
         }
@@ -12200,8 +12482,10 @@
             if (bCentral) { bCentral.innerText = openCount; bCentral.classList.toggle('hidden', openCount === 0); }
             const bAbiertos = document.getElementById('cad-abiertos-count-pill');
             const dueScheduledCount = typeof getUpcoming5MinCallCenterServices === 'function' ? getUpcoming5MinCallCenterServices().length : 0;
-            if (bAbiertos) bAbiertos.innerText = openCount + cctvActiveCount + dueScheduledCount;
+            const dueDailyCount = typeof getDueDailyTasksForDispatcher === 'function' ? getDueDailyTasksForDispatcher().length : 0;
+            if (bAbiertos) bAbiertos.innerText = openCount + cctvActiveCount + dueScheduledCount + dueDailyCount;
             if (typeof checkUpcomingCallCenterServices === 'function') checkUpcomingCallCenterServices();
+            if (typeof checkDailyTasksDispatcherAlerts === 'function') checkDailyTasksDispatcherAlerts();
             if (typeof checkPendingCallCenterDerivations === 'function') checkPendingCallCenterDerivations();
             if (typeof renderCctvIncomingProceduresPanel === 'function') renderCctvIncomingProceduresPanel();
             const bCctv = document.getElementById('cad-badge-cctv');
@@ -12262,6 +12546,31 @@
                             </div>
                         </div>`;
                 }).join('');
+            }
+
+            const dailyWrap = document.getElementById('cad-abiertos-dailytasks-wrap');
+            const dailyQueue = document.getElementById('cenco-despachador-dailytasks-queue');
+            const dailyCount = document.getElementById('cad-abiertos-dailytasks-count');
+            const dueDaily = typeof getDueDailyTasksForDispatcher === 'function' ? getDueDailyTasksForDispatcher() : [];
+            if (dailyWrap) dailyWrap.classList.toggle('hidden', dueDaily.length === 0);
+            if (dailyCount) dailyCount.innerText = dueDaily.length;
+            if (dailyQueue) {
+                dailyQueue.innerHTML = dueDaily.map(t => `
+                    <div class="cad-elevated border border-emerald-500/55 bg-emerald-950/30 rounded-lg p-2.5 space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="font-black ${t._isFixed ? 'text-amber-300' : 'text-cyan-300'}">${t._isFixed ? `⏰ Fija ${t._horaLabel} hrs` : `🎲 Aleatoria ${t._horaLabel} hrs`}</span>
+                            <span class="px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-200 text-[10px] font-black">${escCcHtml(t.cuadrante || 'TODOS')}</span>
+                        </div>
+                        <div class="text-[11px] cad-text font-semibold">${escCcHtml(t.desc)}</div>
+                        <div class="flex items-center gap-1.5 pt-1">
+                            <button type="button" onclick="dispatchDailyTaskToCentral('${escCcHtml(t.id)}')" class="flex-1 py-1.5 px-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px]">
+                                <i class="fa-solid fa-tower-broadcast mr-1"></i>Enviar a Despacho
+                            </button>
+                            <button type="button" onclick="dismissDailyTaskAlert('${escCcHtml(t.id)}')" class="py-1.5 px-2.5 rounded-md cad-surface border cad-border text-emerald-300 hover:text-white font-bold text-[11px]">
+                                ✓ Avisado
+                            </button>
+                        </div>
+                    </div>`).join('');
             }
 
             const cctvWrap = document.getElementById('cad-abiertos-cctv-wrap');
