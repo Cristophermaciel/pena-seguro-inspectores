@@ -12002,7 +12002,9 @@
                 `;
             }).join('');
 
-            const authHtml = authorized.map(item => `
+            const authHtml = authorized
+                .filter(item => !(window._cadHiddenGeoAuthCards && window._cadHiddenGeoAuthCards.has(normalizeVehicleCompactKey(item.movil))))
+                .map(item => `
                 <div class="rounded-lg p-2 shadow-lg border bg-emerald-950/90 border-emerald-500/60 text-emerald-100 text-[10px] backdrop-blur">
                     <div class="flex items-center justify-between gap-1.5">
                         <span class="font-black uppercase text-emerald-300 flex items-center gap-1">
@@ -12010,7 +12012,7 @@
                         </span>
                         <div class="flex items-center gap-1">
                             <button type="button" onclick="focusGpsAlertOnMap(${item.lat}, ${item.lon})" class="px-1.5 py-0.5 rounded bg-white/15 hover:bg-white/25 text-white font-bold text-[9px]">Ver</button>
-                            <button type="button" onclick="revokeGeofenceAuth('${esc(item.auth.id)}')" class="px-1.5 py-0.5 rounded bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white font-bold text-[9px]" title="Finalizar autorización">✕</button>
+                            <button type="button" onclick="hideGeofenceAuthCard('${esc(item.movil)}')" class="px-1.5 py-0.5 rounded bg-white/15 hover:bg-white/30 text-white font-bold text-[9px]" title="Ocultar aviso (mantiene móvil autorizado)">✕</button>
                         </div>
                     </div>
                     <div class="mt-0.5 font-bold text-white leading-tight">${esc(item.auth.tipoAutorizacion)}</div>
@@ -12091,6 +12093,14 @@
 
         function closeGeofenceAuthModal() {
             document.getElementById('cenco-geofence-auth-modal')?.classList.add('hidden');
+        }
+
+        window._cadHiddenGeoAuthCards = window._cadHiddenGeoAuthCards || new Set();
+
+        function hideGeofenceAuthCard(movilName) {
+            const key = normalizeVehicleCompactKey(movilName);
+            if (key) window._cadHiddenGeoAuthCards.add(key);
+            renderGpsGeofencePanel();
         }
 
         function revokeGeofenceAuth(authId) {
